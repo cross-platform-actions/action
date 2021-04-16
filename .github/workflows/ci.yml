@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: '*'
+    tags: v*
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build: # make sure build/ci work properly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm install
+      - run: npm run all
+
+  test: # make sure the action works on a clean machine without building
+    runs-on: macos-10.15
+    strategy:
+      matrix:
+        os:
+          - name: freebsd
+            version: 12.2
+          - name: openbsd
+            version: 6.8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: ${{ matrix.os.name }}
+        uses: ./
+        env:
+          FOO: A
+          BAR: B
+        with:
+          environment_variables: FOO BAR
+          operating_system: ${{ matrix.os.name }}
+          version: ${{ matrix.os.version }}
+          run: |
+            uname -a
+            echo $SHELL
+            pwd
+            ls -lah
+            whoami
+            env | sort

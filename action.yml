@@ -1,0 +1,31 @@
+name: Jacob Carlborg
+description: Provides cross platform runner
+author: Jacob Carlborg
+inputs:
+  run:
+    required: true
+    description: |
+      Runs command-line programs using the operating system's shell.
+      This will be executed inside the virtual machine.
+  operating_system:
+    required: true
+    description: The type of operating system to run the job on
+  version:
+    required: true
+    description: The version of the operating system to use
+  shell:
+    required: false
+    description: |
+      The shell to use to execute the commands. Defaults to the default shell
+      for the given operating system.
+    default: default
+  environment_variables:
+    required: false
+    description: |
+      A list of environment variables to forward to the virtual machine.
+      The list should be separated with spaces.
+    default: ''
+
+runs:
+  using: node12
+  main: dist/index.js
