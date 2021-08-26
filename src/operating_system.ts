@@ -4,16 +4,26 @@ import * as path from 'path'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
+import * as architecture from './architecture'
 import * as xhyve from './xhyve_vm'
+import * as qemu from './qemu_vm'
+import * as vmModule from './vm'
+import * as action from './action'
+import * as host from './host'
+
+export const resourceBaseUrl =
+  'https://github.com/cross-platform-actions/resources/releases/download/'
 
 export enum Kind {
   freeBsd,
+  netBsd,
   openBsd
 }
 
 const stringToKind: ReadonlyMap<string, Kind> = (() => {
   const map = new Map<string, Kind>()
   map.set('freebsd', Kind.freeBsd)
+  map.set('netbsd', Kind.netBsd)
   map.set('openbsd', Kind.openBsd)
   return map
 })()
@@ -22,58 +32,46 @@ export function toKind(value: string): Kind | undefined {
   return stringToKind.get(value.toLowerCase())
 }
 
-export enum Architecture {
-  arm64,
-  x86_64
-}
-
-const stringToArchitecture: ReadonlyMap<string, Architecture> = (() => {
-  const map = new Map<string, Architecture>()
-  map.set('arm64', Architecture.arm64)
-  map.set('x86-64', Architecture.x86_64)
-  return map
-})()
-
-export function toArchitecture(value: string): Architecture | undefined {
-  return stringToArchitecture.get(value.toLowerCase())
-}
-
-export function toString(architecture: Architecture): string {
-  for (const [key, value] of stringToArchitecture) {
-    if (value === architecture) return key
-  }
-
-  throw Error(
-    `Unreachable: missing Architecture.${architecture} in 'stringToArchitecture'`
-  )
-}
-
 export abstract class OperatingSystem {
+  readonly resourcesUrl: string
   private readonly baseUrl = 'https://github.com/cross-platform-actions'
+
+  readonly architecture: architecture.Architecture
+
+  protected readonly xhyveHypervisorUrl = `${resourceBaseUrl}v0.3.0/xhyve-macos.tar`
+
   private readonly name: string
-  private readonly architecture: Architecture
   private readonly version: string
 
-  constructor(name: string, architecture: Architecture, version: string) {
+  constructor(name: string, arch: architecture.Architecture, version: string) {
+    const hostString = host.toString(host.kind)
+    this.resourcesUrl = `${resourceBaseUrl}v0.3.0/resources-${hostString}.tar`
     this.name = name
     this.version = version
-    this.architecture = architecture
+    this.architecture = arch
   }
 
   static create(
-    kind: Kind,
-    architecture: Architecture,
+    operatingSystemKind: Kind,
+    architectureKind: architecture.Kind,
     version: string
   ): OperatingSystem {
-    switch (kind) {
+    const arch = architecture.getArchitecture(architectureKind)
+
+    switch (operatingSystemKind) {
       case Kind.freeBsd:
-        return new FreeBsd(architecture, version)
+        return new FreeBsd(arch, version)
+      case Kind.netBsd:
+        return new NetBsd(arch, version)
       case Kind.openBsd:
-        return new OpenBsd(architecture, version)
+        return new OpenBsd(arch, version)
     }
   }
 
   abstract get virtualMachineImageReleaseVersion(): string
+  abstract get hypervisorUrl(): string
+  abstract get ssHostPort(): number
+  abstract get actionImplementationKind(): action.ImplementationKind
 
   get virtualMachineImageUrl(): string {
     return [
@@ -87,59 +85,67 @@ export abstract class OperatingSystem {
   }
 
   abstract createVirtualMachine(
-    xhyvePath: fs.PathLike,
-    options: xhyve.Options
-  ): xhyve.Vm
+    hypervisorDirectory: fs.PathLike,
+    resourcesDirectory: fs.PathLike,
+    configuration: vmModule.Configuration
+  ): vmModule.Vm
 
-  async prepareDisk(
-    /* eslint-disable @typescript-eslint/no-unused-vars */
+  abstract prepareDisk(
     diskImage: fs.PathLike,
     targetDiskName: fs.PathLike,
     resourcesDirectory: fs.PathLike
-    /* eslint-enable */
+  ): Promise<void>
+
+  async setupWorkDirectory(
+    vm: vmModule.Vm,
+    workDirectory: string
   ): Promise<void> {
-    throw Error('Not implemented')
+    const destination = `/home/${vmModule.Vm.user}/work`
+
+    if (workDirectory === destination)
+      await vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`)
+    else {
+      await vm.execute(
+        `rm -rf '${destination}' && mkdir -p '${workDirectory}' && ln -sf '${workDirectory}/' '${destination}'`
+      )
+    }
   }
 
   private get imageName(): string {
     const encodedVersion = encodeURIComponent(this.version)
-    const archString = toString(this.architecture)
+    const archString = architecture.toString(this.architecture.kind)
     return `${this.name}-${encodedVersion}-${archString}.qcow2`
   }
 }
 
-class FreeBsd extends OperatingSystem {
-  constructor(architecture: Architecture, version: string) {
-    super('freebsd', architecture, version)
-  }
-
-  async prepareDisk(
-    diskImage: fs.PathLike,
-    targetDiskName: fs.PathLike,
-    resourcesDirectory: fs.PathLike
-  ): Promise<void> {
-    await convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
-  }
-
-  get virtualMachineImageReleaseVersion(): string {
-    return 'v0.0.1'
-  }
-
-  createVirtualMachine(
-    xhyvePath: fs.PathLike,
-    options: xhyve.Options
-  ): xhyve.Vm {
-    core.debug('Creating FreeBSD VM')
-    return new xhyve.FreeBsd(xhyvePath, options)
+abstract class Qemu extends OperatingSystem {
+  get ssHostPort(): number {
+    return 2847
   }
 }
 
-class OpenBsd extends OperatingSystem {
-  constructor(architecture: Architecture, version: string) {
-    super('openbsd', architecture, version)
+class FreeBsd extends OperatingSystem {
+  constructor(arch: architecture.Architecture, version: string) {
+    super('freebsd', arch, version)
   }
 
-  async prepareDisk(
+  get hypervisorUrl(): string {
+    if (host.host.canRunXhyve(this.architecture)) return this.xhyveHypervisorUrl
+    else return this.architecture.resourceUrl
+  }
+
+  get ssHostPort(): number {
+    if (host.host.canRunXhyve(this.architecture)) return xhyve.Vm.sshPort
+    else return qemu.Vm.sshPort
+  }
+
+  get actionImplementationKind(): action.ImplementationKind {
+    if (this.architecture.kind === architecture.Kind.x86_64)
+      return action.ImplementationKind.xhyve
+    else return action.ImplementationKind.qemu
+  }
+
+  override async prepareDisk(
     diskImage: fs.PathLike,
     targetDiskName: fs.PathLike,
     resourcesDirectory: fs.PathLike
@@ -152,11 +158,121 @@ class OpenBsd extends OperatingSystem {
   }
 
   createVirtualMachine(
-    xhyvePath: fs.PathLike,
-    options: xhyve.Options
-  ): xhyve.Vm {
+    hypervisorDirectory: fs.PathLike,
+    resourcesDirectory: fs.PathLike,
+    configuration: vmModule.Configuration
+  ): vmModule.Vm {
+    core.debug('Creating FreeBSD VM')
+
+    if (this.architecture.kind === architecture.Kind.x86_64) {
+      return new host.host.vmModule.FreeBsd(
+        hypervisorDirectory,
+        resourcesDirectory,
+        configuration
+      )
+    } else {
+      throw Error(
+        `Not implemented: FreeBSD guests are not implemented on ${architecture.toString(
+          this.architecture.kind
+        )}`
+      )
+    }
+  }
+}
+
+class NetBsd extends Qemu {
+  constructor(arch: architecture.Architecture, version: string) {
+    super('netbsd', arch, version)
+  }
+
+  get hypervisorUrl(): string {
+    return this.architecture.resourceUrl
+  }
+
+  get virtualMachineImageReleaseVersion(): string {
+    return 'v0.0.1-rc6'
+  }
+
+  get actionImplementationKind(): action.ImplementationKind {
+    return action.ImplementationKind.qemu
+  }
+
+  override async prepareDisk(
+    diskImage: fs.PathLike,
+    targetDiskName: fs.PathLike,
+    resourcesDirectory: fs.PathLike
+  ): Promise<void> {
+    await convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
+  }
+
+  createVirtualMachine(
+    hypervisorDirectory: fs.PathLike,
+    resourcesDirectory: fs.PathLike,
+    configuration: vmModule.Configuration
+  ): vmModule.Vm {
+    core.debug('Creating NetBSD VM')
+
+    return new qemu.NetBsd(
+      hypervisorDirectory,
+      resourcesDirectory,
+      configuration
+    )
+  }
+}
+
+class OpenBsd extends OperatingSystem {
+  constructor(arch: architecture.Architecture, version: string) {
+    super('openbsd', arch, version)
+  }
+
+  get hypervisorUrl(): string {
+    if (host.host.canRunXhyve(this.architecture)) return this.xhyveHypervisorUrl
+    else return this.architecture.resourceUrl
+  }
+
+  get ssHostPort(): number {
+    if (host.host.canRunXhyve(this.architecture)) return xhyve.Vm.sshPort
+    else return qemu.Vm.sshPort
+  }
+
+  get actionImplementationKind(): action.ImplementationKind {
+    if (this.architecture.kind === architecture.Kind.x86_64)
+      return action.ImplementationKind.xhyve
+    else return action.ImplementationKind.qemu
+  }
+
+  override async prepareDisk(
+    diskImage: fs.PathLike,
+    targetDiskName: fs.PathLike,
+    resourcesDirectory: fs.PathLike
+  ): Promise<void> {
+    await convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
+  }
+
+  get virtualMachineImageReleaseVersion(): string {
+    return 'v0.2.0'
+  }
+
+  createVirtualMachine(
+    hypervisorDirectory: fs.PathLike,
+    resourcesDirectory: fs.PathLike,
+    configuration: vmModule.Configuration
+  ): vmModule.Vm {
     core.debug('Creating OpenBSD VM')
-    return new xhyve.OpenBsd(xhyvePath, options)
+
+    if (this.architecture.kind === architecture.Kind.x86_64) {
+      return new host.host.vmModule.OpenBsd(
+        hypervisorDirectory,
+        resourcesDirectory,
+        configuration
+      )
+    } else {
+      throw Error(
+        `Not implemented: OpenBSD guests are not implemented on ${architecture.toString(
+          this.architecture.kind
+        )}`
+      )
+    }
   }
 }
 

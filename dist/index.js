@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toString = exports.toShell = void 0;
+exports.toString = exports.toShell = exports.Implementation = exports.Action = exports.ImplementationKind = void 0;
 const fs = __importStar(__webpack_require__(5747));
 const path = __importStar(__webpack_require__(5622));
 const process = __importStar(__webpack_require__(1765));
@@ -47,35 +47,51 @@ const cache = __importStar(__webpack_require__(7784));
 const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
 const array_prototype_flatmap_1 = __importDefault(__webpack_require__(9092));
+const architecture = __importStar(__webpack_require__(4019));
+const hostModule = __importStar(__webpack_require__(8215));
 const os = __importStar(__webpack_require__(9385));
-const utility_1 = __webpack_require__(2857);
-const process_1 = __webpack_require__(1765);
+var ImplementationKind;
+(function (ImplementationKind) {
+    ImplementationKind[ImplementationKind["qemu"] = 0] = "qemu";
+    ImplementationKind[ImplementationKind["xhyve"] = 1] = "xhyve";
+})(ImplementationKind = exports.ImplementationKind || (exports.ImplementationKind = {}));
 class Action {
     constructor() {
-        this.resourceUrl = 'https://github.com/cross-platform-actions/resources/releases/download/v0.0.1/resources.tar';
-        this.workDirectory = '/Users/runner/work';
         this.input = new Input();
+        this.privateSshKeyName = 'id_ed25519';
         this.targetDiskName = 'disk.raw';
-        this.tempPath = fs.mkdtempSync('resources');
-        this.privateSshKey = path.join(this.tempPath, 'ed25519');
+        this.host = hostModule.Host.create();
+        this.tempPath = fs.mkdtempSync('/tmp/resources');
+        this.resourceDisk = new ResourceDisk(this.tempPath, this.host);
+        this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, architecture.Kind.x86_64, this.input.version);
+        this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
+        this.workDirectory = this.host.workDirectory;
+        this.sshDirectory = path.join(this.getHomeDirectory(), '.ssh');
+        this.privateSshKey = path.join(this.tempPath, this.privateSshKeyName);
         this.publicSshKey = `${this.privateSshKey}.pub`;
-        this.resourceDisk = new ResourceDisk(this.tempPath);
-        this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, os.Architecture.x86_64, this.input.version);
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Running action');
-            const [diskImagePath, resourcesArchivePath] = yield Promise.all([
+            const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield Promise.all([
                 this.downloadDiskImage(),
-                this.downloadResources(),
+                this.download('hypervisor', this.operatingSystem.hypervisorUrl),
+                this.download('resources', this.operatingSystem.resourcesUrl),
                 this.setupSSHKey()
             ]);
-            const resourcesDirectory = yield this.unarchiveResoruces(resourcesArchivePath);
-            const vmPromise = this.creareVm(resourcesDirectory, diskImagePath);
+            const [firmwareDirectory, resourcesDirectory] = yield Promise.all([
+                this.unarchiveHypervisor(hypervisorArchivePath),
+                this.unarchive('resources', resourcesArchivePath)
+            ]);
+            const hypervisorDirectory = path.join(firmwareDirectory, 'bin');
+            const vmPromise = this.creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath);
             const excludes = [
+                resourcesArchivePath,
                 resourcesDirectory,
-                diskImagePath,
-                resourcesArchivePath
+                hypervisorArchivePath,
+                hypervisorDirectory,
+                firmwareDirectory,
+                diskImagePath
             ].map(p => p.slice(this.workDirectory.length + 1));
             const vm = yield vmPromise;
             yield vm.init();
@@ -83,6 +99,7 @@ class Action {
                 yield vm.run();
                 this.configSSH(vm.ipAddress);
                 yield vm.wait(60);
+                yield this.operatingSystem.setupWorkDirectory(vm, this.workDirectory);
                 yield this.syncFiles(vm.ipAddress, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
                 try {
@@ -107,28 +124,60 @@ class Action {
             return result;
         });
     }
-    downloadResources() {
+    download(type, url) {
         return __awaiter(this, void 0, void 0, function* () {
-            core.info(`Downloading resources: ${this.resourceUrl}`);
-            const result = yield cache.downloadTool(this.resourceUrl);
+            core.info(`Downloading ${type}: ${url}`);
+            const result = yield cache.downloadTool(url);
             core.info(`Downloaded file: ${result}`);
             return result;
         });
     }
-    creareVm(resourcesDirectory, diskImagePath) {
+    creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.operatingSystem.prepareDisk(diskImagePath, this.targetDiskName, resourcesDirectory);
-            const xhyvePath = path.join(resourcesDirectory, 'xhyve');
-            return this.operatingSystem.createVirtualMachine(xhyvePath, {
+            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, {
                 memory: '4G',
                 cpuCount: 2,
                 diskImage: path.join(resourcesDirectory, this.targetDiskName),
-                resourcesDiskImage: this.resourceDisk.diskPath,
+                ssHostPort: this.operatingSystem.ssHostPort,
+                // qemu
+                cpu: this.operatingSystem.architecture.cpu,
+                accelerator: this.operatingSystem.architecture.accelerator,
+                machineType: this.operatingSystem.architecture.machineType,
+                // xhyve
                 uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
-                userboot: path.join(resourcesDirectory, 'userboot.so'),
-                firmware: path.join(resourcesDirectory, 'uefi.fd')
+                resourcesDiskImage: this.resourceDisk.diskPath,
+                userboot: path.join(firmwareDirectory, 'userboot.so'),
+                firmware: path.join(firmwareDirectory, 'uefi.fd')
             });
         });
+    }
+    unarchive(type, archivePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info(`Unarchiving ${type}: ${archivePath}`);
+            return cache.extractTar(archivePath, undefined, '-x');
+        });
+    }
+    unarchiveHypervisor(archivePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const hypervisorDirectory = yield this.unarchive('hypervisor', archivePath);
+            return path.join(hypervisorDirectory);
+        });
+    }
+    configSSH(ipAddress) {
+        core.debug('Configuring SSH');
+        if (!fs.existsSync(this.sshDirectory))
+            fs.mkdirSync(this.sshDirectory, { recursive: true, mode: 0o700 });
+        const lines = [
+            'StrictHostKeyChecking=accept-new',
+            `Host ${ipAddress}`,
+            `Port ${this.operatingSystem.ssHostPort}`,
+            `IdentityFile ${this.privateSshKey}`,
+            'SendEnv CI GITHUB_*',
+            `SendEnv ${this.input.environmentVariables}`
+        ].join('\n');
+        fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`);
+        this.implementation.configSSH();
     }
     setupSSHKey() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -146,29 +195,6 @@ class Action {
             this.resourceDisk.unmount();
         });
     }
-    unarchiveResoruces(resourcesArchivePath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.info(`Unarchiving resoruces: ${resourcesArchivePath}`);
-            return cache.extractTar(resourcesArchivePath, undefined, '-x');
-        });
-    }
-    configSSH(ipAddress) {
-        core.debug('Configuring SSH');
-        const homeDirectory = process.env['HOME'];
-        if (homeDirectory === undefined)
-            throw Error('Failed to get the home direcory');
-        const sshDirectory = path.join(homeDirectory, '.ssh');
-        if (!fs.existsSync(sshDirectory))
-            fs.mkdirSync(sshDirectory, { recursive: true, mode: 0o700 });
-        const lines = [
-            'StrictHostKeyChecking=accept-new',
-            `Host ${ipAddress}`,
-            `IdentityFile ${this.privateSshKey}`,
-            'SendEnv CI GITHUB_*',
-            `SendEnv ${this.input.environmentVariables}`
-        ].join('\n');
-        fs.appendFileSync(path.join(sshDirectory, 'config'), `${lines}\n`);
-    }
     syncFiles(ipAddress, ...excludePaths) {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug(`Syncing files to VM, excluding: ${excludePaths}`);
@@ -176,7 +202,7 @@ class Action {
             yield exec.exec('rsync', [
                 '-auvzrtopg',
                 '--exclude', '_actions/cross-platform-actions/action',
-                ...array_prototype_flatmap_1.default(excludePaths, p => ['--exclude', p]),
+                ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
                 `${this.workDirectory}/`,
                 `runner@${ipAddress}:work`
             ]);
@@ -197,15 +223,62 @@ class Action {
         return __awaiter(this, void 0, void 0, function* () {
             core.info(`Run: ${this.input.run}`);
             const shell = this.input.shell === Shell.default ? '$SHELL' : toString(this.input.shell);
-            yield vm.execute2(['sh', '-c', `'cd "${process_1.env['GITHUB_WORKSPACE']}" && exec "${shell}" -e'`], Buffer.from(this.input.run));
+            yield vm.execute2([
+                'sh',
+                '-c',
+                `'cd "${process.env['GITHUB_WORKSPACE']}" && exec "${shell}" -e'`
+            ], Buffer.from(this.input.run));
         });
     }
+    getImplementation(kind) {
+        switch (kind) {
+            case ImplementationKind.qemu:
+                return new QemuImplementation(this);
+            case ImplementationKind.xhyve:
+                return new XhyveImplementation(this);
+            default:
+                throw Error(`Unhandled implementation kind: $`);
+        }
+    }
+    getHomeDirectory() {
+        const homeDirectory = process.env['HOME'];
+        if (homeDirectory === undefined)
+            throw Error('Failed to get the home direcory');
+        return homeDirectory;
+    }
 }
-exports.default = Action;
+exports.Action = Action;
+class Implementation {
+    constructor(action) {
+        this.action = action;
+    }
+    get resourceDisk() {
+        return this.action['resourceDisk'];
+    }
+    get publicSshKey() {
+        return this.action['publicSshKey'];
+    }
+    get sshDirectory() {
+        return this.action['sshDirectory'];
+    }
+}
+exports.Implementation = Implementation;
+class XhyveImplementation extends Implementation {
+    configSSH() {
+        // noop
+    }
+}
+class QemuImplementation extends Implementation {
+    configSSH() {
+        const authorizedKeysPath = path.join(this.sshDirectory, 'authorized_keys');
+        const publicKeyContent = fs.readFileSync(this.publicSshKey);
+        fs.appendFileSync(authorizedKeysPath, publicKeyContent);
+    }
+}
 class ResourceDisk {
-    constructor(tempPath) {
+    constructor(tempPath, host) {
         this.mountName = 'RES';
-        this.mountPath = path.join('/Volumes', this.mountName);
+        this.host = host;
         this.tempPath = tempPath;
         this.diskPath = path.join(this.tempPath, 'res.raw');
     }
@@ -215,7 +288,8 @@ class ResourceDisk {
             yield this.createDiskFile();
             this.devicePath = yield this.createDiskDevice();
             yield this.partitionDisk();
-            return this.mountPath;
+            const mountPath = path.join(this.tempPath, 'mount/RES');
+            return (this.mountPath = yield this.mountDisk(mountPath));
         });
     }
     unmount() {
@@ -227,46 +301,37 @@ class ResourceDisk {
     createDiskFile() {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Creating disk file');
-            yield exec.exec('mkfile', ['-n', '40m', this.diskPath]);
+            yield this.host.createDiskFile('40m', this.diskPath);
         });
     }
     createDiskDevice() {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Creating disk file');
-            const devicePath = yield utility_1.execWithOutput('hdiutil', [
-                'attach',
-                '-imagekey',
-                'diskimage-class=CRawDiskImage',
-                '-nomount',
-                this.diskPath
-            ], { silent: true });
-            return devicePath.trim();
+            return yield this.host.createDiskDevice(this.diskPath);
         });
     }
     partitionDisk() {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Partitioning disk');
-            yield exec.exec('diskutil', [
-                'partitionDisk',
-                this.devicePath,
-                '1',
-                'GPT',
-                'fat32',
-                this.mountName,
-                '100%'
-            ]);
+            yield this.host.partitionDisk(this.devicePath, this.mountName);
+        });
+    }
+    mountDisk(mountPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('mounting disk');
+            return yield this.host.mountDisk(this.devicePath, mountPath);
         });
     }
     unmountDisk() {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Unmounting disk');
-            yield exec.exec('umount', [this.mountPath]);
+            yield exec.exec('sudo', ['umount', this.mountPath]);
         });
     }
     detachDevice() {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Detaching device');
-            yield exec.exec('hdiutil', ['detach', this.devicePath]);
+            yield this.host.detachDevice(this.devicePath);
         });
     }
 }
@@ -308,6 +373,19 @@ class Input {
             return this.environmentVariables_;
         return (this.environmentVariables_ = core.getInput('environment_variables'));
     }
+    get architecture() {
+        if (this.architecture_ !== undefined)
+            return this.architecture_;
+        const input = core.getInput('architecture');
+        core.debug(`architecture input: '${input}'`);
+        if (input === undefined || input === '')
+            return (this.architecture_ = architecture.Kind.x86_64);
+        const kind = architecture.toKind(input);
+        core.debug(`kind: '${kind}'`);
+        if (kind === undefined)
+            throw Error(`Invalid architecture: ${input}`);
+        return (this.architecture_ = kind);
+    }
 }
 var Shell;
 (function (Shell) {
@@ -338,7 +416,89 @@ exports.toString = toString;
 
 /***/ }),
 
-/***/ 3109:
+/***/ 4019:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toString = exports.toKind = exports.getArchitecture = exports.Kind = void 0;
+const host = __importStar(__webpack_require__(8215));
+const operating_system_1 = __webpack_require__(9385);
+const vm = __importStar(__webpack_require__(2772));
+var Kind;
+(function (Kind) {
+    Kind[Kind["arm64"] = 0] = "arm64";
+    Kind[Kind["x86_64"] = 1] = "x86_64";
+})(Kind = exports.Kind || (exports.Kind = {}));
+function getArchitecture(kind) {
+    const arch = architectures.get(kind);
+    if (arch === undefined)
+        throw Error(`Unreachable: missing Kind.${kind} in 'architectures'`);
+    return arch;
+}
+exports.getArchitecture = getArchitecture;
+const hostString = host.toString(host.kind);
+const architectures = (() => {
+    const map = new Map();
+    map.set(Kind.arm64, {
+        kind: Kind.arm64,
+        cpu: 'cortex-a57',
+        machineType: 'virt',
+        accelerator: vm.Accelerator.tcg,
+        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.3.0/qemu-system-aarch64-${hostString}.tar`
+    });
+    map.set(Kind.x86_64, {
+        kind: Kind.x86_64,
+        cpu: host.kind === host.Kind.darwin ? 'host' : 'qemu64',
+        machineType: 'pc',
+        accelerator: host.kind === host.Kind.darwin ? vm.Accelerator.hvf : vm.Accelerator.tcg,
+        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.3.0/qemu-system-x86_64-${hostString}.tar`
+    });
+    return map;
+})();
+function toKind(value) {
+    return fromString.get(value.toLowerCase());
+}
+exports.toKind = toKind;
+function toString(kind) {
+    for (const [key, value] of fromString) {
+        if (value === kind)
+            return key;
+    }
+    throw Error(`Unreachable: missing Kind.${kind} in 'fromString'`);
+}
+exports.toString = toString;
+const fromString = (() => {
+    const map = new Map();
+    map.set('arm64', Kind.arm64);
+    map.set('x86-64', Kind.x86_64);
+    return map;
+})();
+//# sourceMappingURL=architecture.js.map
+
+/***/ }),
+
+/***/ 8215:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -375,15 +535,208 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.host = exports.Host = exports.toString = exports.kind = exports.Kind = void 0;
+const fs_1 = __webpack_require__(5747);
+const process = __importStar(__webpack_require__(1765));
+const os = __importStar(__webpack_require__(2087));
+const exec = __importStar(__webpack_require__(1514));
+const architecture = __importStar(__webpack_require__(4019));
+const qemu = __importStar(__webpack_require__(1106));
+const utility_1 = __webpack_require__(2857);
+const path_1 = __importDefault(__webpack_require__(5622));
+const xhyve = __importStar(__webpack_require__(2722));
+var Kind;
+(function (Kind) {
+    Kind[Kind["darwin"] = 0] = "darwin";
+    Kind[Kind["linux"] = 1] = "linux";
+})(Kind = exports.Kind || (exports.Kind = {}));
+exports.kind = toKind(process.platform);
+function toKind(value) {
+    switch (value) {
+        case 'darwin':
+            return Kind.darwin;
+        case 'linux':
+            return Kind.linux;
+        default:
+            throw Error(`Unhandled host platform: ${value}`);
+    }
+}
+function toString(value) {
+    switch (value) {
+        case Kind.darwin:
+            return 'macos';
+        case Kind.linux:
+            return 'linux';
+        default:
+            throw Error(`Unhandled host platform: ${value}`);
+    }
+}
+exports.toString = toString;
+class Host {
+    static create() {
+        switch (exports.kind) {
+            case Kind.darwin:
+                return new MacOs();
+            case Kind.linux:
+                return new Linux();
+            default:
+                throw Error(`Unhandled host platform: ${exports.kind}`);
+        }
+    }
+}
+exports.Host = Host;
+class MacOs extends Host {
+    get workDirectory() {
+        return '/Users/runner/work';
+    }
+    get vmModule() {
+        return xhyve;
+    }
+    canRunXhyve(arch) {
+        return arch.kind === architecture.Kind.x86_64;
+    }
+    createDiskFile(size, diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('mkfile', ['-n', size, diskPath]);
+        });
+    }
+    createDiskDevice(diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const devicePath = yield (0, utility_1.execWithOutput)('hdiutil', [
+                'attach',
+                '-imagekey',
+                'diskimage-class=CRawDiskImage',
+                '-nomount',
+                diskPath
+            ], { silent: true });
+            return devicePath.trim();
+        });
+    }
+    partitionDisk(devicePath, mountName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('diskutil', [
+                'partitionDisk',
+                devicePath,
+                '1',
+                'GPT',
+                'fat32',
+                mountName,
+                '100%'
+            ]);
+        });
+    }
+    mountDisk(_devicePath, mountPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return path_1.default.join('/Volumes', path_1.default.basename(mountPath));
+        });
+    }
+    detachDevice(devicePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('hdiutil', ['detach', devicePath]);
+        });
+    }
+}
+class Linux extends Host {
+    get workDirectory() {
+        return '/home/runner/work';
+    }
+    get vmModule() {
+        return qemu;
+    }
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    canRunXhyve(_arch) {
+        /* eslint-enable @typescript-eslint/no-unused-vars */
+        return false;
+    }
+    createDiskFile(size, diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('truncate', ['-s', size, diskPath]);
+        });
+    }
+    createDiskDevice(diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const devicePath = yield (0, utility_1.execWithOutput)('sudo', ['losetup', '-f', '--show', diskPath], { silent: true });
+            return devicePath.trim();
+        });
+    }
+    /* eslint-disable  @typescript-eslint/no-unused-vars */
+    partitionDisk(devicePath, _mountName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            /* eslint-enable  @typescript-eslint/no-unused-vars */
+            yield exec.exec('sudo', ['mkfs.msdos', devicePath]);
+        });
+    }
+    mountDisk(devicePath, mountPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield fs_1.promises.mkdir(mountPath, { recursive: true });
+            const uid = os.userInfo().uid;
+            yield exec.exec('sudo', [
+                'mount',
+                '-o',
+                `uid=${uid}`,
+                devicePath,
+                mountPath
+            ]);
+            return mountPath;
+        });
+    }
+    detachDevice(devicePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('sudo', ['losetup', '-d', devicePath]);
+        });
+    }
+}
+exports.host = Host.create();
+//# sourceMappingURL=host.js.map
+
+/***/ }),
+
+/***/ 3109:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(2186));
-const action_1 = __importDefault(__webpack_require__(9139));
+const action_1 = __webpack_require__(9139);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield new action_1.default().run();
+            yield new action_1.Action().run();
         }
         catch (error) {
-            core.setFailed(error.message);
+            const err = error;
+            core.setFailed(err.message);
+            if (core.isDebug() && err.stack)
+                core.debug(err.stack);
         }
     });
 }
@@ -426,19 +779,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OperatingSystem = exports.toString = exports.toArchitecture = exports.Architecture = exports.toKind = exports.Kind = void 0;
+exports.OperatingSystem = exports.toKind = exports.Kind = exports.resourceBaseUrl = void 0;
 const path = __importStar(__webpack_require__(5622));
 const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
+const architecture = __importStar(__webpack_require__(4019));
 const xhyve = __importStar(__webpack_require__(2722));
+const qemu = __importStar(__webpack_require__(1106));
+const vmModule = __importStar(__webpack_require__(2772));
+const action = __importStar(__webpack_require__(9139));
+const host = __importStar(__webpack_require__(8215));
+exports.resourceBaseUrl = 'https://github.com/cross-platform-actions/resources/releases/download/';
 var Kind;
 (function (Kind) {
     Kind[Kind["freeBsd"] = 0] = "freeBsd";
-    Kind[Kind["openBsd"] = 1] = "openBsd";
+    Kind[Kind["netBsd"] = 1] = "netBsd";
+    Kind[Kind["openBsd"] = 2] = "openBsd";
 })(Kind = exports.Kind || (exports.Kind = {}));
 const stringToKind = (() => {
     const map = new Map();
     map.set('freebsd', Kind.freeBsd);
+    map.set('netbsd', Kind.netBsd);
     map.set('openbsd', Kind.openBsd);
     return map;
 })();
@@ -446,42 +807,25 @@ function toKind(value) {
     return stringToKind.get(value.toLowerCase());
 }
 exports.toKind = toKind;
-var Architecture;
-(function (Architecture) {
-    Architecture[Architecture["arm64"] = 0] = "arm64";
-    Architecture[Architecture["x86_64"] = 1] = "x86_64";
-})(Architecture = exports.Architecture || (exports.Architecture = {}));
-const stringToArchitecture = (() => {
-    const map = new Map();
-    map.set('arm64', Architecture.arm64);
-    map.set('x86-64', Architecture.x86_64);
-    return map;
-})();
-function toArchitecture(value) {
-    return stringToArchitecture.get(value.toLowerCase());
-}
-exports.toArchitecture = toArchitecture;
-function toString(architecture) {
-    for (const [key, value] of stringToArchitecture) {
-        if (value === architecture)
-            return key;
-    }
-    throw Error(`Unreachable: missing Architecture.${architecture} in 'stringToArchitecture'`);
-}
-exports.toString = toString;
 class OperatingSystem {
-    constructor(name, architecture, version) {
+    constructor(name, arch, version) {
         this.baseUrl = 'https://github.com/cross-platform-actions';
+        this.xhyveHypervisorUrl = `${exports.resourceBaseUrl}v0.3.0/xhyve-macos.tar`;
+        const hostString = host.toString(host.kind);
+        this.resourcesUrl = `${exports.resourceBaseUrl}v0.3.0/resources-${hostString}.tar`;
         this.name = name;
         this.version = version;
-        this.architecture = architecture;
+        this.architecture = arch;
     }
-    static create(kind, architecture, version) {
-        switch (kind) {
+    static create(operatingSystemKind, architectureKind, version) {
+        const arch = architecture.getArchitecture(architectureKind);
+        switch (operatingSystemKind) {
             case Kind.freeBsd:
-                return new FreeBsd(architecture, version);
+                return new FreeBsd(arch, version);
+            case Kind.netBsd:
+                return new NetBsd(arch, version);
             case Kind.openBsd:
-                return new OpenBsd(architecture, version);
+                return new OpenBsd(arch, version);
         }
     }
     get virtualMachineImageUrl() {
@@ -494,42 +838,49 @@ class OperatingSystem {
             this.imageName
         ].join('/');
     }
-    prepareDisk(
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    diskImage, targetDiskName, resourcesDirectory
-    /* eslint-enable */
-    ) {
+    setupWorkDirectory(vm, workDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
-            throw Error('Not implemented');
+            const destination = `/home/${vmModule.Vm.user}/work`;
+            if (workDirectory === destination)
+                yield vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`);
+            else {
+                yield vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}' && ln -sf '${workDirectory}/' '${destination}'`);
+            }
         });
     }
     get imageName() {
         const encodedVersion = encodeURIComponent(this.version);
-        const archString = toString(this.architecture);
+        const archString = architecture.toString(this.architecture.kind);
         return `${this.name}-${encodedVersion}-${archString}.qcow2`;
     }
 }
 exports.OperatingSystem = OperatingSystem;
-class FreeBsd extends OperatingSystem {
-    constructor(architecture, version) {
-        super('freebsd', architecture, version);
-    }
-    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
-        });
-    }
-    get virtualMachineImageReleaseVersion() {
-        return 'v0.0.1';
-    }
-    createVirtualMachine(xhyvePath, options) {
-        core.debug('Creating FreeBSD VM');
-        return new xhyve.FreeBsd(xhyvePath, options);
+class Qemu extends OperatingSystem {
+    get ssHostPort() {
+        return 2847;
     }
 }
-class OpenBsd extends OperatingSystem {
-    constructor(architecture, version) {
-        super('openbsd', architecture, version);
+class FreeBsd extends OperatingSystem {
+    constructor(arch, version) {
+        super('freebsd', arch, version);
+    }
+    get hypervisorUrl() {
+        if (host.host.canRunXhyve(this.architecture))
+            return this.xhyveHypervisorUrl;
+        else
+            return this.architecture.resourceUrl;
+    }
+    get ssHostPort() {
+        if (host.host.canRunXhyve(this.architecture))
+            return xhyve.Vm.sshPort;
+        else
+            return qemu.Vm.sshPort;
+    }
+    get actionImplementationKind() {
+        if (this.architecture.kind === architecture.Kind.x86_64)
+            return action.ImplementationKind.xhyve;
+        else
+            return action.ImplementationKind.qemu;
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -539,9 +890,77 @@ class OpenBsd extends OperatingSystem {
     get virtualMachineImageReleaseVersion() {
         return 'v0.2.0';
     }
-    createVirtualMachine(xhyvePath, options) {
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, configuration) {
+        core.debug('Creating FreeBSD VM');
+        if (this.architecture.kind === architecture.Kind.x86_64) {
+            return new host.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, configuration);
+        }
+        else {
+            throw Error(`Not implemented: FreeBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
+        }
+    }
+}
+class NetBsd extends Qemu {
+    constructor(arch, version) {
+        super('netbsd', arch, version);
+    }
+    get hypervisorUrl() {
+        return this.architecture.resourceUrl;
+    }
+    get virtualMachineImageReleaseVersion() {
+        return 'v0.0.1-rc6';
+    }
+    get actionImplementationKind() {
+        return action.ImplementationKind.qemu;
+    }
+    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
+        });
+    }
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, configuration) {
+        core.debug('Creating NetBSD VM');
+        return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, configuration);
+    }
+}
+class OpenBsd extends OperatingSystem {
+    constructor(arch, version) {
+        super('openbsd', arch, version);
+    }
+    get hypervisorUrl() {
+        if (host.host.canRunXhyve(this.architecture))
+            return this.xhyveHypervisorUrl;
+        else
+            return this.architecture.resourceUrl;
+    }
+    get ssHostPort() {
+        if (host.host.canRunXhyve(this.architecture))
+            return xhyve.Vm.sshPort;
+        else
+            return qemu.Vm.sshPort;
+    }
+    get actionImplementationKind() {
+        if (this.architecture.kind === architecture.Kind.x86_64)
+            return action.ImplementationKind.xhyve;
+        else
+            return action.ImplementationKind.qemu;
+    }
+    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
+        });
+    }
+    get virtualMachineImageReleaseVersion() {
+        return 'v0.2.0';
+    }
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
-        return new xhyve.OpenBsd(xhyvePath, options);
+        if (this.architecture.kind === architecture.Kind.x86_64) {
+            return new host.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
+        }
+        else {
+            throw Error(`Not implemented: OpenBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
+        }
     }
 }
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
@@ -560,6 +979,103 @@ function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
     });
 }
 //# sourceMappingURL=operating_system.js.map
+
+/***/ }),
+
+/***/ 1106:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OpenBsd = exports.NetBsd = exports.FreeBsd = exports.Vm = void 0;
+const vm = __importStar(__webpack_require__(2772));
+class Vm extends vm.Vm {
+    constructor(hypervisorDirectory, resourcesDirectory, configuration) {
+        super(hypervisorDirectory, resourcesDirectory, 'qemu', configuration);
+    }
+    getIpAddress() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return 'localhost';
+        });
+    }
+    get command() {
+        const accel = vm.Accelerator[this.configuration.accelerator];
+        // prettier-ignore
+        return [
+            this.hypervisorPath.toString(),
+            '-machine', `type=${this.configuration.machineType},accel=${accel}`,
+            '-cpu', this.configuration.cpu,
+            '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
+            '-m', this.configuration.memory,
+            '-device', 'virtio-scsi-pci',
+            '-device', 'scsi-hd,drive=drive0,bootindex=0',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+            '-device', 'scsi-hd,drive=drive1,bootindex=1',
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
+            '-device', 'virtio-net,netdev=user.0',
+            '-netdev', `user,id=user.0,hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
+            '-display', 'none',
+            '-monitor', 'none',
+            '-boot', 'strict=off'
+        ];
+    }
+}
+exports.Vm = Vm;
+Vm.sshPort = 2847;
+class FreeBsd extends Vm {
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute('sudo shutdown -p now');
+        });
+    }
+}
+exports.FreeBsd = FreeBsd;
+class NetBsd extends Vm {
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute('sudo shutdown -h -p now');
+        });
+    }
+}
+exports.NetBsd = NetBsd;
+class OpenBsd extends Vm {
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute('sudo shutdown -h -p now');
+        });
+    }
+}
+exports.OpenBsd = OpenBsd;
+//# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
 
@@ -616,6 +1132,147 @@ function execWithOutput(commandLine, args, options = {}) {
 }
 exports.execWithOutput = execWithOutput;
 //# sourceMappingURL=utility.js.map
+
+/***/ }),
+
+/***/ 2772:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Vm = exports.Accelerator = void 0;
+const path = __importStar(__webpack_require__(5622));
+const child_process_1 = __webpack_require__(3129);
+const core = __importStar(__webpack_require__(2186));
+const exec = __importStar(__webpack_require__(1514));
+const wait_1 = __webpack_require__(5817);
+var Accelerator;
+(function (Accelerator) {
+    Accelerator[Accelerator["hvf"] = 0] = "hvf";
+    Accelerator[Accelerator["tcg"] = 1] = "tcg";
+})(Accelerator = exports.Accelerator || (exports.Accelerator = {}));
+class Vm {
+    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, configuration) {
+        this.hypervisorDirectory = hypervisorDirectory;
+        this.resourcesDirectory = resourcesDirectory;
+        this.configuration = configuration;
+        this.hypervisorPath = path.join(hypervisorDirectory.toString(), hypervisorBinary.toString());
+    }
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info('Initializing VM');
+        });
+    }
+    run() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info('Booting VM');
+            core.debug(this.command.join(' '));
+            this.vmProcess = (0, child_process_1.execFile)('sudo', this.command, (error, stdout, stderr) => {
+                var _a, _b, _c;
+                if (error) {
+                    core.debug(`Stack: ${(_a = error.stack) !== null && _a !== void 0 ? _a : 'no stack'}`);
+                    core.debug(`Error code: ${((_b = error.code) !== null && _b !== void 0 ? _b : -1).toString()}`);
+                    core.debug(`Signal recieved: ${(_c = error.signal) !== null && _c !== void 0 ? _c : 'no signal'}`);
+                }
+                core.debug(`Stdout: ${stdout}`);
+                core.debug(`Stderr: ${stderr}`);
+            });
+            // this.vmProcess = spawn('sudo', this.command, {detached: false})
+            this.ipAddress = yield this.getIpAddress();
+        });
+    }
+    wait(timeout) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (let index = 0; index < timeout; index++) {
+                core.info('Waiting for VM to be ready...');
+                const result = yield this.execute('true', {
+                    /*log: false,
+                      silent: true,*/
+                    ignoreReturnCode: true
+                });
+                if (result === 0) {
+                    core.info('VM is ready');
+                    return;
+                }
+                yield (0, wait_1.wait)(1000);
+            }
+            throw Error(`Waiting for VM to become ready timed out after ${timeout} seconds`);
+        });
+    }
+    stop() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info('Shuting down VM');
+            yield this.shutdown();
+        });
+    }
+    terminate() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info('Terminating VM');
+            return yield exec.exec('sudo', ['kill', '-s', 'TERM', this.vmProcess.pid.toString()], { ignoreReturnCode: true });
+        });
+    }
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            throw Error('Not implemented');
+        });
+    }
+    execute(command, options = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const defaultOptions = { log: true };
+            options = Object.assign(Object.assign({}, defaultOptions), options);
+            if (options.log)
+                core.info(`Executing command inside VM: ${command}`);
+            const buffer = Buffer.from(command);
+            return yield exec.exec('ssh', ['-t', `${Vm.user}@${this.ipAddress}`], {
+                input: buffer,
+                silent: options.silent,
+                ignoreReturnCode: options.ignoreReturnCode
+            });
+        });
+    }
+    execute2(args, intput) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield exec.exec('ssh', ['-t', `${Vm.user}@${this.ipAddress}`].concat(args), { input: intput });
+        });
+    }
+    getIpAddress() {
+        return __awaiter(this, void 0, void 0, function* () {
+            throw Error('Not implemented');
+        });
+    }
+}
+exports.Vm = Vm;
+Vm.user = 'runner';
+//# sourceMappingURL=vm.js.map
 
 /***/ }),
 
@@ -686,112 +1343,60 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OpenBsd = exports.FreeBsd = exports.extractIpAddress = exports.Vm = void 0;
 const core = __importStar(__webpack_require__(2186));
-const exec = __importStar(__webpack_require__(1514));
-const child_process_1 = __webpack_require__(3129);
-const wait_1 = __webpack_require__(5817);
+const vm = __importStar(__webpack_require__(2772));
 const utility_1 = __webpack_require__(2857);
-class Vm {
-    constructor(xhyvePath, options) {
-        this.xhyvePath = xhyvePath;
-        this.options = options;
+const wait_1 = __webpack_require__(5817);
+class Vm extends vm.Vm {
+    constructor(hypervisorDirectory, resourcesDirectory, configuration) {
+        super(hypervisorDirectory, resourcesDirectory, 'xhyve', configuration);
     }
     init() {
+        const _super = Object.create(null, {
+            init: { get: () => super.init }
+        });
         return __awaiter(this, void 0, void 0, function* () {
-            core.info('Initializing VM');
+            _super.init.call(this);
             this.macAddress = yield this.getMacAddress();
         });
     }
-    run() {
+    getIpAddress() {
         return __awaiter(this, void 0, void 0, function* () {
-            core.info('Booting VM');
-            this.vmProcess = child_process_1.spawn('sudo', this.xhyveArgs, { detached: true });
-            this.ipAddress = yield getIpAddressFromArp(this.macAddress);
-        });
-    }
-    wait(timeout) {
-        return __awaiter(this, void 0, void 0, function* () {
-            for (let index = 0; index < timeout; index++) {
-                core.info('Waiting for VM to be ready...');
-                const result = yield this.execute('true', {
-                    /*log: false,
-                    silent: true,*/
-                    ignoreReturnCode: true
-                });
-                if (result === 0) {
-                    core.info('VM is ready');
-                    return;
-                }
-                yield wait_1.wait(1000);
-            }
-            throw Error(`Waiting for VM to become ready timed out after ${timeout} seconds`);
-        });
-    }
-    stop() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.info('Shuting down VM');
-            yield this.shutdown();
-        });
-    }
-    terminate() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.info('Terminating VM');
-            return yield exec.exec('sudo', ['kill', '-s', 'TERM', this.vmProcess.pid.toString()], { ignoreReturnCode: true });
-        });
-    }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            throw Error('Not implemented');
-        });
-    }
-    execute(command, options = {}) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const defaultOptions = { log: true };
-            options = Object.assign(Object.assign({}, defaultOptions), options);
-            if (options.log)
-                core.info(`Executing command inside VM: ${command}`);
-            const buffer = Buffer.from(command);
-            return yield exec.exec('ssh', ['-t', `${Vm.user}@${this.ipAddress}`], {
-                input: buffer,
-                silent: options.silent,
-                ignoreReturnCode: options.ignoreReturnCode
-            });
-        });
-    }
-    execute2(args, intput) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield exec.exec('ssh', ['-t', `${Vm.user}@${this.ipAddress}`].concat(args), { input: intput });
+            return getIpAddressFromArp(this.macAddress);
         });
     }
     getMacAddress() {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Getting MAC address');
-            this.macAddress = (yield utility_1.execWithOutput('sudo', this.xhyveArgs.concat('-M'), { silent: true }))
+            this.macAddress = (yield (0, utility_1.execWithOutput)('sudo', this.command.concat('-M'), {
+                silent: !core.isDebug()
+            }))
                 .trim()
                 .slice(5);
             core.debug(`Found MAC address: '${this.macAddress}'`);
             return this.macAddress;
         });
     }
-    get xhyveArgs() {
+    /*override*/ get command() {
+        const config = this.configuration;
         // prettier-ignore
         return [
-            this.xhyvePath.toString(),
-            '-U', this.options.uuid,
+            this.hypervisorPath.toString(),
+            '-U', config.uuid,
             '-A',
             '-H',
-            '-m', this.options.memory,
-            '-c', this.options.cpuCount.toString(),
+            '-m', config.memory,
+            '-c', config.cpuCount.toString(),
             '-s', '0:0,hostbridge',
             '-s', `2:0,${this.networkDevice}`,
-            '-s', `4:0,virtio-blk,${this.options.diskImage}`,
-            '-s', `4:1,virtio-blk,${this.options.resourcesDiskImage}`,
+            '-s', `4:0,virtio-blk,${config.diskImage}`,
+            '-s', `4:1,virtio-blk,${config.resourcesDiskImage}`,
             '-s', '31,lpc',
             '-l', 'com1,stdio'
         ];
     }
 }
 exports.Vm = Vm;
-Vm.user = 'runner';
+Vm.sshPort = 22;
 function extractIpAddress(arpOutput, macAddress) {
     var _a;
     core.debug('Extracing IP address');
@@ -805,9 +1410,9 @@ function extractIpAddress(arpOutput, macAddress) {
 }
 exports.extractIpAddress = extractIpAddress;
 class FreeBsd extends Vm {
-    get xhyveArgs() {
+    get command() {
         // prettier-ignore
-        return super.xhyveArgs.concat('-f', `fbsd,${this.options.userboot},${this.options.diskImage},`);
+        return super.command.concat('-f', `fbsd,${this.configuration.userboot},${this.configuration.diskImage},`);
     }
     shutdown() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -820,9 +1425,9 @@ class FreeBsd extends Vm {
 }
 exports.FreeBsd = FreeBsd;
 class OpenBsd extends Vm {
-    get xhyveArgs() {
+    get command() {
         // prettier-ignore
-        return super.xhyveArgs.concat('-l', `bootrom,${this.options.firmware}`, '-w');
+        return super.command.concat('-l', `bootrom,${this.configuration.firmware}`, '-w');
     }
     shutdown() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -839,11 +1444,11 @@ function getIpAddressFromArp(macAddress) {
         core.info(`Getting IP address for MAC address: ${macAddress}`);
         for (let i = 0; i < 500; i++) {
             core.info('Waiting for IP to become available...');
-            const arpOutput = yield utility_1.execWithOutput('arp', ['-a', '-n'], { silent: true });
+            const arpOutput = yield (0, utility_1.execWithOutput)('arp', ['-a', '-n'], { silent: true });
             const ipAddress = extractIpAddress(arpOutput, macAddress);
             if (ipAddress !== undefined)
                 return ipAddress;
-            yield wait_1.wait(1000);
+            yield (0, wait_1.wait)(1000);
         }
         throw Error(`Failed to get IP address for MAC address: ${macAddress}`);
     });
@@ -4919,6 +5524,9 @@ module.exports = function ToNumber(argument) {
 	if (typeof value === 'symbol') {
 		throw new $TypeError('Cannot convert a Symbol value to a number');
 	}
+	if (typeof value === 'bigint') {
+		throw new $TypeError('Conversion from \'BigInt\' to \'number\' is not allowed.');
+	}
 	if (typeof value === 'string') {
 		if (isBinary(value)) {
 			return ToNumber($parseInteger($strSlice(value, 2), 2));
@@ -4926,12 +5534,12 @@ module.exports = function ToNumber(argument) {
 			return ToNumber($parseInteger($strSlice(value, 2), 8));
 		} else if (hasNonWS(value) || isInvalidHexLiteral(value)) {
 			return NaN;
-		} else {
-			var trimmed = $trim(value);
-			if (trimmed !== value) {
-				return ToNumber(trimmed);
-			}
 		}
+		var trimmed = $trim(value);
+		if (trimmed !== value) {
+			return ToNumber(trimmed);
+		}
+
 	}
 	return $Number(value);
 };
@@ -6186,6 +6794,21 @@ module.exports = function hasSymbols() {
 
 /***/ }),
 
+/***/ 9038:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var hasSymbols = __webpack_require__(7747);
+
+module.exports = function hasToStringTagShams() {
+	return hasSymbols() && !!Symbol.toStringTag;
+};
+
+
+/***/ }),
+
 /***/ 6339:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
@@ -6250,7 +6873,7 @@ var tryFunctionObject = function tryFunctionToStr(value) {
 var toStr = Object.prototype.toString;
 var fnClass = '[object Function]';
 var genClass = '[object GeneratorFunction]';
-var hasToStringTag = typeof Symbol === 'function' && typeof Symbol.toStringTag === 'symbol';
+var hasToStringTag = typeof Symbol === 'function' && !!Symbol.toStringTag; // better: use `has-tostringtag`
 /* globals document: false */
 var documentDotAll = typeof document === 'object' && typeof document.all === 'undefined' && document.all !== undefined ? document.all : {};
 
@@ -6316,8 +6939,7 @@ module.exports = function isDateObject(value) {
 
 
 var callBound = __webpack_require__(8803);
-var hasSymbols = __webpack_require__(587)();
-var hasToStringTag = hasSymbols && typeof Symbol.toStringTag === 'symbol';
+var hasToStringTag = __webpack_require__(9038)();
 var has;
 var $exec;
 var isRegexMarker;
@@ -6443,6 +7065,7 @@ var match = String.prototype.match;
 var bigIntValueOf = typeof BigInt === 'function' ? BigInt.prototype.valueOf : null;
 var gOPS = Object.getOwnPropertySymbols;
 var symToString = typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol' ? Symbol.prototype.toString : null;
+var hasShammedSymbols = typeof Symbol === 'function' && typeof Symbol.iterator === 'object';
 var isEnumerable = Object.prototype.propertyIsEnumerable;
 
 var gPO = (typeof Reflect === 'function' ? Reflect.getPrototypeOf : Object.getPrototypeOf) || (
@@ -6455,7 +7078,7 @@ var gPO = (typeof Reflect === 'function' ? Reflect.getPrototypeOf : Object.getPr
 
 var inspectCustom = __webpack_require__(7265).custom;
 var inspectSymbol = inspectCustom && isSymbol(inspectCustom) ? inspectCustom : null;
-var toStringTag = typeof Symbol === 'function' && typeof Symbol.toStringTag === 'symbol' ? Symbol.toStringTag : null;
+var toStringTag = typeof Symbol === 'function' && typeof Symbol.toStringTag !== 'undefined' ? Symbol.toStringTag : null;
 
 module.exports = function inspect_(obj, options, depth, seen) {
     var opts = options || {};
@@ -6472,8 +7095,8 @@ module.exports = function inspect_(obj, options, depth, seen) {
         throw new TypeError('option "maxStringLength", if provided, must be a positive integer, Infinity, or `null`');
     }
     var customInspect = has(opts, 'customInspect') ? opts.customInspect : true;
-    if (typeof customInspect !== 'boolean') {
-        throw new TypeError('option "customInspect", if provided, must be `true` or `false`');
+    if (typeof customInspect !== 'boolean' && customInspect !== 'symbol') {
+        throw new TypeError('option "customInspect", if provided, must be `true`, `false`, or `\'symbol\'`');
     }
 
     if (
@@ -6545,8 +7168,8 @@ module.exports = function inspect_(obj, options, depth, seen) {
         return '[Function' + (name ? ': ' + name : ' (anonymous)') + ']' + (keys.length > 0 ? ' { ' + keys.join(', ') + ' }' : '');
     }
     if (isSymbol(obj)) {
-        var symString = symToString.call(obj);
-        return typeof obj === 'object' ? markBoxed(symString) : symString;
+        var symString = hasShammedSymbols ? String(obj).replace(/^(Symbol\(.*\))_[^)]*$/, '$1') : symToString.call(obj);
+        return typeof obj === 'object' && !hasShammedSymbols ? markBoxed(symString) : symString;
     }
     if (isElement(obj)) {
         var s = '<' + String(obj.nodeName).toLowerCase();
@@ -6575,7 +7198,7 @@ module.exports = function inspect_(obj, options, depth, seen) {
     if (typeof obj === 'object' && customInspect) {
         if (inspectSymbol && typeof obj[inspectSymbol] === 'function') {
             return obj[inspectSymbol]();
-        } else if (typeof obj.inspect === 'function') {
+        } else if (customInspect !== 'symbol' && typeof obj.inspect === 'function') {
             return obj.inspect();
         }
     }
@@ -6649,6 +7272,9 @@ function isBoolean(obj) { return toStr(obj) === '[object Boolean]' && (!toString
 
 // Symbol and BigInt do have Symbol.toStringTag by spec, so that can't be used to eliminate false positives
 function isSymbol(obj) {
+    if (hasShammedSymbols) {
+        return obj && typeof obj === 'object' && obj instanceof Symbol;
+    }
     if (typeof obj === 'symbol') {
         return true;
     }
@@ -6856,17 +7482,28 @@ function arrObjKeys(obj, inspect) {
             xs[i] = has(obj, i) ? inspect(obj[i], obj) : '';
         }
     }
+    var syms = typeof gOPS === 'function' ? gOPS(obj) : [];
+    var symMap;
+    if (hasShammedSymbols) {
+        symMap = {};
+        for (var k = 0; k < syms.length; k++) {
+            symMap['$' + syms[k]] = syms[k];
+        }
+    }
+
     for (var key in obj) { // eslint-disable-line no-restricted-syntax
         if (!has(obj, key)) { continue; } // eslint-disable-line no-restricted-syntax, no-continue
         if (isArr && String(Number(key)) === key && key < obj.length) { continue; } // eslint-disable-line no-restricted-syntax, no-continue
-        if ((/[^\w$]/).test(key)) {
+        if (hasShammedSymbols && symMap['$' + key] instanceof Symbol) {
+            // this is to prevent shammed Symbols, which are stored as strings, from being included in the string key section
+            continue; // eslint-disable-line no-restricted-syntax, no-continue
+        } else if ((/[^\w$]/).test(key)) {
             xs.push(inspect(key, obj) + ': ' + inspect(obj[key], obj));
         } else {
             xs.push(key + ': ' + inspect(obj[key], obj));
         }
     }
     if (typeof gOPS === 'function') {
-        var syms = gOPS(obj);
         for (var j = 0; j < syms.length; j++) {
             if (isEnumerable.call(obj, syms[j])) {
                 xs.push('[' + inspect(syms[j]) + ']: ' + inspect(obj[syms[j]], obj));
@@ -8981,16 +9618,14 @@ function bytesToUuid(buf, offset) {
   var i = offset || 0;
   var bth = byteToHex;
   // join used to fix memory issue caused by concatenation: https://bugs.chromium.org/p/v8/issues/detail?id=3175#c4
-  return ([
-    bth[buf[i++]], bth[buf[i++]],
-    bth[buf[i++]], bth[buf[i++]], '-',
-    bth[buf[i++]], bth[buf[i++]], '-',
-    bth[buf[i++]], bth[buf[i++]], '-',
-    bth[buf[i++]], bth[buf[i++]], '-',
-    bth[buf[i++]], bth[buf[i++]],
-    bth[buf[i++]], bth[buf[i++]],
-    bth[buf[i++]], bth[buf[i++]]
-  ]).join('');
+  return ([bth[buf[i++]], bth[buf[i++]], 
+	bth[buf[i++]], bth[buf[i++]], '-',
+	bth[buf[i++]], bth[buf[i++]], '-',
+	bth[buf[i++]], bth[buf[i++]], '-',
+	bth[buf[i++]], bth[buf[i++]], '-',
+	bth[buf[i++]], bth[buf[i++]],
+	bth[buf[i++]], bth[buf[i++]],
+	bth[buf[i++]], bth[buf[i++]]]).join('');
 }
 
 module.exports = bytesToUuid;

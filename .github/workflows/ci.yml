@@ -18,24 +18,45 @@ jobs:
 
   test: # make sure the action works on a clean machine without building
     name: ${{ matrix.os.name }} ${{ matrix.os.version }}
-    runs-on: macos-10.15
+    runs-on: ${{ matrix.os.host }}
     strategy:
       fail-fast: false
       matrix:
         os:
           - name: FreeBSD
             version: 12.2
+            host: macos-10.15
+            workDirectory: /Users/runner/work/action/action
             uname:
               hardware: amd64
               release: 12.2-RELEASE
 
+          - name: FreeBSD
+            version: '13.0'
+            host: macos-10.15
+            workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+              release: 13.0-RELEASE
+
           - name: OpenBSD
             version: 6.8
+            host: macos-10.15
+            workDirectory: /Users/runner/work/action/action
             uname:
               hardware: amd64
 
           - name: OpenBSD
             version: 6.9
+            host: macos-10.15
+            workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+
+          - name: NetBSD
+            version: 9.2
+            host: ubuntu-latest
+            workDirectory: /home/runner/work/action/action
             uname:
               hardware: amd64
 
@@ -44,6 +65,9 @@ jobs:
         uses: actions/checkout@v2
         with:
           persist-credentials: false
+
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
       - name: ${{ matrix.os.name }}
         uses: ./
@@ -55,11 +79,13 @@ jobs:
           operating_system: ${{ matrix.os.name }}
           version: ${{ matrix.os.version }}
           run: |
-            [ "`uname -s`" = '${{ matrix.os.name }}' ]
-            [ "`uname -r`" = '${{ matrix.os.uname.release || matrix.os.version }}' ]
-            [ "`uname -m`" = '${{ matrix.os.uname.hardware }}' ]
+            uname -a
             echo $SHELL
             pwd
             ls -lah
             whoami
             env | sort
+            [ "`uname -s`" = '${{ matrix.os.name }}' ]
+            [ "`uname -r`" = '${{ matrix.os.uname.release || matrix.os.version }}' ]
+            [ "`uname -m`" = '${{ matrix.os.uname.hardware }}' ]
+            [ "`pwd`" = '${{ matrix.os.workDirectory }}' ]

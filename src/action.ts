@@ -8,53 +8,82 @@ import * as exec from '@actions/exec'
 
 import flatMap from 'array.prototype.flatmap'
 
-import * as xhyve from './xhyve_vm'
+import * as architecture from './architecture'
+import * as hostModule from './host'
 import * as os from './operating_system'
-import {execWithOutput} from './utility'
-import {env} from 'process'
+import * as vmModule from './vm'
 
-export default class Action {
-  private readonly resourceUrl =
-    'https://github.com/cross-platform-actions/resources/releases/download/v0.0.1/resources.tar'
+export enum ImplementationKind {
+  qemu,
+  xhyve
+}
 
-  private readonly workDirectory = '/Users/runner/work'
+export class Action {
   private readonly input = new Input()
-
-  private readonly targetDiskName = 'disk.raw'
-  private readonly tempPath: string
-  private readonly privateSshKey: fs.PathLike
-  private readonly publicSshKey: fs.PathLike
   private readonly resourceDisk: ResourceDisk
   private readonly operatingSystem: os.OperatingSystem
+  private readonly implementation: Implementation
+  private readonly host: hostModule.Host
+  private readonly workDirectory
+  private readonly tempPath: string
+  private readonly sshDirectory: string
+  private readonly privateSshKey: fs.PathLike
+  private readonly publicSshKey: fs.PathLike
+  private readonly privateSshKeyName = 'id_ed25519'
+  private readonly targetDiskName = 'disk.raw'
 
   constructor() {
-    this.tempPath = fs.mkdtempSync('resources')
-    this.privateSshKey = path.join(this.tempPath, 'ed25519')
-    this.publicSshKey = `${this.privateSshKey}.pub`
-    this.resourceDisk = new ResourceDisk(this.tempPath)
+    this.host = hostModule.Host.create()
+    this.tempPath = fs.mkdtempSync('/tmp/resources')
+    this.resourceDisk = new ResourceDisk(this.tempPath, this.host)
+
     this.operatingSystem = os.OperatingSystem.create(
       this.input.operatingSystem,
-      os.Architecture.x86_64,
+      architecture.Kind.x86_64,
       this.input.version
     )
+
+    this.implementation = this.getImplementation(
+      this.operatingSystem.actionImplementationKind
+    )
+
+    this.workDirectory = this.host.workDirectory
+    this.sshDirectory = path.join(this.getHomeDirectory(), '.ssh')
+    this.privateSshKey = path.join(this.tempPath, this.privateSshKeyName)
+    this.publicSshKey = `${this.privateSshKey}.pub`
   }
 
   async run(): Promise<void> {
     core.debug('Running action')
-    const [diskImagePath, resourcesArchivePath] = await Promise.all([
-      this.downloadDiskImage(),
-      this.downloadResources(),
-      this.setupSSHKey()
+    const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] =
+      await Promise.all([
+        this.downloadDiskImage(),
+        this.download('hypervisor', this.operatingSystem.hypervisorUrl),
+        this.download('resources', this.operatingSystem.resourcesUrl),
+        this.setupSSHKey()
+      ])
+
+    const [firmwareDirectory, resourcesDirectory] = await Promise.all([
+      this.unarchiveHypervisor(hypervisorArchivePath),
+      this.unarchive('resources', resourcesArchivePath)
     ])
 
-    const resourcesDirectory = await this.unarchiveResoruces(
-      resourcesArchivePath
-    )
-    const vmPromise = this.creareVm(resourcesDirectory, diskImagePath)
-    const excludes = [
+    const hypervisorDirectory = path.join(firmwareDirectory, 'bin')
+
+    const vmPromise = this.creareVm(
+      hypervisorDirectory,
+      firmwareDirectory,
       resourcesDirectory,
-      diskImagePath,
-      resourcesArchivePath
+      diskImagePath
+    )
+
+    const excludes = [
+      resourcesArchivePath,
+      resourcesDirectory,
+      hypervisorArchivePath,
+      hypervisorDirectory,
+      firmwareDirectory,
+      diskImagePath
     ].map(p => p.slice(this.workDirectory.length + 1))
 
     const vm = await vmPromise
@@ -64,6 +93,7 @@ export default class Action {
       await vm.run()
       this.configSSH(vm.ipAddress)
       await vm.wait(60)
+      await this.operatingSystem.setupWorkDirectory(vm, this.workDirectory)
       await this.syncFiles(
         vm.ipAddress,
         this.targetDiskName,
@@ -95,37 +125,79 @@ export default class Action {
     return result
   }
 
-  async downloadResources(): Promise<string> {
-    core.info(`Downloading resources: ${this.resourceUrl}`)
-    const result = await cache.downloadTool(this.resourceUrl)
+  async download(type: string, url: string): Promise<string> {
+    core.info(`Downloading ${type}: ${url}`)
+    const result = await cache.downloadTool(url)
     core.info(`Downloaded file: ${result}`)
 
     return result
   }
 
   async creareVm(
+    hypervisorDirectory: string,
+    firmwareDirectory: string,
     resourcesDirectory: string,
     diskImagePath: string
-  ): Promise<xhyve.Vm> {
+  ): Promise<vmModule.Vm> {
     await this.operatingSystem.prepareDisk(
       diskImagePath,
       this.targetDiskName,
       resourcesDirectory
     )
 
-    const xhyvePath = path.join(resourcesDirectory, 'xhyve')
-    return this.operatingSystem.createVirtualMachine(xhyvePath, {
-      memory: '4G',
-      cpuCount: 2,
-      diskImage: path.join(resourcesDirectory, this.targetDiskName),
-      resourcesDiskImage: this.resourceDisk.diskPath,
-      uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
-      userboot: path.join(resourcesDirectory, 'userboot.so'),
-      firmware: path.join(resourcesDirectory, 'uefi.fd')
-    })
+    return this.operatingSystem.createVirtualMachine(
+      hypervisorDirectory,
+      resourcesDirectory,
+      {
+        memory: '4G',
+        cpuCount: 2,
+        diskImage: path.join(resourcesDirectory, this.targetDiskName),
+        ssHostPort: this.operatingSystem.ssHostPort,
+
+        // qemu
+        cpu: this.operatingSystem.architecture.cpu,
+        accelerator: this.operatingSystem.architecture.accelerator,
+        machineType: this.operatingSystem.architecture.machineType,
+
+        // xhyve
+        uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
+        resourcesDiskImage: this.resourceDisk.diskPath,
+        userboot: path.join(firmwareDirectory, 'userboot.so'),
+        firmware: path.join(firmwareDirectory, 'uefi.fd')
+      }
+    )
   }
 
-  async setupSSHKey(): Promise<void> {
+  async unarchive(type: string, archivePath: string): Promise<string> {
+    core.info(`Unarchiving ${type}: ${archivePath}`)
+    return cache.extractTar(archivePath, undefined, '-x')
+  }
+
+  async unarchiveHypervisor(archivePath: string): Promise<string> {
+    const hypervisorDirectory = await this.unarchive('hypervisor', archivePath)
+    return path.join(hypervisorDirectory)
+  }
+
+  configSSH(ipAddress: string): void {
+    core.debug('Configuring SSH')
+
+    if (!fs.existsSync(this.sshDirectory))
+      fs.mkdirSync(this.sshDirectory, {recursive: true, mode: 0o700})
+
+    const lines = [
+      'StrictHostKeyChecking=accept-new',
+      `Host ${ipAddress}`,
+      `Port ${this.operatingSystem.ssHostPort}`,
+      `IdentityFile ${this.privateSshKey}`,
+      'SendEnv CI GITHUB_*',
+      `SendEnv ${this.input.environmentVariables}`
+    ].join('\n')
+
+    fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`)
+    this.implementation.configSSH()
+  }
+
+  private async setupSSHKey(): Promise<void> {
     const mountPath = this.resourceDisk.create()
     await exec.exec('ssh-keygen', [
       '-t',
@@ -138,34 +210,6 @@ export default class Action {
     ])
     fs.copyFileSync(this.publicSshKey, path.join(await mountPath, 'keys'))
     this.resourceDisk.unmount()
-  }
-
-  async unarchiveResoruces(resourcesArchivePath: string): Promise<string> {
-    core.info(`Unarchiving resoruces: ${resourcesArchivePath}`)
-    return cache.extractTar(resourcesArchivePath, undefined, '-x')
-  }
-
-  configSSH(ipAddress: string): void {
-    core.debug('Configuring SSH')
-    const homeDirectory = process.env['HOME']
-
-    if (homeDirectory === undefined)
-      throw Error('Failed to get the home direcory')
-
-    const sshDirectory = path.join(homeDirectory, '.ssh')
-
-    if (!fs.existsSync(sshDirectory))
-      fs.mkdirSync(sshDirectory, {recursive: true, mode: 0o700})
-
-    const lines = [
-      'StrictHostKeyChecking=accept-new',
-      `Host ${ipAddress}`,
-      `IdentityFile ${this.privateSshKey}`,
-      'SendEnv CI GITHUB_*',
-      `SendEnv ${this.input.environmentVariables}`
-    ].join('\n')
-
-    fs.appendFileSync(path.join(sshDirectory, 'config'), `${lines}\n`)
   }
 
   private async syncFiles(
@@ -193,14 +237,74 @@ export default class Action {
     ])
   }
 
-  private async runCommand(vm: xhyve.Vm): Promise<void> {
+  private async runCommand(vm: vmModule.Vm): Promise<void> {
     core.info(`Run: ${this.input.run}`)
     const shell =
       this.input.shell === Shell.default ? '$SHELL' : toString(this.input.shell)
     await vm.execute2(
-      ['sh', '-c', `'cd "${env['GITHUB_WORKSPACE']}" && exec "${shell}" -e'`],
+      [
+        'sh',
+        '-c',
+        `'cd "${process.env['GITHUB_WORKSPACE']}" && exec "${shell}" -e'`
+      ],
       Buffer.from(this.input.run)
     )
+  }
+
+  private getImplementation(kind: ImplementationKind): Implementation {
+    switch (kind) {
+      case ImplementationKind.qemu:
+        return new QemuImplementation(this)
+      case ImplementationKind.xhyve:
+        return new XhyveImplementation(this)
+      default:
+        throw Error(`Unhandled implementation kind: $`)
+    }
+  }
+
+  private getHomeDirectory(): string {
+    const homeDirectory = process.env['HOME']
+
+    if (homeDirectory === undefined)
+      throw Error('Failed to get the home direcory')
+
+    return homeDirectory
+  }
+}
+
+export abstract class Implementation {
+  protected readonly action: Action
+
+  constructor(action: Action) {
+    this.action = action
+  }
+
+  abstract configSSH(): void
+
+  protected get resourceDisk(): ResourceDisk {
+    return this.action['resourceDisk']
+  }
+
+  protected get publicSshKey(): fs.PathLike {
+    return this.action['publicSshKey']
+  }
+
+  protected get sshDirectory(): string {
+    return this.action['sshDirectory']
+  }
+}
+
+class XhyveImplementation extends Implementation {
+  configSSH(): void {
+    // noop
+  }
+}
+
+class QemuImplementation extends Implementation {
+  configSSH(): void {
+    const authorizedKeysPath = path.join(this.sshDirectory, 'authorized_keys')
+    const publicKeyContent = fs.readFileSync(this.publicSshKey)
+    fs.appendFileSync(authorizedKeysPath, publicKeyContent)
   }
 }
 
@@ -208,13 +312,14 @@ class ResourceDisk {
   readonly diskPath: string
 
   private readonly mountName = 'RES'
-  private readonly mountPath: string
+  private mountPath!: string
 
+  private readonly host: hostModule.Host
   private readonly tempPath: string
   private devicePath!: string
 
-  constructor(tempPath: string) {
-    this.mountPath = path.join('/Volumes', this.mountName)
+  constructor(tempPath: string, host: hostModule.Host) {
+    this.host = host
     this.tempPath = tempPath
     this.diskPath = path.join(this.tempPath, 'res.raw')
   }
@@ -225,7 +330,9 @@ class ResourceDisk {
     this.devicePath = await this.createDiskDevice()
     await this.partitionDisk()
 
-    return this.mountPath
+    const mountPath = path.join(this.tempPath, 'mount/RES')
+
+    return (this.mountPath = await this.mountDisk(mountPath))
   }
 
   async unmount(): Promise<void> {
@@ -235,47 +342,32 @@ class ResourceDisk {
 
   private async createDiskFile(): Promise<void> {
     core.debug('Creating disk file')
-    await exec.exec('mkfile', ['-n', '40m', this.diskPath])
+    await this.host.createDiskFile('40m', this.diskPath)
   }
 
   private async createDiskDevice(): Promise<string> {
     core.debug('Creating disk file')
-    const devicePath = await execWithOutput(
-      'hdiutil',
-      [
-        'attach',
-        '-imagekey',
-        'diskimage-class=CRawDiskImage',
-        '-nomount',
-        this.diskPath
-      ],
-      {silent: true}
-    )
-
-    return devicePath.trim()
+    return await this.host.createDiskDevice(this.diskPath)
   }
 
   private async partitionDisk(): Promise<void> {
     core.debug('Partitioning disk')
-    await exec.exec('diskutil', [
-      'partitionDisk',
-      this.devicePath,
-      '1',
-      'GPT',
-      'fat32',
-      this.mountName,
-      '100%'
-    ])
+    await this.host.partitionDisk(this.devicePath, this.mountName)
+  }
+
+  private async mountDisk(mountPath: string): Promise<string> {
+    core.debug('mounting disk')
+    return await this.host.mountDisk(this.devicePath, mountPath)
   }
 
   private async unmountDisk(): Promise<void> {
     core.debug('Unmounting disk')
-    await exec.exec('umount', [this.mountPath])
+    await exec.exec('sudo', ['umount', this.mountPath])
   }
 
   private async detachDevice(): Promise<void> {
     core.debug('Detaching device')
-    await exec.exec('hdiutil', ['detach', this.devicePath])
+    await this.host.detachDevice(this.devicePath)
   }
 }
 
@@ -285,6 +377,7 @@ class Input {
   private version_?: string
   private shell_?: Shell
   private environmentVariables_?: string
+  private architecture_?: architecture.Kind
 
   get version(): string {
     if (this.version_ !== undefined) return this.version_
@@ -321,6 +414,22 @@ class Input {
       return this.environmentVariables_
 
     return (this.environmentVariables_ = core.getInput('environment_variables'))
+  }
+
+  get architecture(): architecture.Kind {
+    if (this.architecture_ !== undefined) return this.architecture_
+
+    const input = core.getInput('architecture')
+    core.debug(`architecture input: '${input}'`)
+    if (input === undefined || input === '')
+      return (this.architecture_ = architecture.Kind.x86_64)
+
+    const kind = architecture.toKind(input)
+    core.debug(`kind: '${kind}'`)
+
+    if (kind === undefined) throw Error(`Invalid architecture: ${input}`)
+
+    return (this.architecture_ = kind)
   }
 }
 

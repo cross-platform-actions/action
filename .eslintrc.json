@@ -46,7 +46,10 @@
       "@typescript-eslint/type-annotation-spacing": "error",
       "@typescript-eslint/unbound-method": "error",
       "no-shadow": "off",
-      "@typescript-eslint/no-shadow": "error"
+      "@typescript-eslint/no-shadow": "error",
+      "i18n-text/no-en": "off",
+      "sort-imports": "off",
+      "filenames/match-regex": [2, "^[a-z_]+$", true]
     },
     "env": {
       "node": true,

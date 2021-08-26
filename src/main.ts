@@ -1,11 +1,14 @@
 import * as core from '@actions/core'
-import Action from './action'
+import {Action} from './action'
 
 async function main(): Promise<void> {
   try {
     await new Action().run()
-  } catch (error) {
-    core.setFailed(error.message)
+  } catch (error: unknown) {
+    const err = error as Error
+    core.setFailed(err.message)
+
+    if (core.isDebug() && err.stack) core.debug(err.stack)
   }
 }
 
