@@ -17,6 +17,7 @@ jobs:
       - run: npm run all
 
   test: # make sure the action works on a clean machine without building
+    name: ${{ matrix.os.name }} ${{ matrix.os.version }}
     runs-on: macos-10.15
     strategy:
       fail-fast: false
@@ -54,9 +55,9 @@ jobs:
           operating_system: ${{ matrix.os.name }}
           version: ${{ matrix.os.version }}
           run: |
-            [ "$(uname -s)" = '${{ matrix.os.name }}' ]
-            [ "$(uname -r)" = '${{ matrix.os.uname.release || matrix.os.version }}' ]
-            [ "$(uname -m)" = '${{ matrix.os.uname.hardware }}' ]
+            [ "`uname -s`" = '${{ matrix.os.name }}' ]
+            [ "`uname -r`" = '${{ matrix.os.uname.release || matrix.os.version }}' ]
+            [ "`uname -m`" = '${{ matrix.os.uname.hardware }}' ]
             echo $SHELL
             pwd
             ls -lah
