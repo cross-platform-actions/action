@@ -50,7 +50,6 @@ export function toString(architecture: Architecture): string {
 
 export abstract class OperatingSystem {
   private readonly baseUrl = 'https://github.com/cross-platform-actions'
-  private readonly releaseVersion = 'v0.0.1'
   private readonly name: string
   private readonly architecture: Architecture
   private readonly version: string
@@ -74,13 +73,15 @@ export abstract class OperatingSystem {
     }
   }
 
+  abstract get virtualMachineImageReleaseVersion(): string
+
   get virtualMachineImageUrl(): string {
     return [
       this.baseUrl,
       `${this.name}-builder`,
       'releases',
       'download',
-      this.releaseVersion,
+      this.virtualMachineImageReleaseVersion,
       this.imageName
     ].join('/')
   }
@@ -120,6 +121,10 @@ class FreeBsd extends OperatingSystem {
     await convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
   }
 
+  get virtualMachineImageReleaseVersion(): string {
+    return 'v0.0.1'
+  }
+
   createVirtualMachine(
     xhyvePath: fs.PathLike,
     options: xhyve.Options
@@ -140,6 +145,10 @@ class OpenBsd extends OperatingSystem {
     resourcesDirectory: fs.PathLike
   ): Promise<void> {
     await convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
+  }
+
+  get virtualMachineImageReleaseVersion(): string {
+    return 'v0.2.0'
   }
 
   createVirtualMachine(

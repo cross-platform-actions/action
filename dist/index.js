@@ -472,7 +472,6 @@ exports.toString = toString;
 class OperatingSystem {
     constructor(name, architecture, version) {
         this.baseUrl = 'https://github.com/cross-platform-actions';
-        this.releaseVersion = 'v0.0.1';
         this.name = name;
         this.version = version;
         this.architecture = architecture;
@@ -491,7 +490,7 @@ class OperatingSystem {
             `${this.name}-builder`,
             'releases',
             'download',
-            this.releaseVersion,
+            this.virtualMachineImageReleaseVersion,
             this.imageName
         ].join('/');
     }
@@ -520,6 +519,9 @@ class FreeBsd extends OperatingSystem {
             yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
         });
     }
+    get virtualMachineImageReleaseVersion() {
+        return 'v0.0.1';
+    }
     createVirtualMachine(xhyvePath, options) {
         core.debug('Creating FreeBSD VM');
         return new xhyve.FreeBsd(xhyvePath, options);
@@ -533,6 +535,9 @@ class OpenBsd extends OperatingSystem {
         return __awaiter(this, void 0, void 0, function* () {
             yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
         });
+    }
+    get virtualMachineImageReleaseVersion() {
+        return 'v0.2.0';
     }
     createVirtualMachine(xhyvePath, options) {
         core.debug('Creating OpenBSD VM');

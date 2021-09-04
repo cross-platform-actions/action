@@ -33,6 +33,11 @@ jobs:
             uname:
               hardware: amd64
 
+          - name: OpenBSD
+            version: 6.9
+            uname:
+              hardware: amd64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
