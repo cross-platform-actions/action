@@ -80,12 +80,14 @@ operating system will list which versions are supported.
 
 | Version | x86-64 |
 |---------|--------|
+| 6.9     | ✓      |
 | 6.8     | ✓      |
 
 ### [FreeBSD][freebsd_builder]
 
 | Version | x86-64 |
 |---------|--------|
+| 13.0    | ✓      |
 | 12.2    | ✓      |
 
 ## Under the Hood
