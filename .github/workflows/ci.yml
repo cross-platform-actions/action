@@ -19,12 +19,19 @@ jobs:
   test: # make sure the action works on a clean machine without building
     runs-on: macos-10.15
     strategy:
+      fail-fast: false
       matrix:
         os:
-          - name: freebsd
+          - name: FreeBSD
             version: 12.2
-          - name: openbsd
+            uname:
+              hardware: amd64
+              release: 12.2-RELEASE
+
+          - name: OpenBSD
             version: 6.8
+            uname:
+              hardware: amd64
 
     steps:
       - name: Checkout
@@ -42,7 +49,9 @@ jobs:
           operating_system: ${{ matrix.os.name }}
           version: ${{ matrix.os.version }}
           run: |
-            uname -a
+            [ "$(uname -s)" = '${{ matrix.os.name }}' ]
+            [ "$(uname -r)" = '${{ matrix.os.uname.release || matrix.os.version }}' ]
+            [ "$(uname -m)" = '${{ matrix.os.uname.hardware }}' ]
             echo $SHELL
             pwd
             ls -lah
