@@ -33,6 +33,8 @@ export function toKind(value: string): Kind | undefined {
 }
 
 export abstract class OperatingSystem {
+  protected static readonly qemuFirmwareDirectory = 'share/qemu'
+
   readonly resourcesUrl: string
   private readonly baseUrl = 'https://github.com/cross-platform-actions'
 
@@ -42,6 +44,9 @@ export abstract class OperatingSystem {
 
   private readonly name: string
   private readonly version: string
+
+  protected readonly xhyveEfiFirmware = 'uefi.fd'
+  protected readonly qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
     const hostString = host.toString(host.kind)
@@ -87,6 +92,7 @@ export abstract class OperatingSystem {
   abstract createVirtualMachine(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
+    firmwareDirectory: fs.PathLike,
     configuration: vmModule.Configuration
   ): vmModule.Vm
 
@@ -160,11 +166,21 @@ class FreeBsd extends OperatingSystem {
   createVirtualMachine(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
+    firmwareDirectory: fs.PathLike,
     configuration: vmModule.Configuration
   ): vmModule.Vm {
     core.debug('Creating FreeBSD VM')
 
     if (this.architecture.kind === architecture.Kind.x86_64) {
+      const firmwareFile = host.host.canRunXhyve(this.architecture)
+        ? this.xhyveEfiFirmware
+        : this.qemuEfiFirmware
+
+      configuration.firmware = path.join(
+        firmwareDirectory.toString(),
+        firmwareFile
+      )
+
       return new host.host.vmModule.FreeBsd(
         hypervisorDirectory,
         resourcesDirectory,
@@ -208,15 +224,30 @@ class NetBsd extends Qemu {
   createVirtualMachine(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
+    firmwareDirectory: fs.PathLike,
     configuration: vmModule.Configuration
   ): vmModule.Vm {
     core.debug('Creating NetBSD VM')
 
-    return new qemu.NetBsd(
-      hypervisorDirectory,
-      resourcesDirectory,
-      configuration
-    )
+    if (this.architecture.kind === architecture.Kind.x86_64) {
+      configuration.firmware = path.join(
+        firmwareDirectory.toString(),
+        OperatingSystem.qemuFirmwareDirectory,
+        'bios-256k.bin'
+      )
+
+      return new qemu.NetBsd(
+        hypervisorDirectory,
+        resourcesDirectory,
+        configuration
+      )
+    } else {
+      throw Error(
+        `Not implemented: NetBSD guests are not implemented on ${architecture.toString(
+          this.architecture.kind
+        )}`
+      )
+    }
   }
 }
 
@@ -256,11 +287,21 @@ class OpenBsd extends OperatingSystem {
   createVirtualMachine(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
+    firmwareDirectory: fs.PathLike,
     configuration: vmModule.Configuration
   ): vmModule.Vm {
     core.debug('Creating OpenBSD VM')
 
     if (this.architecture.kind === architecture.Kind.x86_64) {
+      const firmwareFile = host.host.canRunXhyve(this.architecture)
+        ? this.xhyveEfiFirmware
+        : this.qemuEfiFirmware
+
+      configuration.firmware = path.join(
+        firmwareDirectory.toString(),
+        firmwareFile
+      )
+
       return new host.host.vmModule.OpenBsd(
         hypervisorDirectory,
         resourcesDirectory,

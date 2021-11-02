@@ -29,7 +29,7 @@ export interface Configuration {
   uuid: string
   resourcesDiskImage: fs.PathLike
   userboot: fs.PathLike
-  firmware: fs.PathLike
+  firmware?: fs.PathLike
 }
 
 export abstract class Vm {

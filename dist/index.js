@@ -135,7 +135,7 @@ class Action {
     creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.operatingSystem.prepareDisk(diskImagePath, this.targetDiskName, resourcesDirectory);
-            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, {
+            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, {
                 memory: '4G',
                 cpuCount: 2,
                 diskImage: path.join(resourcesDirectory, this.targetDiskName),
@@ -147,8 +147,7 @@ class Action {
                 // xhyve
                 uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
                 resourcesDiskImage: this.resourceDisk.diskPath,
-                userboot: path.join(firmwareDirectory, 'userboot.so'),
-                firmware: path.join(firmwareDirectory, 'uefi.fd')
+                userboot: path.join(firmwareDirectory, 'userboot.so')
             });
         });
     }
@@ -811,6 +810,8 @@ class OperatingSystem {
     constructor(name, arch, version) {
         this.baseUrl = 'https://github.com/cross-platform-actions';
         this.xhyveHypervisorUrl = `${exports.resourceBaseUrl}v0.3.0/xhyve-macos.tar`;
+        this.xhyveEfiFirmware = 'uefi.fd';
+        this.qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`;
         const hostString = host.toString(host.kind);
         this.resourcesUrl = `${exports.resourceBaseUrl}v0.3.0/resources-${hostString}.tar`;
         this.name = name;
@@ -855,6 +856,7 @@ class OperatingSystem {
     }
 }
 exports.OperatingSystem = OperatingSystem;
+OperatingSystem.qemuFirmwareDirectory = 'share/qemu';
 class Qemu extends OperatingSystem {
     get ssHostPort() {
         return 2847;
@@ -890,9 +892,13 @@ class FreeBsd extends OperatingSystem {
     get virtualMachineImageReleaseVersion() {
         return 'v0.2.0';
     }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, configuration) {
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
+            const firmwareFile = host.host.canRunXhyve(this.architecture)
+                ? this.xhyveEfiFirmware
+                : this.qemuEfiFirmware;
+            configuration.firmware = path.join(firmwareDirectory.toString(), firmwareFile);
             return new host.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
@@ -918,9 +924,15 @@ class NetBsd extends Qemu {
             yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
         });
     }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, configuration) {
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating NetBSD VM');
-        return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, configuration);
+        if (this.architecture.kind === architecture.Kind.x86_64) {
+            configuration.firmware = path.join(firmwareDirectory.toString(), OperatingSystem.qemuFirmwareDirectory, 'bios-256k.bin');
+            return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, configuration);
+        }
+        else {
+            throw Error(`Not implemented: NetBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
+        }
     }
 }
 class OpenBsd extends OperatingSystem {
@@ -953,9 +965,13 @@ class OpenBsd extends OperatingSystem {
     get virtualMachineImageReleaseVersion() {
         return 'v0.2.0';
     }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, configuration) {
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
+            const firmwareFile = host.host.canRunXhyve(this.architecture)
+                ? this.xhyveEfiFirmware
+                : this.qemuEfiFirmware;
+            configuration.firmware = path.join(firmwareDirectory.toString(), firmwareFile);
             return new host.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
@@ -1045,7 +1061,10 @@ class Vm extends vm.Vm {
             '-netdev', `user,id=user.0,hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
             '-display', 'none',
             '-monitor', 'none',
-            '-boot', 'strict=off'
+            '-boot', 'strict=off',
+            /* eslint-disable @typescript-eslint/no-non-null-assertion */
+            '-bios', this.configuration.firmware.toString()
+            /* eslint-enable @typescript-eslint/no-non-null-assertion */
         ];
     }
 }

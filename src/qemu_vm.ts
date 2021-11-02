@@ -39,7 +39,10 @@ export abstract class Vm extends vm.Vm {
       '-display', 'none',
       '-monitor', 'none',
       
-      '-boot', 'strict=off'
+      '-boot', 'strict=off',
+      /* eslint-disable @typescript-eslint/no-non-null-assertion */
+      '-bios', this.configuration.firmware!.toString()
+      /* eslint-enable @typescript-eslint/no-non-null-assertion */
     ]
   }
 }
