@@ -914,7 +914,7 @@ class NetBsd extends Qemu {
         return this.architecture.resourceUrl;
     }
     get virtualMachineImageReleaseVersion() {
-        return 'v0.0.1-rc6';
+        return 'v0.0.1';
     }
     get actionImplementationKind() {
         return action.ImplementationKind.qemu;

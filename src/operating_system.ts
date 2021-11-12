@@ -206,7 +206,7 @@ class NetBsd extends Qemu {
   }
 
   get virtualMachineImageReleaseVersion(): string {
-    return 'v0.0.1-rc6'
+    return 'v0.0.1'
   }
 
   get actionImplementationKind(): action.ImplementationKind {
