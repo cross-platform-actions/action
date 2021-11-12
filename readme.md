@@ -8,11 +8,11 @@ currently natively support.
 
 Some of the features that are supported include:
 
-* Multiple operating system with one single action
-* Multiple versions of each operating system
-* Allows to use default shell or Bash shell
-* Low boot overhead
-* Fast execution
+- Multiple operating system with one single action
+- Multiple versions of each operating system
+- Allows to use default shell or Bash shell
+- Low boot overhead
+- Fast execution
 
 ## Usage
 
@@ -57,14 +57,15 @@ jobs:
             env | sort
 ```
 
-The jobs need to run on: `macos-10.15`.
+The FreeBSD and OpenBSD jobs need to run on: `macos-10.15`. Jobs for the other
+platforms need to run on a Linux runner.
 
 ### Inputs
 
 This section lists the available inputs for the action.
 
 | Input                   | Required | Default Value | Description                                                                                                                                            |
-|-------------------------|----------|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------------- | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `run`                   | ✓        | ✗             | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                       |
 | `operating_system`      | ✓        | ✗             | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                       |
 | `version`               | ✓        | ✗             | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                           |
@@ -79,30 +80,40 @@ operating system will list which versions are supported.
 ### [OpenBSD][openbsd_builder]
 
 | Version | x86-64 |
-|---------|--------|
+| ------- | ------ |
 | 6.9     | ✓      |
 | 6.8     | ✓      |
 
 ### [FreeBSD][freebsd_builder]
 
 | Version | x86-64 |
-|---------|--------|
+| ------- | ------ |
 | 13.0    | ✓      |
 | 12.2    | ✓      |
+
+### [NetBSD][netbsd_builder]
+
+| Version | x86-64 |
+| ------- | ------ |
+| 9.2     | ✓      |
 
 ## Under the Hood
 
 GitHub Actions currently only support the following platforms: macOS, Linux and
-Windows. To be able to run other platforms, this GitHub action runs the commands
-inside a virtual machine (VM). macOS is used as the host platform because it
-supports nested virtualization.
+Windows. To be able to run other platforms, this GitHub action runs the
+commands inside a virtual machine (VM). If the host platform is macOS the
+hypervisor can take advantage of nested virtualization.
 
-The VMs run on the [xhyve][xhyve] hypervisor, which is built on top of Apple's
-[Hypervisor][hypervisor_framework] framework. The Hypervisor framework allows
-to implement hypervisors with support for hardware acceleration without the
-need for kernel extensions. xhyve is a lightweight hypervisor that boots the
-guest operating systems quickly and requires no dependencies outside of what's
-provided by the system.
+The FreeBSD and OpenBSD VMs run on the [xhyve][xhyve] hypervisor (on a macOS
+host), while the other platforms run on the [QEMU][qemu] hypervisor (on a Linux
+host). xhyve is built on top of Apple's [Hypervisor][hypervisor_framework]
+framework. The Hypervisor framework allows to implement hypervisors with
+support for hardware acceleration without the need for kernel extensions. xhyve
+is a lightweight hypervisor that boots the guest operating systems quickly and
+requires no dependencies outside of what's provided by the system. QEMU is a
+more general purpose hypervisor that runs on most host platforms and supports
+most guest systems. It's a bit slower than xhyve because it's general purpose
+and it cannot use nested virtualization on the Linux hosts provided by GitHub.
 
 The VM images running inside the hypervisor are built using [Packer][packer].
 It's a tool for automatically creating VM images, installing the guest
@@ -123,23 +134,25 @@ To reduce the time it takes for the GitHub action to start executing the
 commands specified by the user, it aims to boot the guest operating systems as
 fast as possible. This is achieved in a couple of ways:
 
-* By downloading [resources][resources], like xhyve and a few other tools,
-    instead of installing them through a package manager
+- By downloading [resources][resources], like the hypervisor and a few other
+  tools, instead of installing them through a package manager
 
-* No compression is used for the resources that are downloaded. The size is
-    small enough anyway and it's faster to download the uncompressed data than
-    it is to download compressed data and then uncompress it.
+- No compression is used for the resources that are downloaded. The size is
+  small enough anyway and it's faster to download the uncompressed data than
+  it is to download compressed data and then uncompress it.
 
-* It leverages `async`/`await` to perform tasks asynchronously. Like
-    downloading the VM image and other resources at the same time
+- It leverages `async`/`await` to perform tasks asynchronously. Like
+  downloading the VM image and other resources at the same time
 
-* It performs as much as possible of the setup ahead of time when the VM image
-    is provisioned
+- It performs as much as possible of the setup ahead of time when the VM image
+  is provisioned
 
 [xhyve]: https://github.com/machyve/xhyve
+[qemu]: https://www.qemu.org
 [hypervisor_framework]: https://developer.apple.com/library/mac/documentation/DriversKernelHardware/Reference/Hypervisor/index.html
 [rsync]: https://en.wikipedia.org/wiki/Rsync
 [resources]: https://github.com/cross-platform-actions/resources
 [packer]: https://www.packer.io
 [openbsd_builder]: https://github.com/cross-platform-actions/openbsd-builder
 [freebsd_builder]: https://github.com/cross-platform-actions/freebsd-builder
+[netbsd_builder]: https://github.com/cross-platform-actions/netbsd-builder
