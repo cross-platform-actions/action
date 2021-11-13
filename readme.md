@@ -77,21 +77,21 @@ This section lists the available inputs for the action.
 This sections lists the currently supported platforms by operating system. Each
 operating system will list which versions are supported.
 
-### [OpenBSD][openbsd_builder]
+### [OpenBSD][openbsd_builder] (`openbsd`)
 
 | Version | x86-64 |
 | ------- | ------ |
 | 6.9     | ✓      |
 | 6.8     | ✓      |
 
-### [FreeBSD][freebsd_builder]
+### [FreeBSD][freebsd_builder] (`freebsd`)
 
 | Version | x86-64 |
 | ------- | ------ |
 | 13.0    | ✓      |
 | 12.2    | ✓      |
 
-### [NetBSD][netbsd_builder]
+### [NetBSD][netbsd_builder] (`netbsd`)
 
 | Version | x86-64 |
 | ------- | ------ |
