@@ -1,5 +1,11 @@
 # Cross-Platform Action Changelog
 
+## 0.3.0
+
+### New/Changed Features
+
+* Added support for NetBSD ([#1](https://github.com/cross-platform-actions/action/issues/1))
+
 ## 0.2.0
 
 ### New/Changed Features
