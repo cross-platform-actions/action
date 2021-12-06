@@ -464,14 +464,14 @@ const architectures = (() => {
         cpu: 'cortex-a57',
         machineType: 'virt',
         accelerator: vm.Accelerator.tcg,
-        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.3.0/qemu-system-aarch64-${hostString}.tar`
+        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.3.1/qemu-system-aarch64-${hostString}.tar`
     });
     map.set(Kind.x86_64, {
         kind: Kind.x86_64,
         cpu: host.kind === host.Kind.darwin ? 'host' : 'qemu64',
         machineType: 'pc',
         accelerator: host.kind === host.Kind.darwin ? vm.Accelerator.hvf : vm.Accelerator.tcg,
-        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.3.0/qemu-system-x86_64-${hostString}.tar`
+        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.3.1/qemu-system-x86_64-${hostString}.tar`
     });
     return map;
 })();
@@ -809,11 +809,11 @@ exports.toKind = toKind;
 class OperatingSystem {
     constructor(name, arch, version) {
         this.baseUrl = 'https://github.com/cross-platform-actions';
-        this.xhyveHypervisorUrl = `${exports.resourceBaseUrl}v0.3.0/xhyve-macos.tar`;
+        this.xhyveHypervisorUrl = `${exports.resourceBaseUrl}v0.3.1/xhyve-macos.tar`;
         this.xhyveEfiFirmware = 'uefi.fd';
         this.qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`;
         const hostString = host.toString(host.kind);
-        this.resourcesUrl = `${exports.resourceBaseUrl}v0.3.0/resources-${hostString}.tar`;
+        this.resourcesUrl = `${exports.resourceBaseUrl}v0.3.1/resources-${hostString}.tar`;
         this.name = name;
         this.version = version;
         this.architecture = arch;

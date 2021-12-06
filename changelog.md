@@ -1,5 +1,11 @@
 # Cross-Platform Action Changelog
 
+## 0.3.1
+
+### Bugs Fixed
+
+* Missing QEMU dependency glib ([#5](https://github.com/cross-platform-actions/action/issues/5))
+
 ## 0.3.0
 
 ### New/Changed Features
