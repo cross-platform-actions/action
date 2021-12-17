@@ -72,6 +72,15 @@ This section lists the available inputs for the action.
 | `shell`                 | ✗        | `default`     | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash` |
 | `environment_variables` | ✗        | `""`          | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                           |
 
+All inputs are expected to be strings. It's important that especially the
+`version` is explicitly specified as a string, using single or double quotes.
+Otherwise YAML might interpet the value as a numeric value instead of a string.
+This might lead to some unexpected behavior. If the version is specified as
+`version: 13.0`, YAML will interpet `13.0` as a floating point number, drop the
+fraction part (because `13` and `13.0` are the same) and the GitHub action will
+only see `13` instead of `13.0`. The solution is to explicitly state that a
+string is required by using quotes: `version: '13.0'`.
+
 ## Supported Platforms
 
 This sections lists the currently supported platforms by operating system. Each
