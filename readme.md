@@ -31,9 +31,9 @@ jobs:
       matrix:
         os:
           - name: freebsd
-            version: 12.2
+            version: '12.2'
           - name: openbsd
-            version: 6.8
+            version: '6.8'
 
     steps:
       - uses: actions/checkout@v2
