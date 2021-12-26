@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.0.1
+        uses: cross-platform-actions/action@v0.3.1
         env:
           MY_ENV1: MY_ENV1
           MY_ENV2: MY_ENV2
