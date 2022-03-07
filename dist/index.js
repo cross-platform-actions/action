@@ -471,7 +471,7 @@ const architectures = (() => {
         cpu: host.kind === host.Kind.darwin ? 'host' : 'qemu64',
         machineType: 'pc',
         accelerator: host.kind === host.Kind.darwin ? vm.Accelerator.hvf : vm.Accelerator.tcg,
-        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.3.1/qemu-system-x86_64-${hostString}.tar`
+        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.4.0/qemu-system-x86_64-${hostString}.tar`
     });
     return map;
 })();
@@ -650,11 +650,25 @@ class Linux extends Host {
     createDiskFile(size, diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
             yield exec.exec('truncate', ['-s', size, diskPath]);
+            const input = Buffer.from('n\np\n1\n\n\nw\n');
+            // technically, this is partitioning the disk
+            yield exec.exec('fdisk', [diskPath], { input });
         });
     }
     createDiskDevice(diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
-            const devicePath = yield (0, utility_1.execWithOutput)('sudo', ['losetup', '-f', '--show', diskPath], { silent: true });
+            // the offset and size limit are retrieved by running:
+            // `sfdisk -d ${diskPath}` and multiply the start and size by 512.
+            // https://checkmk.com/linux-knowledge/mounting-partition-loop-device
+            // prettier-ignore
+            const devicePath = yield (0, utility_1.execWithOutput)('sudo', [
+                'losetup',
+                '-f',
+                '--show',
+                '--offset', '1048576',
+                '--sizelimit', '40894464',
+                diskPath
+            ], { silent: true });
             return devicePath.trim();
         });
     }
@@ -662,7 +676,8 @@ class Linux extends Host {
     partitionDisk(devicePath, _mountName) {
         return __awaiter(this, void 0, void 0, function* () {
             /* eslint-enable  @typescript-eslint/no-unused-vars */
-            yield exec.exec('sudo', ['mkfs.msdos', devicePath]);
+            // technically, this is creating the filesystem on the partition
+            yield exec.exec('sudo', ['mkfs.fat', '-F32', devicePath]);
         });
     }
     mountDisk(devicePath, mountPath) {
@@ -812,6 +827,7 @@ class OperatingSystem {
         this.xhyveHypervisorUrl = `${exports.resourceBaseUrl}v0.3.1/xhyve-macos.tar`;
         this.xhyveEfiFirmware = 'uefi.fd';
         this.qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`;
+        this.qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`;
         const hostString = host.toString(host.kind);
         this.resourcesUrl = `${exports.resourceBaseUrl}v0.3.1/resources-${hostString}.tar`;
         this.name = name;
@@ -897,7 +913,7 @@ class FreeBsd extends OperatingSystem {
         if (this.architecture.kind === architecture.Kind.x86_64) {
             const firmwareFile = host.host.canRunXhyve(this.architecture)
                 ? this.xhyveEfiFirmware
-                : this.qemuEfiFirmware;
+                : this.qemuBiosFirmware;
             configuration.firmware = path.join(firmwareDirectory.toString(), firmwareFile);
             return new host.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
@@ -927,7 +943,7 @@ class NetBsd extends Qemu {
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating NetBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
-            configuration.firmware = path.join(firmwareDirectory.toString(), OperatingSystem.qemuFirmwareDirectory, 'bios-256k.bin');
+            configuration.firmware = path.join(firmwareDirectory.toString(), this.qemuBiosFirmware);
             return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
@@ -1053,8 +1069,10 @@ class Vm extends vm.Vm {
             '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
             '-m', this.configuration.memory,
             '-device', 'virtio-scsi-pci',
+            // '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
             '-device', 'scsi-hd,drive=drive0,bootindex=0',
             '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+            // '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
             '-device', 'scsi-hd,drive=drive1,bootindex=1',
             '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
             '-device', 'virtio-net,netdev=user.0',

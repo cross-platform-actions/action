@@ -26,10 +26,13 @@ export abstract class Vm extends vm.Vm {
       '-cpu', this.configuration.cpu,
       '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
       '-m', this.configuration.memory,
-      
+
       '-device', 'virtio-scsi-pci',
+
+      // '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
       '-device', 'scsi-hd,drive=drive0,bootindex=0',
       '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+      // '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
       '-device', 'scsi-hd,drive=drive1,bootindex=1',
       '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
 
@@ -38,7 +41,7 @@ export abstract class Vm extends vm.Vm {
 
       '-display', 'none',
       '-monitor', 'none',
-      
+
       '-boot', 'strict=off',
       /* eslint-disable @typescript-eslint/no-non-null-assertion */
       '-bios', this.configuration.firmware!.toString()

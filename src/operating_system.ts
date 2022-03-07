@@ -47,6 +47,7 @@ export abstract class OperatingSystem {
 
   protected readonly xhyveEfiFirmware = 'uefi.fd'
   protected readonly qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`
+  protected readonly qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
     const hostString = host.toString(host.kind)
@@ -174,7 +175,7 @@ class FreeBsd extends OperatingSystem {
     if (this.architecture.kind === architecture.Kind.x86_64) {
       const firmwareFile = host.host.canRunXhyve(this.architecture)
         ? this.xhyveEfiFirmware
-        : this.qemuEfiFirmware
+        : this.qemuBiosFirmware
 
       configuration.firmware = path.join(
         firmwareDirectory.toString(),
@@ -232,8 +233,7 @@ class NetBsd extends Qemu {
     if (this.architecture.kind === architecture.Kind.x86_64) {
       configuration.firmware = path.join(
         firmwareDirectory.toString(),
-        OperatingSystem.qemuFirmwareDirectory,
-        'bios-256k.bin'
+        this.qemuBiosFirmware
       )
 
       return new qemu.NetBsd(

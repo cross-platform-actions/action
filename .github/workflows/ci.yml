@@ -17,7 +17,7 @@ jobs:
       - run: npm run all
 
   test: # make sure the action works on a clean machine without building
-    name: ${{ matrix.os.name }} ${{ matrix.os.version }}
+    name: ${{ matrix.os.name }} ${{ matrix.os.version }} on ${{ matrix.os.host }}
     runs-on: ${{ matrix.os.host }}
     strategy:
       fail-fast: false
@@ -32,9 +32,27 @@ jobs:
               release: 12.2-RELEASE
 
           - name: FreeBSD
+            version: '12.2'
+            host: ubuntu-latest
+            # /home is symlinked to /usr/home. pwd will return the resolved path.
+            workDirectory: /usr/home/runner/work/action/action
+            uname:
+              hardware: amd64
+              release: 12.2-RELEASE
+
+          - name: FreeBSD
             version: '13.0'
             host: macos-10.15
             workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+              release: 13.0-RELEASE
+
+          - name: FreeBSD
+            version: '13.0'
+            host: ubuntu-latest
+            # /home is symlinked to /usr/home. pwd will return the resolved path.
+            workDirectory: /usr/home/runner/work/action/action
             uname:
               hardware: amd64
               release: 13.0-RELEASE
@@ -68,6 +86,9 @@ jobs:
 
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
+
+      # - name: Setup SSH session
+      #   uses: lhotari/action-upterm@v1
 
       - name: ${{ matrix.os.name }}
         uses: ./

@@ -132,12 +132,28 @@ class Linux extends Host {
 
   async createDiskFile(size: string, diskPath: string): Promise<void> {
     await exec.exec('truncate', ['-s', size, diskPath])
+
+    const input = Buffer.from('n\np\n1\n\n\nw\n')
+    // technically, this is partitioning the disk
+    await exec.exec('fdisk', [diskPath], {input})
   }
 
   async createDiskDevice(diskPath: string): Promise<string> {
+    // the offset and size limit are retrieved by running:
+    // `sfdisk -d ${diskPath}` and multiply the start and size by 512.
+    // https://checkmk.com/linux-knowledge/mounting-partition-loop-device
+
+    // prettier-ignore
     const devicePath = await execWithOutput(
       'sudo',
-      ['losetup', '-f', '--show', diskPath],
+      [
+        'losetup',
+        '-f',
+        '--show',
+        '--offset', '1048576',
+        '--sizelimit', '40894464',
+        diskPath
+      ],
       {silent: true}
     )
 
@@ -147,7 +163,8 @@ class Linux extends Host {
   /* eslint-disable  @typescript-eslint/no-unused-vars */
   async partitionDisk(devicePath: string, _mountName: string): Promise<void> {
     /* eslint-enable  @typescript-eslint/no-unused-vars */
-    await exec.exec('sudo', ['mkfs.msdos', devicePath])
+    // technically, this is creating the filesystem on the partition
+    await exec.exec('sudo', ['mkfs.fat', '-F32', devicePath])
   }
 
   async mountDisk(devicePath: string, mountPath: string): Promise<string> {
