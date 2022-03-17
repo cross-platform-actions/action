@@ -40,7 +40,7 @@ export abstract class OperatingSystem {
 
   readonly architecture: architecture.Architecture
 
-  protected readonly xhyveHypervisorUrl = `${resourceBaseUrl}v0.3.1/xhyve-macos.tar`
+  protected readonly xhyveHypervisorUrl = `${resourceBaseUrl}v0.4.0-rc4/xhyve-macos.tar`
 
   private readonly name: string
   private readonly version: string
@@ -50,7 +50,7 @@ export abstract class OperatingSystem {
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
     const hostString = host.toString(host.kind)
-    this.resourcesUrl = `${resourceBaseUrl}v0.3.1/resources-${hostString}.tar`
+    this.resourcesUrl = `${resourceBaseUrl}v0.4.0-rc4/resources-${hostString}.tar`
     this.name = name
     this.version = version
     this.architecture = arch
