@@ -50,6 +50,7 @@ const array_prototype_flatmap_1 = __importDefault(__webpack_require__(9092));
 const architecture = __importStar(__webpack_require__(4019));
 const hostModule = __importStar(__webpack_require__(8215));
 const os = __importStar(__webpack_require__(9385));
+const resource_disk_1 = __importDefault(__webpack_require__(7102));
 var ImplementationKind;
 (function (ImplementationKind) {
     ImplementationKind[ImplementationKind["qemu"] = 0] = "qemu";
@@ -62,8 +63,8 @@ class Action {
         this.targetDiskName = 'disk.raw';
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
-        this.resourceDisk = new ResourceDisk(this.tempPath, this.host);
         this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, architecture.Kind.x86_64, this.input.version);
+        this.resourceDisk = resource_disk_1.default.for(this);
         this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
         this.workDirectory = this.host.workDirectory;
         this.sshDirectory = path.join(this.getHomeDirectory(), '.ssh');
@@ -274,66 +275,6 @@ class QemuImplementation extends Implementation {
         fs.appendFileSync(authorizedKeysPath, publicKeyContent);
     }
 }
-class ResourceDisk {
-    constructor(tempPath, host) {
-        this.mountName = 'RES';
-        this.host = host;
-        this.tempPath = tempPath;
-        this.diskPath = path.join(this.tempPath, 'res.raw');
-    }
-    create() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('Creating resource disk');
-            yield this.createDiskFile();
-            this.devicePath = yield this.createDiskDevice();
-            yield this.partitionDisk();
-            const mountPath = path.join(this.tempPath, 'mount/RES');
-            return (this.mountPath = yield this.mountDisk(mountPath));
-        });
-    }
-    unmount() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.unmountDisk();
-            yield this.detachDevice();
-        });
-    }
-    createDiskFile() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('Creating disk file');
-            yield this.host.createDiskFile('40m', this.diskPath);
-        });
-    }
-    createDiskDevice() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('Creating disk file');
-            return yield this.host.createDiskDevice(this.diskPath);
-        });
-    }
-    partitionDisk() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('Partitioning disk');
-            yield this.host.partitionDisk(this.devicePath, this.mountName);
-        });
-    }
-    mountDisk(mountPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('mounting disk');
-            return yield this.host.mountDisk(this.devicePath, mountPath);
-        });
-    }
-    unmountDisk() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('Unmounting disk');
-            yield exec.exec('sudo', ['umount', this.mountPath]);
-        });
-    }
-    detachDevice() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('Detaching device');
-            yield this.host.detachDevice(this.devicePath);
-        });
-    }
-}
 class Input {
     get version() {
         if (this.version_ !== undefined)
@@ -521,28 +462,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.host = exports.Host = exports.toString = exports.kind = exports.Kind = void 0;
-const fs_1 = __webpack_require__(5747);
 const process = __importStar(__webpack_require__(1765));
-const os = __importStar(__webpack_require__(2087));
-const exec = __importStar(__webpack_require__(1514));
 const architecture = __importStar(__webpack_require__(4019));
 const qemu = __importStar(__webpack_require__(1106));
-const utility_1 = __webpack_require__(2857);
-const path_1 = __importDefault(__webpack_require__(5622));
 const xhyve = __importStar(__webpack_require__(2722));
 var Kind;
 (function (Kind) {
@@ -591,48 +515,11 @@ class MacOs extends Host {
     get vmModule() {
         return xhyve;
     }
+    resolve(implementation) {
+        return implementation.macos;
+    }
     canRunXhyve(arch) {
         return arch.kind === architecture.Kind.x86_64;
-    }
-    createDiskFile(size, diskPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield exec.exec('mkfile', ['-n', size, diskPath]);
-        });
-    }
-    createDiskDevice(diskPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const devicePath = yield (0, utility_1.execWithOutput)('hdiutil', [
-                'attach',
-                '-imagekey',
-                'diskimage-class=CRawDiskImage',
-                '-nomount',
-                diskPath
-            ], { silent: true });
-            return devicePath.trim();
-        });
-    }
-    partitionDisk(devicePath, mountName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield exec.exec('diskutil', [
-                'partitionDisk',
-                devicePath,
-                '1',
-                'GPT',
-                'fat32',
-                mountName,
-                '100%'
-            ]);
-        });
-    }
-    mountDisk(_devicePath, mountPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return path_1.default.join('/Volumes', path_1.default.basename(mountPath));
-        });
-    }
-    detachDevice(devicePath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield exec.exec('hdiutil', ['detach', devicePath]);
-        });
     }
 }
 class Linux extends Host {
@@ -647,57 +534,8 @@ class Linux extends Host {
         /* eslint-enable @typescript-eslint/no-unused-vars */
         return false;
     }
-    createDiskFile(size, diskPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield exec.exec('truncate', ['-s', size, diskPath]);
-            const input = Buffer.from('n\np\n1\n\n\nw\n');
-            // technically, this is partitioning the disk
-            yield exec.exec('fdisk', [diskPath], { input });
-        });
-    }
-    createDiskDevice(diskPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // the offset and size limit are retrieved by running:
-            // `sfdisk -d ${diskPath}` and multiply the start and size by 512.
-            // https://checkmk.com/linux-knowledge/mounting-partition-loop-device
-            // prettier-ignore
-            const devicePath = yield (0, utility_1.execWithOutput)('sudo', [
-                'losetup',
-                '-f',
-                '--show',
-                '--offset', '1048576',
-                '--sizelimit', '40894464',
-                diskPath
-            ], { silent: true });
-            return devicePath.trim();
-        });
-    }
-    /* eslint-disable  @typescript-eslint/no-unused-vars */
-    partitionDisk(devicePath, _mountName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            /* eslint-enable  @typescript-eslint/no-unused-vars */
-            // technically, this is creating the filesystem on the partition
-            yield exec.exec('sudo', ['mkfs.fat', '-F32', devicePath]);
-        });
-    }
-    mountDisk(devicePath, mountPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield fs_1.promises.mkdir(mountPath, { recursive: true });
-            const uid = os.userInfo().uid;
-            yield exec.exec('sudo', [
-                'mount',
-                '-o',
-                `uid=${uid}`,
-                devicePath,
-                mountPath
-            ]);
-            return mountPath;
-        });
-    }
-    detachDevice(devicePath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield exec.exec('sudo', ['losetup', '-d', devicePath]);
-        });
+    resolve(implementation) {
+        return implementation.linux;
     }
 }
 exports.host = Host.create();
@@ -855,9 +693,14 @@ class OperatingSystem {
             this.imageName
         ].join('/');
     }
+    resolve(implementation) {
+        var _a;
+        return (_a = this.resolveImplementation(implementation)) !== null && _a !== void 0 ? _a : implementation.default;
+    }
     setupWorkDirectory(vm, workDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
             const destination = `/home/${vmModule.Vm.user}/work`;
+            yield vm.execute('mkdir -p /home/runner/work');
             if (workDirectory === destination)
                 yield vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`);
             else {
@@ -921,6 +764,9 @@ class FreeBsd extends OperatingSystem {
             throw Error(`Not implemented: FreeBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
         }
     }
+    resolveImplementation(implementation) {
+        return implementation.freebsd;
+    }
 }
 class NetBsd extends Qemu {
     constructor(arch, version) {
@@ -949,6 +795,9 @@ class NetBsd extends Qemu {
         else {
             throw Error(`Not implemented: NetBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
         }
+    }
+    resolveImplementation(implementation) {
+        return implementation.netbsd;
     }
 }
 class OpenBsd extends OperatingSystem {
@@ -993,6 +842,9 @@ class OpenBsd extends OperatingSystem {
         else {
             throw Error(`Not implemented: OpenBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
         }
+    }
+    resolveImplementation(implementation) {
+        return implementation.openbsd;
     }
 }
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
@@ -1068,13 +920,6 @@ class Vm extends vm.Vm {
             '-cpu', this.configuration.cpu,
             '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
             '-m', this.configuration.memory,
-            '-device', 'virtio-scsi-pci',
-            // '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
-            '-device', 'scsi-hd,drive=drive0,bootindex=0',
-            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
-            // '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
-            '-device', 'scsi-hd,drive=drive1,bootindex=1',
-            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
             '-device', 'virtio-net,netdev=user.0',
             '-netdev', `user,id=user.0,hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
             '-display', 'none',
@@ -1083,12 +928,31 @@ class Vm extends vm.Vm {
             /* eslint-disable @typescript-eslint/no-non-null-assertion */
             '-bios', this.configuration.firmware.toString()
             /* eslint-enable @typescript-eslint/no-non-null-assertion */
+        ].concat(this.hardDriverFlags);
+    }
+    get defaultHardDriveFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-scsi-pci',
+            '-device', 'scsi-hd,drive=drive0,bootindex=0',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+            '-device', 'scsi-hd,drive=drive1,bootindex=1',
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
         ];
     }
 }
 exports.Vm = Vm;
 Vm.sshPort = 2847;
 class FreeBsd extends Vm {
+    get hardDriverFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+            '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
+        ];
+    }
     shutdown() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.execute('sudo shutdown -p now');
@@ -1097,6 +961,9 @@ class FreeBsd extends Vm {
 }
 exports.FreeBsd = FreeBsd;
 class NetBsd extends Vm {
+    get hardDriverFlags() {
+        return this.defaultHardDriveFlags;
+    }
     shutdown() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.execute('sudo shutdown -h -p now');
@@ -1105,6 +972,9 @@ class NetBsd extends Vm {
 }
 exports.NetBsd = NetBsd;
 class OpenBsd extends Vm {
+    get hardDriverFlags() {
+        return this.defaultHardDriveFlags;
+    }
     shutdown() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.execute('sudo shutdown -h -p now');
@@ -1113,6 +983,251 @@ class OpenBsd extends Vm {
 }
 exports.OpenBsd = OpenBsd;
 //# sourceMappingURL=qemu_vm.js.map
+
+/***/ }),
+
+/***/ 7102:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const fs_1 = __webpack_require__(5747);
+const path_1 = __importDefault(__webpack_require__(5622));
+const os = __importStar(__webpack_require__(2087));
+const core = __importStar(__webpack_require__(2186));
+const exec = __importStar(__webpack_require__(1514));
+const utility_1 = __webpack_require__(2857);
+class ResourceDisk {
+    constructor(action) {
+        this.mountName = 'RES';
+        this.tempPath = action.tempPath;
+        this.operatingSystem = action.operatingSystem;
+    }
+    static for(action) {
+        const implementationClass = action.host.resolve({
+            macos: MacOs,
+            linux: Linux
+        });
+        return new implementationClass(action);
+    }
+    get diskPath() {
+        return path_1.default.join(this.tempPath, 'res.raw');
+    }
+    create() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Creating resource disk');
+            yield this.createDiskFile('40m', this.diskPath);
+            this.devicePath = yield this.createDiskDevice(this.diskPath);
+            yield this.partitionDisk(this.devicePath, this.mountName);
+            this.mountPath = yield this.mountDisk(this.devicePath, this.baseMountPath);
+            return this.mountPath;
+        });
+    }
+    unmount() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.unmountDisk();
+            yield this.detachDevice(this.devicePath);
+        });
+    }
+    get baseMountPath() {
+        return path_1.default.join(this.tempPath, `mount/${this.mountName}`);
+    }
+    unmountDisk() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Unmounting disk');
+            yield exec.exec('sudo', ['umount', this.mountPath]);
+        });
+    }
+}
+exports.default = ResourceDisk;
+class MacOs extends ResourceDisk {
+    createDiskFile(size, diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('mkfile', ['-n', size, diskPath]);
+        });
+    }
+    createDiskDevice(diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const devicePath = yield (0, utility_1.execWithOutput)('hdiutil', [
+                'attach',
+                '-imagekey',
+                'diskimage-class=CRawDiskImage',
+                '-nomount',
+                diskPath
+            ], { silent: true });
+            return devicePath.trim();
+        });
+    }
+    partitionDisk(devicePath, mountName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('diskutil', [
+                'partitionDisk',
+                devicePath,
+                '1',
+                'GPT',
+                'fat32',
+                mountName,
+                '100%'
+            ]);
+        });
+    }
+    mountDisk(_devicePath, mountPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return path_1.default.join('/Volumes', path_1.default.basename(mountPath));
+        });
+    }
+    detachDevice(devicePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('hdiutil', ['detach', devicePath]);
+        });
+    }
+}
+class Linux extends ResourceDisk {
+    createDiskFile(size, diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Creating disk file');
+            yield LinuxDiskFileCreator.for(this.operatingSystem).create(size, diskPath);
+        });
+    }
+    createDiskDevice(diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Creating disk device');
+            return yield LinuxDiskDeviceCreator.for(this.operatingSystem).create(diskPath);
+        });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    partitionDisk(devicePath, _mountName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Partitioning disk');
+            yield exec.exec('sudo', ['mkfs.fat', '-F32', devicePath]);
+        });
+    }
+    mountDisk(devicePath, mountPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Mounting disk');
+            yield fs_1.promises.mkdir(mountPath, { recursive: true });
+            const uid = os.userInfo().uid;
+            yield exec.exec('sudo', [
+                'mount',
+                '-o',
+                `uid=${uid}`,
+                devicePath,
+                mountPath
+            ]);
+            return mountPath;
+        });
+    }
+    detachDevice(devicePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Detaching device');
+            yield exec.exec('sudo', ['losetup', '-d', devicePath]);
+        });
+    }
+}
+class LinuxDiskFileCreator {
+    static for(operatingSystem) {
+        const implementationClass = operatingSystem.resolve({
+            freebsd: this.FreeBsd,
+            default: this.Default
+        });
+        return new implementationClass();
+    }
+    create(size, diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec('truncate', ['-s', size, diskPath]);
+            yield this.partition(diskPath);
+        });
+    }
+}
+LinuxDiskFileCreator.FreeBsd = class extends LinuxDiskFileCreator {
+    partition(diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const input = Buffer.from('n\np\n1\n\n\nw\n');
+            yield exec.exec('fdisk', [diskPath], { input });
+        });
+    }
+};
+LinuxDiskFileCreator.Default = class extends LinuxDiskFileCreator {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    partition(_diskPath) {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+};
+class LinuxDiskDeviceCreator {
+    static for(operatingSystem) {
+        const implementationClass = operatingSystem.resolve({
+            freebsd: this.FreeBsd,
+            default: this.Default
+        });
+        return new implementationClass();
+    }
+    create(diskPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // prettier-ignore
+            const devicePath = yield (0, utility_1.execWithOutput)('sudo', [
+                'losetup',
+                '-f',
+                '--show',
+                '--offset', this.offset,
+                '--sizelimit', this.sizeLimit,
+                diskPath
+            ], { silent: false });
+            return devicePath.trim();
+        });
+    }
+}
+LinuxDiskDeviceCreator.FreeBsd = class extends LinuxDiskDeviceCreator {
+    // the offset and size limit are retrieved by running:
+    // `sfdisk -d ${diskPath}` and multiply the start and size by 512.
+    // https://checkmk.com/linux-knowledge/mounting-partition-loop-device
+    get offset() {
+        return '1048576';
+    }
+    get sizeLimit() {
+        return '40894464';
+    }
+};
+LinuxDiskDeviceCreator.Default = class extends LinuxDiskDeviceCreator {
+    get offset() {
+        return '0';
+    }
+    get sizeLimit() {
+        return '0';
+    }
+};
+//# sourceMappingURL=resource_disk.js.map
 
 /***/ }),
 

@@ -26,3 +26,5 @@ export async function execWithOutput(
 
   return output.toString()
 }
+
+export type Class<T> = new () => T

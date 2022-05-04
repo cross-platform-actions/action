@@ -11,6 +11,7 @@ import flatMap from 'array.prototype.flatmap'
 import * as architecture from './architecture'
 import * as hostModule from './host'
 import * as os from './operating_system'
+import ResourceDisk from './resource_disk'
 import * as vmModule from './vm'
 
 export enum ImplementationKind {
@@ -19,13 +20,14 @@ export enum ImplementationKind {
 }
 
 export class Action {
+  readonly tempPath: string
+  readonly host: hostModule.Host
+  readonly operatingSystem: os.OperatingSystem
+
   private readonly input = new Input()
   private readonly resourceDisk: ResourceDisk
-  private readonly operatingSystem: os.OperatingSystem
   private readonly implementation: Implementation
-  private readonly host: hostModule.Host
   private readonly workDirectory
-  private readonly tempPath: string
   private readonly sshDirectory: string
   private readonly privateSshKey: fs.PathLike
   private readonly publicSshKey: fs.PathLike
@@ -35,13 +37,14 @@ export class Action {
   constructor() {
     this.host = hostModule.Host.create()
     this.tempPath = fs.mkdtempSync('/tmp/resources')
-    this.resourceDisk = new ResourceDisk(this.tempPath, this.host)
 
     this.operatingSystem = os.OperatingSystem.create(
       this.input.operatingSystem,
       architecture.Kind.x86_64,
       this.input.version
     )
+
+    this.resourceDisk = ResourceDisk.for(this)
 
     this.implementation = this.getImplementation(
       this.operatingSystem.actionImplementationKind
@@ -305,69 +308,6 @@ class QemuImplementation extends Implementation {
     const authorizedKeysPath = path.join(this.sshDirectory, 'authorized_keys')
     const publicKeyContent = fs.readFileSync(this.publicSshKey)
     fs.appendFileSync(authorizedKeysPath, publicKeyContent)
-  }
-}
-
-class ResourceDisk {
-  readonly diskPath: string
-
-  private readonly mountName = 'RES'
-  private mountPath!: string
-
-  private readonly host: hostModule.Host
-  private readonly tempPath: string
-  private devicePath!: string
-
-  constructor(tempPath: string, host: hostModule.Host) {
-    this.host = host
-    this.tempPath = tempPath
-    this.diskPath = path.join(this.tempPath, 'res.raw')
-  }
-
-  async create(): Promise<string> {
-    core.debug('Creating resource disk')
-    await this.createDiskFile()
-    this.devicePath = await this.createDiskDevice()
-    await this.partitionDisk()
-
-    const mountPath = path.join(this.tempPath, 'mount/RES')
-
-    return (this.mountPath = await this.mountDisk(mountPath))
-  }
-
-  async unmount(): Promise<void> {
-    await this.unmountDisk()
-    await this.detachDevice()
-  }
-
-  private async createDiskFile(): Promise<void> {
-    core.debug('Creating disk file')
-    await this.host.createDiskFile('40m', this.diskPath)
-  }
-
-  private async createDiskDevice(): Promise<string> {
-    core.debug('Creating disk file')
-    return await this.host.createDiskDevice(this.diskPath)
-  }
-
-  private async partitionDisk(): Promise<void> {
-    core.debug('Partitioning disk')
-    await this.host.partitionDisk(this.devicePath, this.mountName)
-  }
-
-  private async mountDisk(mountPath: string): Promise<string> {
-    core.debug('mounting disk')
-    return await this.host.mountDisk(this.devicePath, mountPath)
-  }
-
-  private async unmountDisk(): Promise<void> {
-    core.debug('Unmounting disk')
-    await exec.exec('sudo', ['umount', this.mountPath])
-  }
-
-  private async detachDevice(): Promise<void> {
-    core.debug('Detaching device')
-    await this.host.detachDevice(this.devicePath)
   }
 }
 

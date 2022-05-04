@@ -10,6 +10,7 @@ import * as qemu from './qemu_vm'
 import * as vmModule from './vm'
 import * as action from './action'
 import * as host from './host'
+import {Class} from './utility'
 
 export const resourceBaseUrl =
   'https://github.com/cross-platform-actions/resources/releases/download/'
@@ -35,6 +36,8 @@ export function toKind(value: string): Kind | undefined {
 export abstract class OperatingSystem {
   protected static readonly qemuFirmwareDirectory = 'share/qemu'
 
+  readonly name: string
+
   readonly resourcesUrl: string
   private readonly baseUrl = 'https://github.com/cross-platform-actions'
 
@@ -42,7 +45,6 @@ export abstract class OperatingSystem {
 
   protected readonly xhyveHypervisorUrl = `${resourceBaseUrl}v0.3.1/xhyve-macos.tar`
 
-  private readonly name: string
   private readonly version: string
 
   protected readonly xhyveEfiFirmware = 'uefi.fd'
@@ -90,6 +92,18 @@ export abstract class OperatingSystem {
     ].join('/')
   }
 
+  resolve<
+    Default extends Base,
+    FreeBsd extends Base,
+    OpenBsd extends Base,
+    NetBsd extends Base,
+    Base
+  >(
+    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
+  ): Class<Base> {
+    return this.resolveImplementation(implementation) ?? implementation.default
+  }
+
   abstract createVirtualMachine(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
@@ -109,6 +123,8 @@ export abstract class OperatingSystem {
   ): Promise<void> {
     const destination = `/home/${vmModule.Vm.user}/work`
 
+    await vm.execute('mkdir -p /home/runner/work')
+
     if (workDirectory === destination)
       await vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`)
     else {
@@ -118,11 +134,34 @@ export abstract class OperatingSystem {
     }
   }
 
+  protected abstract resolveImplementation<
+    Default extends Base,
+    FreeBsd extends Base,
+    OpenBsd extends Base,
+    NetBsd extends Base,
+    Base
+  >(
+    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
+  ): Class<Base> | undefined
+
   private get imageName(): string {
     const encodedVersion = encodeURIComponent(this.version)
     const archString = architecture.toString(this.architecture.kind)
     return `${this.name}-${encodedVersion}-${archString}.qcow2`
   }
+}
+
+interface Implementation<
+  Default extends Base,
+  FreeBsd extends Base,
+  OpenBsd extends Base,
+  NetBsd extends Base,
+  Base
+> {
+  default: Class<Default>
+  freebsd?: Class<FreeBsd>
+  openbsd?: Class<OpenBsd>
+  netbsd?: Class<NetBsd>
 }
 
 abstract class Qemu extends OperatingSystem {
@@ -195,6 +234,18 @@ class FreeBsd extends OperatingSystem {
       )
     }
   }
+
+  protected override resolveImplementation<
+    Default extends Base,
+    FreeBsd extends Base,
+    OpenBsd extends Base,
+    NetBsd extends Base,
+    Base
+  >(
+    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
+  ): Class<Base> | undefined {
+    return implementation.freebsd
+  }
 }
 
 class NetBsd extends Qemu {
@@ -248,6 +299,18 @@ class NetBsd extends Qemu {
         )}`
       )
     }
+  }
+
+  protected override resolveImplementation<
+    Default extends Base,
+    FreeBsd extends Base,
+    OpenBsd extends Base,
+    NetBsd extends Base,
+    Base
+  >(
+    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
+  ): Class<Base> | undefined {
+    return implementation.netbsd
   }
 }
 
@@ -314,6 +377,18 @@ class OpenBsd extends OperatingSystem {
         )}`
       )
     }
+  }
+
+  protected override resolveImplementation<
+    Default extends Base,
+    FreeBsd extends Base,
+    OpenBsd extends Base,
+    NetBsd extends Base,
+    Base
+  >(
+    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
+  ): Class<Base> | undefined {
+    return implementation.openbsd
   }
 }
 

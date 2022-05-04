@@ -27,15 +27,6 @@ export abstract class Vm extends vm.Vm {
       '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
       '-m', this.configuration.memory,
 
-      '-device', 'virtio-scsi-pci',
-
-      // '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
-      '-device', 'scsi-hd,drive=drive0,bootindex=0',
-      '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
-      // '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
-      '-device', 'scsi-hd,drive=drive1,bootindex=1',
-      '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
-
       '-device', 'virtio-net,netdev=user.0',
       '-netdev', `user,id=user.0,hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
 
@@ -46,23 +37,57 @@ export abstract class Vm extends vm.Vm {
       /* eslint-disable @typescript-eslint/no-non-null-assertion */
       '-bios', this.configuration.firmware!.toString()
       /* eslint-enable @typescript-eslint/no-non-null-assertion */
+    ].concat(this.hardDriverFlags)
+  }
+
+  protected abstract get hardDriverFlags(): string[]
+
+  protected get defaultHardDriveFlags(): string[] {
+    // prettier-ignore
+    return [
+      '-device', 'virtio-scsi-pci',
+
+      '-device', 'scsi-hd,drive=drive0,bootindex=0',
+      '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+
+      '-device', 'scsi-hd,drive=drive1,bootindex=1',
+      '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
     ]
   }
 }
 
 export class FreeBsd extends Vm {
+  protected get hardDriverFlags(): string[] {
+    // prettier-ignore
+    return [
+      '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
+      '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+
+      '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
+      '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
+    ]
+  }
+
   protected override async shutdown(): Promise<void> {
     await this.execute('sudo shutdown -p now')
   }
 }
 
 export class NetBsd extends Vm {
+  protected get hardDriverFlags(): string[] {
+    return this.defaultHardDriveFlags
+  }
+
   protected override async shutdown(): Promise<void> {
     await this.execute('sudo shutdown -h -p now')
   }
 }
 
 export class OpenBsd extends Vm {
+  protected get hardDriverFlags(): string[] {
+    return this.defaultHardDriveFlags
+  }
+
   protected override async shutdown(): Promise<void> {
     await this.execute('sudo shutdown -h -p now')
   }
