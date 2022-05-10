@@ -57,8 +57,8 @@ jobs:
             env | sort
 ```
 
-The FreeBSD and OpenBSD jobs need to run on: `macos-10.15`. Jobs for the other
-platforms need to run on a Linux runner.
+Different platforms need to run on different runners, see the
+[Runners](#runners) section below.
 
 ### Inputs
 
@@ -105,6 +105,16 @@ operating system will list which versions are supported.
 | Version | x86-64 |
 | ------- | ------ |
 | 9.2     | ✓      |
+
+### Runners
+
+This section list the different combinations of platforms and on which runners
+they can run.
+
+| Runner            | OpenBSD | FreeBSD | NetBSD |
+| ----------------- | ------- | ------- | ------ |
+| **Linux**         | ✗       | ✓       | ✓      |
+| **macos-10.15**   | ✓       | ✓       | ✗      |
 
 ## Under the Hood
 
