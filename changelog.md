@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2022-05-10
+### Added
+- Add support for running FreeBSD on Linux ([#8](https://github.com/cross-platform-actions/action/issues/8))
+
 ## [0.3.1] - 2021-12-06
 ### Fixed
 - Missing QEMU dependency glib ([#5](https://github.com/cross-platform-actions/action/issues/5))
@@ -27,7 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/olivierlacan/keep-a-changelog/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/olivierlacan/keep-a-changelog/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/cross-platform-actions/action/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/cross-platform-actions/action/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/cross-platform-actions/action/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cross-platform-actions/action/compare/v0.0.2...v0.2.0
