@@ -13,8 +13,8 @@ import * as hostModule from '../host'
 import * as os from '../operating_system'
 import ResourceDisk from '../resource_disk'
 import * as vmModule from '../vm'
-import {Input} from './input'
-import {Shell, toString} from './shell'
+import * as input from './input'
+import * as shell from './shell'
 
 export enum ImplementationKind {
   qemu,
@@ -26,7 +26,7 @@ export class Action {
   readonly host: hostModule.Host
   readonly operatingSystem: os.OperatingSystem
 
-  private readonly input = new Input()
+  private readonly input = new input.Input()
   private readonly resourceDisk: ResourceDisk
   private readonly implementation: Implementation
   private readonly workDirectory
@@ -244,13 +244,15 @@ export class Action {
 
   private async runCommand(vm: vmModule.Vm): Promise<void> {
     core.info(`Run: ${this.input.run}`)
-    const shell =
-      this.input.shell === Shell.default ? '$SHELL' : toString(this.input.shell)
+    const sh =
+      this.input.shell === shell.Shell.default
+        ? '$SHELL'
+        : shell.toString(this.input.shell)
     await vm.execute2(
       [
         'sh',
         '-c',
-        `'cd "${process.env['GITHUB_WORKSPACE']}" && exec "${shell}" -e'`
+        `'cd "${process.env['GITHUB_WORKSPACE']}" && exec "${sh}" -e'`
       ],
       Buffer.from(this.input.run)
     )

@@ -51,8 +51,8 @@ const architecture = __importStar(__webpack_require__(4019));
 const hostModule = __importStar(__webpack_require__(8215));
 const os = __importStar(__webpack_require__(9385));
 const resource_disk_1 = __importDefault(__webpack_require__(7102));
-const input_1 = __webpack_require__(1099);
-const shell_1 = __webpack_require__(9044);
+const input = __importStar(__webpack_require__(1099));
+const shell = __importStar(__webpack_require__(9044));
 var ImplementationKind;
 (function (ImplementationKind) {
     ImplementationKind[ImplementationKind["qemu"] = 0] = "qemu";
@@ -60,7 +60,7 @@ var ImplementationKind;
 })(ImplementationKind = exports.ImplementationKind || (exports.ImplementationKind = {}));
 class Action {
     constructor() {
-        this.input = new input_1.Input();
+        this.input = new input.Input();
         this.privateSshKeyName = 'id_ed25519';
         this.targetDiskName = 'disk.raw';
         this.host = hostModule.Host.create();
@@ -224,11 +224,13 @@ class Action {
     runCommand(vm) {
         return __awaiter(this, void 0, void 0, function* () {
             core.info(`Run: ${this.input.run}`);
-            const shell = this.input.shell === shell_1.Shell.default ? '$SHELL' : (0, shell_1.toString)(this.input.shell);
+            const sh = this.input.shell === shell.Shell.default
+                ? '$SHELL'
+                : shell.toString(this.input.shell);
             yield vm.execute2([
                 'sh',
                 '-c',
-                `'cd "${process.env['GITHUB_WORKSPACE']}" && exec "${shell}" -e'`
+                `'cd "${process.env['GITHUB_WORKSPACE']}" && exec "${sh}" -e'`
             ], Buffer.from(this.input.run));
         });
     }
