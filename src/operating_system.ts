@@ -8,7 +8,7 @@ import * as architecture from './architecture'
 import * as xhyve from './xhyve_vm'
 import * as qemu from './qemu_vm'
 import * as vmModule from './vm'
-import * as action from './action'
+import * as action from './action/action'
 import * as host from './host'
 import {Class} from './utility'
 

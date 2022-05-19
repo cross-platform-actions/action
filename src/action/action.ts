@@ -8,11 +8,11 @@ import * as exec from '@actions/exec'
 
 import flatMap from 'array.prototype.flatmap'
 
-import * as architecture from './architecture'
-import * as hostModule from './host'
-import * as os from './operating_system'
-import ResourceDisk from './resource_disk'
-import * as vmModule from './vm'
+import * as architecture from '../architecture'
+import * as hostModule from '../host'
+import * as os from '../operating_system'
+import ResourceDisk from '../resource_disk'
+import * as vmModule from '../vm'
 
 export enum ImplementationKind {
   qemu,

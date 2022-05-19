@@ -5,7 +5,7 @@ import * as os from 'os'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
-import {Action} from './action'
+import {Action} from './action/action'
 import {Class, execWithOutput} from './utility'
 import {OperatingSystem} from './operating_system'
 
