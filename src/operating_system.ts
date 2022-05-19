@@ -11,9 +11,7 @@ import * as vmModule from './vm'
 import * as action from './action/action'
 import * as host from './host'
 import {Class} from './utility'
-
-export const resourceBaseUrl =
-  'https://github.com/cross-platform-actions/resources/releases/download/'
+import {ResourceUrls} from './operating_systems/resource_urls'
 
 export enum Kind {
   freeBsd,
@@ -39,11 +37,11 @@ export abstract class OperatingSystem {
   readonly name: string
 
   readonly resourcesUrl: string
-  private readonly baseUrl = 'https://github.com/cross-platform-actions'
 
   readonly architecture: architecture.Architecture
 
-  protected readonly xhyveHypervisorUrl = `${resourceBaseUrl}v0.3.1/xhyve-macos.tar`
+  private static readonly resourceUrls = ResourceUrls.create()
+  protected readonly xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.3.1/xhyve-macos.tar`
 
   private readonly version: string
 
@@ -53,7 +51,7 @@ export abstract class OperatingSystem {
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
     const hostString = host.toString(host.kind)
-    this.resourcesUrl = `${resourceBaseUrl}v0.3.1/resources-${hostString}.tar`
+    this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.3.1/resources-${hostString}.tar`
     this.name = name
     this.version = version
     this.architecture = arch
@@ -83,7 +81,7 @@ export abstract class OperatingSystem {
 
   get virtualMachineImageUrl(): string {
     return [
-      this.baseUrl,
+      OperatingSystem.resourceUrls.baseUrl,
       `${this.name}-builder`,
       'releases',
       'download',

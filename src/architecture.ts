@@ -1,5 +1,5 @@
 import * as host from './host'
-import {resourceBaseUrl} from './operating_system'
+import {ResourceUrls} from './operating_systems/resource_urls'
 import * as vm from './vm'
 
 export enum Kind {
@@ -28,6 +28,7 @@ const hostString = host.toString(host.kind)
 
 const architectures: ReadonlyMap<Kind, Architecture> = (() => {
   const map = new Map<Kind, Architecture>()
+  const resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
 
   map.set(Kind.arm64, {
     kind: Kind.arm64,

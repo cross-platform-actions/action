@@ -433,7 +433,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.toString = exports.toKind = exports.getArchitecture = exports.Kind = void 0;
 const host = __importStar(__webpack_require__(8215));
-const operating_system_1 = __webpack_require__(9385);
+const resource_urls_1 = __webpack_require__(3990);
 const vm = __importStar(__webpack_require__(2772));
 var Kind;
 (function (Kind) {
@@ -450,19 +450,20 @@ exports.getArchitecture = getArchitecture;
 const hostString = host.toString(host.kind);
 const architectures = (() => {
     const map = new Map();
+    const resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
     map.set(Kind.arm64, {
         kind: Kind.arm64,
         cpu: 'cortex-a57',
         machineType: 'virt',
         accelerator: vm.Accelerator.tcg,
-        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.3.1/qemu-system-aarch64-${hostString}.tar`
+        resourceUrl: `${resourceBaseUrl}v0.3.1/qemu-system-aarch64-${hostString}.tar`
     });
     map.set(Kind.x86_64, {
         kind: Kind.x86_64,
         cpu: host.kind === host.Kind.darwin ? 'host' : 'qemu64',
         machineType: 'pc',
         accelerator: host.kind === host.Kind.darwin ? vm.Accelerator.hvf : vm.Accelerator.tcg,
-        resourceUrl: `${operating_system_1.resourceBaseUrl}v0.4.0/qemu-system-x86_64-${hostString}.tar`
+        resourceUrl: `${resourceBaseUrl}v0.4.0/qemu-system-x86_64-${hostString}.tar`
     });
     return map;
 })();
@@ -681,7 +682,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OperatingSystem = exports.toKind = exports.Kind = exports.resourceBaseUrl = void 0;
+exports.OperatingSystem = exports.toKind = exports.Kind = void 0;
 const path = __importStar(__webpack_require__(5622));
 const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
@@ -691,7 +692,7 @@ const qemu = __importStar(__webpack_require__(1106));
 const vmModule = __importStar(__webpack_require__(2772));
 const action = __importStar(__webpack_require__(6072));
 const host = __importStar(__webpack_require__(8215));
-exports.resourceBaseUrl = 'https://github.com/cross-platform-actions/resources/releases/download/';
+const resource_urls_1 = __webpack_require__(3990);
 var Kind;
 (function (Kind) {
     Kind[Kind["freeBsd"] = 0] = "freeBsd";
@@ -711,13 +712,12 @@ function toKind(value) {
 exports.toKind = toKind;
 class OperatingSystem {
     constructor(name, arch, version) {
-        this.baseUrl = 'https://github.com/cross-platform-actions';
-        this.xhyveHypervisorUrl = `${exports.resourceBaseUrl}v0.3.1/xhyve-macos.tar`;
+        this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.3.1/xhyve-macos.tar`;
         this.xhyveEfiFirmware = 'uefi.fd';
         this.qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`;
         this.qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`;
         const hostString = host.toString(host.kind);
-        this.resourcesUrl = `${exports.resourceBaseUrl}v0.3.1/resources-${hostString}.tar`;
+        this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.3.1/resources-${hostString}.tar`;
         this.name = name;
         this.version = version;
         this.architecture = arch;
@@ -735,7 +735,7 @@ class OperatingSystem {
     }
     get virtualMachineImageUrl() {
         return [
-            this.baseUrl,
+            OperatingSystem.resourceUrls.baseUrl,
             `${this.name}-builder`,
             'releases',
             'download',
@@ -766,6 +766,7 @@ class OperatingSystem {
 }
 exports.OperatingSystem = OperatingSystem;
 OperatingSystem.qemuFirmwareDirectory = 'share/qemu';
+OperatingSystem.resourceUrls = resource_urls_1.ResourceUrls.create();
 class Qemu extends OperatingSystem {
     get ssHostPort() {
         return 2847;
@@ -913,6 +914,43 @@ function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
     });
 }
 //# sourceMappingURL=operating_system.js.map
+
+/***/ }),
+
+/***/ 3990:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ResourceUrls = void 0;
+class ResourceUrls {
+    static create() {
+        const cls = this.localResources ? this.Local : this.Remote;
+        return new cls();
+    }
+    get baseUrl() {
+        return `https://${this.domain}/cross-platform-actions`;
+    }
+    get resourceBaseUrl() {
+        return `${this.baseUrl}/resources/releases/download/`;
+    }
+    static get localResources() {
+        return process.env['CPA_LOCAL_RESOURCES'] !== undefined;
+    }
+}
+exports.ResourceUrls = ResourceUrls;
+ResourceUrls.Local = class extends ResourceUrls {
+    get domain() {
+        return 'localhost';
+    }
+};
+ResourceUrls.Remote = class extends ResourceUrls {
+    get domain() {
+        return 'github.com';
+    }
+};
+//# sourceMappingURL=resource_urls.js.map
 
 /***/ }),
 
