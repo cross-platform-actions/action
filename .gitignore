@@ -99,3 +99,4 @@ __tests__/runner/*
 lib/**/*
 
 test/http/*
+test/workflows/ci.yml
