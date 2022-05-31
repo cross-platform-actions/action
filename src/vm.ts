@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import {ChildProcess, execFile} from 'child_process'
+import {ChildProcess, spawn} from 'child_process'
 
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
@@ -64,17 +64,17 @@ export abstract class Vm {
   async run(): Promise<void> {
     core.info('Booting VM')
     core.debug(this.command.join(' '))
-    this.vmProcess = execFile('sudo', this.command, (error, stdout, stderr) => {
-      if (error) {
-        core.debug(`Stack: ${error.stack ?? 'no stack'}`)
-        core.debug(`Error code: ${(error.code ?? -1).toString()}`)
-        core.debug(`Signal recieved: ${error.signal ?? 'no signal'}`)
-      }
-
-      core.debug(`Stdout: ${stdout}`)
-      core.debug(`Stderr: ${stderr}`)
+    this.vmProcess = spawn('sudo', this.command, {
+      detached: false,
+      stdio: ['ignore', 'inherit', 'inherit']
     })
-    // this.vmProcess = spawn('sudo', this.command, {detached: false})
+
+    if (this.vmProcess.exitCode) {
+      throw Error(
+        `Failed to start VM process, exit code: ${this.vmProcess.exitCode}`
+      )
+    }
+
     this.ipAddress = await this.getIpAddress()
   }
 
