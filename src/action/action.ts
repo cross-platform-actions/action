@@ -195,7 +195,8 @@ export class Action {
       `Port ${this.operatingSystem.ssHostPort}`,
       `IdentityFile ${this.privateSshKey}`,
       'SendEnv CI GITHUB_*',
-      `SendEnv ${this.input.environmentVariables}`
+      `SendEnv ${this.input.environmentVariables}`,
+      'PasswordAuthentication no'
     ].join('\n')
 
     fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`)
