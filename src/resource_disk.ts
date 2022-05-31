@@ -173,8 +173,8 @@ abstract class LinuxDiskFileCreator {
   static for(operatingSystem: OperatingSystem): LinuxDiskFileCreator {
     const implementationClass: Class<LinuxDiskFileCreator> =
       operatingSystem.resolve({
-        freebsd: this.FreeBsd,
-        default: this.Default
+        freebsd: this.FdiskDiskFileCreator,
+        default: this.NoopDiskFileCreator
       })
 
     return new implementationClass()
@@ -187,14 +187,14 @@ abstract class LinuxDiskFileCreator {
 
   protected abstract partition(diskPath: string): Promise<void>
 
-  static readonly FreeBsd = class extends LinuxDiskFileCreator {
+  static readonly FdiskDiskFileCreator = class extends LinuxDiskFileCreator {
     protected override async partition(diskPath: string): Promise<void> {
       const input = Buffer.from('n\np\n1\n\n\nw\n')
       await exec.exec('fdisk', [diskPath], {input})
     }
   }
 
-  static readonly Default = class extends LinuxDiskFileCreator {
+  static readonly NoopDiskFileCreator = class extends LinuxDiskFileCreator {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected override async partition(_diskPath: string): Promise<void> {}
   }
@@ -204,8 +204,8 @@ abstract class LinuxDiskDeviceCreator {
   static for(operatingSystem: OperatingSystem): LinuxDiskDeviceCreator {
     const implementationClass: Class<LinuxDiskDeviceCreator> =
       operatingSystem.resolve({
-        freebsd: this.FreeBsd,
-        default: this.Default
+        freebsd: this.FdiskDiskDeviceCreator,
+        default: this.FullDiskDeviceCreator
       })
 
     return new implementationClass()
@@ -232,7 +232,7 @@ abstract class LinuxDiskDeviceCreator {
   protected abstract get offset(): string
   protected abstract get sizeLimit(): string
 
-  static readonly FreeBsd = class extends LinuxDiskDeviceCreator {
+  static readonly FdiskDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
     // the offset and size limit are retrieved by running:
     // `sfdisk -d ${diskPath}` and multiply the start and size by 512.
     // https://checkmk.com/linux-knowledge/mounting-partition-loop-device
@@ -246,7 +246,7 @@ abstract class LinuxDiskDeviceCreator {
     }
   }
 
-  static readonly Default = class extends LinuxDiskDeviceCreator {
+  static readonly FullDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
     protected override get offset(): string {
       return '0'
     }
