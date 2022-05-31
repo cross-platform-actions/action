@@ -113,7 +113,7 @@ they can run.
 
 | Runner            | OpenBSD | FreeBSD | NetBSD |
 | ----------------- | ------- | ------- | ------ |
-| **Linux**         | ✗       | ✓       | ✓      |
+| **Linux**         | ✓       | ✓       | ✓      |
 | **macos-10.15**   | ✓       | ✓       | ✗      |
 
 ## Under the Hood

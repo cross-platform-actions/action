@@ -41,7 +41,7 @@ export abstract class OperatingSystem {
   readonly architecture: architecture.Architecture
 
   private static readonly resourceUrls = ResourceUrls.create()
-  protected readonly xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.3.1/xhyve-macos.tar`
+  protected readonly xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.5.0/xhyve-macos.tar`
 
   private readonly version: string
 
@@ -51,7 +51,7 @@ export abstract class OperatingSystem {
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
     const hostString = host.toString(host.kind)
-    this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.3.1/resources-${hostString}.tar`
+    this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.5.0/resources-${hostString}.tar`
     this.name = name
     this.version = version
     this.architecture = arch
@@ -342,7 +342,7 @@ class OpenBsd extends OperatingSystem {
   }
 
   get virtualMachineImageReleaseVersion(): string {
-    return 'v0.2.0'
+    return 'v0.2.1'
   }
 
   createVirtualMachine(

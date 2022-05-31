@@ -27,11 +27,12 @@ export abstract class Vm extends vm.Vm {
       '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
       '-m', this.configuration.memory,
 
-      '-device', 'virtio-net,netdev=user.0',
+      '-device', `${this.netDevive},netdev=user.0`,
       '-netdev', `user,id=user.0,hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
 
       '-display', 'none',
       '-monitor', 'none',
+      // '-nographic',
 
       '-boot', 'strict=off',
       /* eslint-disable @typescript-eslint/no-non-null-assertion */
@@ -53,6 +54,10 @@ export abstract class Vm extends vm.Vm {
       '-device', 'scsi-hd,drive=drive1,bootindex=1',
       '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
     ]
+  }
+
+  protected get netDevive(): string {
+    return 'virtio-net'
   }
 }
 
@@ -86,6 +91,10 @@ export class NetBsd extends Vm {
 export class OpenBsd extends Vm {
   protected get hardDriverFlags(): string[] {
     return this.defaultHardDriveFlags
+  }
+
+  protected override get netDevive(): string {
+    return 'e1000'
   }
 
   protected override async shutdown(): Promise<void> {

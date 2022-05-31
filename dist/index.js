@@ -176,7 +176,8 @@ class Action {
             `Port ${this.operatingSystem.ssHostPort}`,
             `IdentityFile ${this.privateSshKey}`,
             'SendEnv CI GITHUB_*',
-            `SendEnv ${this.input.environmentVariables}`
+            `SendEnv ${this.input.environmentVariables}`,
+            'PasswordAuthentication no'
         ].join('\n');
         fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`);
         this.implementation.configSSH();
@@ -463,7 +464,7 @@ const architectures = (() => {
         cpu: host.kind === host.Kind.darwin ? 'host' : 'qemu64',
         machineType: 'pc',
         accelerator: host.kind === host.Kind.darwin ? vm.Accelerator.hvf : vm.Accelerator.tcg,
-        resourceUrl: `${resourceBaseUrl}v0.4.0/qemu-system-x86_64-${hostString}.tar`
+        resourceUrl: `${resourceBaseUrl}v0.5.0/qemu-system-x86_64-${hostString}.tar`
     });
     return map;
 })();
@@ -712,12 +713,12 @@ function toKind(value) {
 exports.toKind = toKind;
 class OperatingSystem {
     constructor(name, arch, version) {
-        this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.3.1/xhyve-macos.tar`;
+        this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.5.0/xhyve-macos.tar`;
         this.xhyveEfiFirmware = 'uefi.fd';
         this.qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`;
         this.qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`;
         const hostString = host.toString(host.kind);
-        this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.3.1/resources-${hostString}.tar`;
+        this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.5.0/resources-${hostString}.tar`;
         this.name = name;
         this.version = version;
         this.architecture = arch;
@@ -879,7 +880,7 @@ class OpenBsd extends OperatingSystem {
         });
     }
     get virtualMachineImageReleaseVersion() {
-        return 'v0.2.0';
+        return 'v0.2.1';
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
@@ -925,31 +926,25 @@ function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ResourceUrls = void 0;
 class ResourceUrls {
+    constructor(domain) {
+        this.domain = domain;
+    }
     static create() {
-        const cls = this.localResources ? this.Local : this.Remote;
-        return new cls();
+        const domain = this.resourceUrl || this.defaultDomain;
+        return new ResourceUrls(domain);
     }
     get baseUrl() {
-        return `https://${this.domain}/cross-platform-actions`;
+        return `${this.domain}/cross-platform-actions`;
     }
     get resourceBaseUrl() {
         return `${this.baseUrl}/resources/releases/download/`;
     }
-    static get localResources() {
-        return process.env['CPA_LOCAL_RESOURCES'] !== undefined;
+    static get resourceUrl() {
+        return process.env['CPA_RESOURCE_URL'];
     }
 }
 exports.ResourceUrls = ResourceUrls;
-ResourceUrls.Local = class extends ResourceUrls {
-    get domain() {
-        return 'localhost';
-    }
-};
-ResourceUrls.Remote = class extends ResourceUrls {
-    get domain() {
-        return 'github.com';
-    }
-};
+ResourceUrls.defaultDomain = 'https://github.com';
 //# sourceMappingURL=resource_urls.js.map
 
 /***/ }),
@@ -1008,10 +1003,11 @@ class Vm extends vm.Vm {
             '-cpu', this.configuration.cpu,
             '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
             '-m', this.configuration.memory,
-            '-device', 'virtio-net,netdev=user.0',
+            '-device', `${this.netDevive},netdev=user.0`,
             '-netdev', `user,id=user.0,hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
             '-display', 'none',
             '-monitor', 'none',
+            // '-nographic',
             '-boot', 'strict=off',
             /* eslint-disable @typescript-eslint/no-non-null-assertion */
             '-bios', this.configuration.firmware.toString()
@@ -1027,6 +1023,9 @@ class Vm extends vm.Vm {
             '-device', 'scsi-hd,drive=drive1,bootindex=1',
             '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
         ];
+    }
+    get netDevive() {
+        return 'virtio-net';
     }
 }
 exports.Vm = Vm;
@@ -1062,6 +1061,9 @@ exports.NetBsd = NetBsd;
 class OpenBsd extends Vm {
     get hardDriverFlags() {
         return this.defaultHardDriveFlags;
+    }
+    get netDevive() {
+        return 'e1000';
     }
     shutdown() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1247,8 +1249,8 @@ class Linux extends ResourceDisk {
 class LinuxDiskFileCreator {
     static for(operatingSystem) {
         const implementationClass = operatingSystem.resolve({
-            freebsd: this.FreeBsd,
-            default: this.Default
+            freebsd: this.FdiskDiskFileCreator,
+            default: this.NoopDiskFileCreator
         });
         return new implementationClass();
     }
@@ -1259,7 +1261,7 @@ class LinuxDiskFileCreator {
         });
     }
 }
-LinuxDiskFileCreator.FreeBsd = class extends LinuxDiskFileCreator {
+LinuxDiskFileCreator.FdiskDiskFileCreator = class extends LinuxDiskFileCreator {
     partition(diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
             const input = Buffer.from('n\np\n1\n\n\nw\n');
@@ -1267,7 +1269,7 @@ LinuxDiskFileCreator.FreeBsd = class extends LinuxDiskFileCreator {
         });
     }
 };
-LinuxDiskFileCreator.Default = class extends LinuxDiskFileCreator {
+LinuxDiskFileCreator.NoopDiskFileCreator = class extends LinuxDiskFileCreator {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     partition(_diskPath) {
         return __awaiter(this, void 0, void 0, function* () { });
@@ -1276,8 +1278,8 @@ LinuxDiskFileCreator.Default = class extends LinuxDiskFileCreator {
 class LinuxDiskDeviceCreator {
     static for(operatingSystem) {
         const implementationClass = operatingSystem.resolve({
-            freebsd: this.FreeBsd,
-            default: this.Default
+            freebsd: this.FdiskDiskDeviceCreator,
+            default: this.FullDiskDeviceCreator
         });
         return new implementationClass();
     }
@@ -1296,7 +1298,7 @@ class LinuxDiskDeviceCreator {
         });
     }
 }
-LinuxDiskDeviceCreator.FreeBsd = class extends LinuxDiskDeviceCreator {
+LinuxDiskDeviceCreator.FdiskDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
     // the offset and size limit are retrieved by running:
     // `sfdisk -d ${diskPath}` and multiply the start and size by 512.
     // https://checkmk.com/linux-knowledge/mounting-partition-loop-device
@@ -1307,7 +1309,7 @@ LinuxDiskDeviceCreator.FreeBsd = class extends LinuxDiskDeviceCreator {
         return '40894464';
     }
 };
-LinuxDiskDeviceCreator.Default = class extends LinuxDiskDeviceCreator {
+LinuxDiskDeviceCreator.FullDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
     get offset() {
         return '0';
     }
@@ -1436,17 +1438,13 @@ class Vm {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Booting VM');
             core.debug(this.command.join(' '));
-            this.vmProcess = (0, child_process_1.execFile)('sudo', this.command, (error, stdout, stderr) => {
-                var _a, _b, _c;
-                if (error) {
-                    core.debug(`Stack: ${(_a = error.stack) !== null && _a !== void 0 ? _a : 'no stack'}`);
-                    core.debug(`Error code: ${((_b = error.code) !== null && _b !== void 0 ? _b : -1).toString()}`);
-                    core.debug(`Signal recieved: ${(_c = error.signal) !== null && _c !== void 0 ? _c : 'no signal'}`);
-                }
-                core.debug(`Stdout: ${stdout}`);
-                core.debug(`Stderr: ${stderr}`);
+            this.vmProcess = (0, child_process_1.spawn)('sudo', this.command, {
+                detached: false,
+                stdio: ['ignore', 'inherit', 'inherit']
             });
-            // this.vmProcess = spawn('sudo', this.command, {detached: false})
+            if (this.vmProcess.exitCode) {
+                throw Error(`Failed to start VM process, exit code: ${this.vmProcess.exitCode}`);
+            }
             this.ipAddress = yield this.getIpAddress();
         });
     }
