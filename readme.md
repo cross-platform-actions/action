@@ -166,6 +166,89 @@ fast as possible. This is achieved in a couple of ways:
 - It performs as much as possible of the setup ahead of time when the VM image
   is provisioned
 
+## Local Development
+
+### Prerequisites
+
+* [NodeJS](https://nodejs.org)
+* [npm](https://github.com/npm/cli)
+* [git](https://git-scm.com)
+
+### Instructions
+
+1. Install the above prerequisites
+1. Clone the repository by running:
+
+    ```
+    git clone https://github.com/cross-platform-actions/action
+    ```
+
+1. Navigate to the newly cloned repository: `cd action`
+1. Install the dependencies by running: `npm install`
+1. Run any of the below npm commands
+
+### npm Commands
+
+The following npm commands are available:
+
+* `build` - Build the GitHub action
+* `format` - Reformat the code
+* `lint` - Lint the code
+* `package` - Package the GitHub action for distribution and end to end testing
+* `test` - Run unit tests
+* `all` - Will run all of the above commands
+
+### Running End to End Tests
+
+The end to end tests can be run locally by running it through [Act][act]. By
+default, resources and VM images will be downloaded from github.com. By running
+a local HTTP server it's possible to point the GitHub action to local resources.
+
+#### Prerequisites
+
+* [Docker](https://docker.com)
+* [Act][act]
+
+#### Instructions
+
+1. Install the above prerequisites
+1. Copy [`test/workflows/ci.yml.example`](test/workflows/ci.yml.example) to
+    `test/workflows/ci.yml`
+
+1. Make any changes you like to `test/workflows/ci.yml`, this is file ignored by
+    Git
+
+1. Build the GitHub action by running: `npm run build`
+1. Package the GitHub action by running: `npm run package`
+1. Run the GitHub action by running: `act --privileged -W test/workflows`
+
+#### Providing Resources Locally
+
+The GitHub action includes a development dependency on a HTTP server. The
+[`test/http`](test/http) directory contains a skeleton of a directory structure
+which matches the URLs that the GitHub action uses to download resources. All
+files within the [`test/http`](test/http) are ignore by Git.
+
+1. Add resources as necessary to the [`test/http`](test/http) directory
+1. In one shell, run the following command to start the HTTP server:
+
+    ```
+    ./node_modules/http-server/bin/http-server test/http -a 127.0.0.1
+    ```
+
+    The `-a` flag configures the HTTP server to only listen for incoming
+    connections from localhost, no external computers will be able to connect.
+
+1. In another shell, run the GitHub action by running:
+
+    ```
+    act --privileged -W test/workflows --env CPA_RESOURCE_URL=<url>
+    ```
+
+    Where `<url>` is the URL inside Docker that points to localhost of the host
+    machine, for macOS, this is `http://host.docker.internal:8080`. By default,
+    the HTTP server is listening on port `8080`.
+
 [xhyve]: https://github.com/machyve/xhyve
 [qemu]: https://www.qemu.org
 [hypervisor_framework]: https://developer.apple.com/library/mac/documentation/DriversKernelHardware/Reference/Hypervisor/index.html
@@ -175,3 +258,4 @@ fast as possible. This is achieved in a couple of ways:
 [openbsd_builder]: https://github.com/cross-platform-actions/openbsd-builder
 [freebsd_builder]: https://github.com/cross-platform-actions/freebsd-builder
 [netbsd_builder]: https://github.com/cross-platform-actions/netbsd-builder
+[act]: https://github.com/nektos/act
