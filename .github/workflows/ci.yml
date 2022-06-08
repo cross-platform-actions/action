@@ -85,6 +85,20 @@ jobs:
             uname:
               hardware: amd64
 
+          - name: OpenBSD
+            version: '7.1'
+            host: macos-10.15
+            workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+
+          - name: OpenBSD
+            version: '7.1'
+            host: ubuntu-latest
+            workDirectory: /home/runner/work/action/action
+            uname:
+              hardware: amd64
+
           - name: NetBSD
             version: '9.2'
             host: ubuntu-latest

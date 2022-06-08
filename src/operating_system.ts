@@ -342,7 +342,7 @@ class OpenBsd extends OperatingSystem {
   }
 
   get virtualMachineImageReleaseVersion(): string {
-    return 'v0.2.1'
+    return 'v0.3.0'
   }
 
   createVirtualMachine(

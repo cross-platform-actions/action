@@ -880,7 +880,7 @@ class OpenBsd extends OperatingSystem {
         });
     }
     get virtualMachineImageReleaseVersion() {
-        return 'v0.2.1';
+        return 'v0.3.0';
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');

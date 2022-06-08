@@ -90,6 +90,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 |
 | ------- | ------ |
+| 7.1     | ✓      |
 | 6.9     | ✓      |
 | 6.8     | ✓      |
 
