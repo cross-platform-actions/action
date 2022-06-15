@@ -1,3 +1,5 @@
+import version from '../version'
+
 export class ResourceUrls {
   static create(): ResourceUrls {
     const domain = this.resourceUrl || this.defaultDomain
@@ -16,7 +18,7 @@ export class ResourceUrls {
   }
 
   get resourceBaseUrl(): string {
-    return `${this.baseUrl}/resources/releases/download/`
+    return `${this.baseUrl}/resources/releases/download/${version.resources}`
   }
 
   private static get resourceUrl(): string | undefined {

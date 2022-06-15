@@ -457,14 +457,14 @@ const architectures = (() => {
         cpu: 'cortex-a57',
         machineType: 'virt',
         accelerator: vm.Accelerator.tcg,
-        resourceUrl: `${resourceBaseUrl}v0.3.1/qemu-system-aarch64-${hostString}.tar`
+        resourceUrl: `${resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`
     });
     map.set(Kind.x86_64, {
         kind: Kind.x86_64,
         cpu: host.kind === host.Kind.darwin ? 'host' : 'qemu64',
         machineType: 'pc',
         accelerator: host.kind === host.Kind.darwin ? vm.Accelerator.hvf : vm.Accelerator.tcg,
-        resourceUrl: `${resourceBaseUrl}v0.5.0/qemu-system-x86_64-${hostString}.tar`
+        resourceUrl: `${resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`
     });
     return map;
 })();
@@ -682,6 +682,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OperatingSystem = exports.toKind = exports.Kind = void 0;
 const path = __importStar(__webpack_require__(5622));
@@ -694,6 +697,7 @@ const vmModule = __importStar(__webpack_require__(2772));
 const action = __importStar(__webpack_require__(6072));
 const host = __importStar(__webpack_require__(8215));
 const resource_urls_1 = __webpack_require__(3990);
+const version_1 = __importDefault(__webpack_require__(8217));
 var Kind;
 (function (Kind) {
     Kind[Kind["freeBsd"] = 0] = "freeBsd";
@@ -713,12 +717,12 @@ function toKind(value) {
 exports.toKind = toKind;
 class OperatingSystem {
     constructor(name, arch, version) {
-        this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.5.0/xhyve-macos.tar`;
+        this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`;
         this.xhyveEfiFirmware = 'uefi.fd';
         this.qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`;
         this.qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`;
         const hostString = host.toString(host.kind);
-        this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.5.0/resources-${hostString}.tar`;
+        this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`;
         this.name = name;
         this.version = version;
         this.architecture = arch;
@@ -801,7 +805,7 @@ class FreeBsd extends OperatingSystem {
         });
     }
     get virtualMachineImageReleaseVersion() {
-        return 'v0.2.0';
+        return version_1.default.operating_system.freebsd;
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
@@ -828,7 +832,7 @@ class NetBsd extends Qemu {
         return this.architecture.resourceUrl;
     }
     get virtualMachineImageReleaseVersion() {
-        return 'v0.0.1';
+        return version_1.default.operating_system.netbsd;
     }
     get actionImplementationKind() {
         return action.ImplementationKind.qemu;
@@ -880,7 +884,7 @@ class OpenBsd extends OperatingSystem {
         });
     }
     get virtualMachineImageReleaseVersion() {
-        return 'v0.3.0';
+        return version_1.default.operating_system.openbsd;
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
@@ -919,12 +923,16 @@ function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
 /***/ }),
 
 /***/ 3990:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ResourceUrls = void 0;
+const version_1 = __importDefault(__webpack_require__(8217));
 class ResourceUrls {
     constructor(domain) {
         this.domain = domain;
@@ -937,7 +945,7 @@ class ResourceUrls {
         return `${this.domain}/cross-platform-actions`;
     }
     get resourceBaseUrl() {
-        return `${this.baseUrl}/resources/releases/download/`;
+        return `${this.baseUrl}/resources/releases/download/${version_1.default.resources}`;
     }
     static get resourceUrl() {
         return process.env['CPA_RESOURCE_URL'];
@@ -1374,6 +1382,25 @@ function execWithOutput(commandLine, args, options = {}) {
 }
 exports.execWithOutput = execWithOutput;
 //# sourceMappingURL=utility.js.map
+
+/***/ }),
+
+/***/ 8217:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const version = {
+    operating_system: {
+        freebsd: 'v0.2.0',
+        netbsd: 'v0.0.1',
+        openbsd: 'v0.3.0'
+    },
+    resources: 'v0.5.0'
+};
+exports.default = version;
+//# sourceMappingURL=version.js.map
 
 /***/ }),
 

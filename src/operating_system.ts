@@ -12,6 +12,7 @@ import * as action from './action/action'
 import * as host from './host'
 import {Class} from './utility'
 import {ResourceUrls} from './operating_systems/resource_urls'
+import versions from './version'
 
 export enum Kind {
   freeBsd,
@@ -41,7 +42,7 @@ export abstract class OperatingSystem {
   readonly architecture: architecture.Architecture
 
   private static readonly resourceUrls = ResourceUrls.create()
-  protected readonly xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.5.0/xhyve-macos.tar`
+  protected readonly xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`
 
   private readonly version: string
 
@@ -51,7 +52,7 @@ export abstract class OperatingSystem {
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
     const hostString = host.toString(host.kind)
-    this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}v0.5.0/resources-${hostString}.tar`
+    this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`
     this.name = name
     this.version = version
     this.architecture = arch
@@ -198,7 +199,7 @@ class FreeBsd extends OperatingSystem {
   }
 
   get virtualMachineImageReleaseVersion(): string {
-    return 'v0.2.0'
+    return versions.operating_system.freebsd
   }
 
   createVirtualMachine(
@@ -256,7 +257,7 @@ class NetBsd extends Qemu {
   }
 
   get virtualMachineImageReleaseVersion(): string {
-    return 'v0.0.1'
+    return versions.operating_system.netbsd
   }
 
   get actionImplementationKind(): action.ImplementationKind {
@@ -342,7 +343,7 @@ class OpenBsd extends OperatingSystem {
   }
 
   get virtualMachineImageReleaseVersion(): string {
-    return 'v0.3.0'
+    return versions.operating_system.openbsd
   }
 
   createVirtualMachine(
