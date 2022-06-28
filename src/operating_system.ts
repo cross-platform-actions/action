@@ -13,6 +13,7 @@ import * as host from './host'
 import {Class} from './utility'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import versions from './version'
+import {getOrDefaultOrThrow} from './utility'
 
 export enum Kind {
   freeBsd,
@@ -91,16 +92,9 @@ export abstract class OperatingSystem {
     ].join('/')
   }
 
-  resolve<
-    Default extends Base,
-    FreeBsd extends Base,
-    OpenBsd extends Base,
-    NetBsd extends Base,
-    Base
-  >(
-    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
-  ): Class<Base> {
-    return this.resolveImplementation(implementation) ?? implementation.default
+  resolve<Base>(implementation: Record<string, Class<Base>>): Class<Base> {
+    const name = this.constructor.name.toLocaleLowerCase()
+    return getOrDefaultOrThrow(implementation, name)
   }
 
   abstract createVirtualMachine(
@@ -133,34 +127,11 @@ export abstract class OperatingSystem {
     }
   }
 
-  protected abstract resolveImplementation<
-    Default extends Base,
-    FreeBsd extends Base,
-    OpenBsd extends Base,
-    NetBsd extends Base,
-    Base
-  >(
-    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
-  ): Class<Base> | undefined
-
   private get imageName(): string {
     const encodedVersion = encodeURIComponent(this.version)
     const archString = architecture.toString(this.architecture.kind)
     return `${this.name}-${encodedVersion}-${archString}.qcow2`
   }
-}
-
-interface Implementation<
-  Default extends Base,
-  FreeBsd extends Base,
-  OpenBsd extends Base,
-  NetBsd extends Base,
-  Base
-> {
-  default: Class<Default>
-  freebsd?: Class<FreeBsd>
-  openbsd?: Class<OpenBsd>
-  netbsd?: Class<NetBsd>
 }
 
 abstract class Qemu extends OperatingSystem {
@@ -233,18 +204,6 @@ class FreeBsd extends OperatingSystem {
       )
     }
   }
-
-  protected override resolveImplementation<
-    Default extends Base,
-    FreeBsd extends Base,
-    OpenBsd extends Base,
-    NetBsd extends Base,
-    Base
-  >(
-    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
-  ): Class<Base> | undefined {
-    return implementation.freebsd
-  }
 }
 
 class NetBsd extends Qemu {
@@ -298,18 +257,6 @@ class NetBsd extends Qemu {
         )}`
       )
     }
-  }
-
-  protected override resolveImplementation<
-    Default extends Base,
-    FreeBsd extends Base,
-    OpenBsd extends Base,
-    NetBsd extends Base,
-    Base
-  >(
-    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
-  ): Class<Base> | undefined {
-    return implementation.netbsd
   }
 }
 
@@ -376,18 +323,6 @@ class OpenBsd extends OperatingSystem {
         )}`
       )
     }
-  }
-
-  protected override resolveImplementation<
-    Default extends Base,
-    FreeBsd extends Base,
-    OpenBsd extends Base,
-    NetBsd extends Base,
-    Base
-  >(
-    implementation: Implementation<Default, FreeBsd, OpenBsd, NetBsd, Base>
-  ): Class<Base> | undefined {
-    return implementation.openbsd
   }
 }
 

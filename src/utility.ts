@@ -1,5 +1,7 @@
 import * as exec from '@actions/exec'
 
+export type Class<T> = new () => T
+
 export interface ExecuteOptions {
   log?: boolean
   ignoreReturnCode?: boolean
@@ -27,4 +29,10 @@ export async function execWithOutput(
   return output.toString()
 }
 
-export type Class<T> = new () => T
+export function getOrDefaultOrThrow<V>(record: Record<string, V>, key: string) {
+  const value = record[key] ?? record['default']
+
+  if (value === undefined) throw Error(`Missing key and no default key: ${key}`)
+
+  return value
+}

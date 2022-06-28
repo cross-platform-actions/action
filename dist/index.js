@@ -9,7 +9,11 @@ require('./sourcemap-register.js');module.exports =
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -291,7 +295,11 @@ class QemuImplementation extends Implementation {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -414,7 +422,11 @@ exports.toString = toString;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -497,7 +509,11 @@ const fromString = (() => {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -602,7 +618,11 @@ exports.host = Host.create();
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -656,7 +676,11 @@ main();
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -698,6 +722,7 @@ const action = __importStar(__webpack_require__(6072));
 const host = __importStar(__webpack_require__(8215));
 const resource_urls_1 = __webpack_require__(3990);
 const version_1 = __importDefault(__webpack_require__(8217));
+const utility_1 = __webpack_require__(2857);
 var Kind;
 (function (Kind) {
     Kind[Kind["freeBsd"] = 0] = "freeBsd";
@@ -749,8 +774,8 @@ class OperatingSystem {
         ].join('/');
     }
     resolve(implementation) {
-        var _a;
-        return (_a = this.resolveImplementation(implementation)) !== null && _a !== void 0 ? _a : implementation.default;
+        const name = this.constructor.name.toLocaleLowerCase();
+        return (0, utility_1.getOrDefaultOrThrow)(implementation, name);
     }
     setupWorkDirectory(vm, workDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -820,9 +845,6 @@ class FreeBsd extends OperatingSystem {
             throw Error(`Not implemented: FreeBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
         }
     }
-    resolveImplementation(implementation) {
-        return implementation.freebsd;
-    }
 }
 class NetBsd extends Qemu {
     constructor(arch, version) {
@@ -851,9 +873,6 @@ class NetBsd extends Qemu {
         else {
             throw Error(`Not implemented: NetBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
         }
-    }
-    resolveImplementation(implementation) {
-        return implementation.netbsd;
     }
 }
 class OpenBsd extends OperatingSystem {
@@ -898,9 +917,6 @@ class OpenBsd extends OperatingSystem {
         else {
             throw Error(`Not implemented: OpenBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
         }
-    }
-    resolveImplementation(implementation) {
-        return implementation.openbsd;
     }
 }
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
@@ -964,7 +980,11 @@ ResourceUrls.defaultDomain = 'https://github.com';
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1091,7 +1111,11 @@ exports.OpenBsd = OpenBsd;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1270,7 +1294,7 @@ class LinuxDiskFileCreator {
     }
 }
 LinuxDiskFileCreator.FdiskDiskFileCreator = class extends LinuxDiskFileCreator {
-    partition(diskPath) {
+    /*protected*/ partition(diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
             const input = Buffer.from('n\np\n1\n\n\nw\n');
             yield exec.exec('fdisk', [diskPath], { input });
@@ -1279,7 +1303,7 @@ LinuxDiskFileCreator.FdiskDiskFileCreator = class extends LinuxDiskFileCreator {
 };
 LinuxDiskFileCreator.NoopDiskFileCreator = class extends LinuxDiskFileCreator {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    partition(_diskPath) {
+    /*protected*/ partition(_diskPath) {
         return __awaiter(this, void 0, void 0, function* () { });
     }
 };
@@ -1310,7 +1334,7 @@ LinuxDiskDeviceCreator.FdiskDiskDeviceCreator = class extends LinuxDiskDeviceCre
     // the offset and size limit are retrieved by running:
     // `sfdisk -d ${diskPath}` and multiply the start and size by 512.
     // https://checkmk.com/linux-knowledge/mounting-partition-loop-device
-    get offset() {
+    /*protected*/ get offset() {
         return '1048576';
     }
     get sizeLimit() {
@@ -1318,10 +1342,10 @@ LinuxDiskDeviceCreator.FdiskDiskDeviceCreator = class extends LinuxDiskDeviceCre
     }
 };
 LinuxDiskDeviceCreator.FullDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
-    get offset() {
+    /*protected*/ get offset() {
         return '0';
     }
-    get sizeLimit() {
+    /*protected*/ get sizeLimit() {
         return '0';
     }
 };
@@ -1336,7 +1360,11 @@ LinuxDiskDeviceCreator.FullDiskDeviceCreator = class extends LinuxDiskDeviceCrea
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1363,7 +1391,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.execWithOutput = void 0;
+exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
 const exec = __importStar(__webpack_require__(1514));
 function execWithOutput(commandLine, args, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -1381,6 +1409,14 @@ function execWithOutput(commandLine, args, options = {}) {
     });
 }
 exports.execWithOutput = execWithOutput;
+function getOrDefaultOrThrow(record, key) {
+    var _a;
+    const value = (_a = record[key]) !== null && _a !== void 0 ? _a : record['default'];
+    if (value === undefined)
+        throw Error(`Missing key and no default key: ${key}`);
+    return value;
+}
+exports.getOrDefaultOrThrow = getOrDefaultOrThrow;
 //# sourceMappingURL=utility.js.map
 
 /***/ }),
@@ -1411,7 +1447,11 @@ exports.default = version;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1579,7 +1619,11 @@ exports.wait = wait;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
