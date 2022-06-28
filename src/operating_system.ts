@@ -9,7 +9,7 @@ import * as xhyve from './xhyve_vm'
 import * as qemu from './qemu_vm'
 import * as vmModule from './vm'
 import * as action from './action/action'
-import * as host from './host'
+import {host} from './host'
 import {Class} from './utility'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import versions from './version'
@@ -52,7 +52,7 @@ export abstract class OperatingSystem {
   protected readonly qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
-    const hostString = host.host.toString()
+    const hostString = host.toString()
     this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`
     this.name = name
     this.version = version
@@ -146,12 +146,12 @@ class FreeBsd extends OperatingSystem {
   }
 
   get hypervisorUrl(): string {
-    if (host.host.canRunXhyve(this.architecture)) return this.xhyveHypervisorUrl
+    if (host.canRunXhyve(this.architecture)) return this.xhyveHypervisorUrl
     else return this.architecture.resourceUrl
   }
 
   get ssHostPort(): number {
-    if (host.host.canRunXhyve(this.architecture)) return xhyve.Vm.sshPort
+    if (host.canRunXhyve(this.architecture)) return xhyve.Vm.sshPort
     else return qemu.Vm.sshPort
   }
 
@@ -182,7 +182,7 @@ class FreeBsd extends OperatingSystem {
     core.debug('Creating FreeBSD VM')
 
     if (this.architecture.kind === architecture.Kind.x86_64) {
-      const firmwareFile = host.host.canRunXhyve(this.architecture)
+      const firmwareFile = host.canRunXhyve(this.architecture)
         ? this.xhyveEfiFirmware
         : this.qemuBiosFirmware
 
@@ -191,7 +191,7 @@ class FreeBsd extends OperatingSystem {
         firmwareFile
       )
 
-      return new host.host.vmModule.FreeBsd(
+      return new host.vmModule.FreeBsd(
         hypervisorDirectory,
         resourcesDirectory,
         configuration
@@ -266,12 +266,12 @@ class OpenBsd extends OperatingSystem {
   }
 
   get hypervisorUrl(): string {
-    if (host.host.canRunXhyve(this.architecture)) return this.xhyveHypervisorUrl
+    if (host.canRunXhyve(this.architecture)) return this.xhyveHypervisorUrl
     else return this.architecture.resourceUrl
   }
 
   get ssHostPort(): number {
-    if (host.host.canRunXhyve(this.architecture)) return xhyve.Vm.sshPort
+    if (host.canRunXhyve(this.architecture)) return xhyve.Vm.sshPort
     else return qemu.Vm.sshPort
   }
 
@@ -302,7 +302,7 @@ class OpenBsd extends OperatingSystem {
     core.debug('Creating OpenBSD VM')
 
     if (this.architecture.kind === architecture.Kind.x86_64) {
-      const firmwareFile = host.host.canRunXhyve(this.architecture)
+      const firmwareFile = host.canRunXhyve(this.architecture)
         ? this.xhyveEfiFirmware
         : this.qemuEfiFirmware
 
@@ -311,7 +311,7 @@ class OpenBsd extends OperatingSystem {
         firmwareFile
       )
 
-      return new host.host.vmModule.OpenBsd(
+      return new host.vmModule.OpenBsd(
         hypervisorDirectory,
         resourcesDirectory,
         configuration
