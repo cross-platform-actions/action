@@ -52,7 +52,7 @@ export abstract class OperatingSystem {
   protected readonly qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
-    const hostString = host.toString(host.kind)
+    const hostString = host.host.toString()
     this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`
     this.name = name
     this.version = version

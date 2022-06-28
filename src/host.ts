@@ -22,17 +22,6 @@ function toKind(value: string): Kind {
   }
 }
 
-export function toString(value: Kind): string {
-  switch (value) {
-    case Kind.darwin:
-      return 'macos'
-    case Kind.linux:
-      return 'linux'
-    default:
-      throw Error(`Unhandled host platform: ${value}`)
-  }
-}
-
 interface Implementation<MacOsType, LinuxType> {
   macos: MacOsType
   linux: LinuxType
@@ -57,6 +46,8 @@ export abstract class Host {
   ): MacOsType | LinuxType
 
   abstract canRunXhyve(arch: architecture.Architecture): boolean
+
+  toString = () => this.constructor.name.toLocaleLowerCase()
 }
 
 class MacOs extends Host {

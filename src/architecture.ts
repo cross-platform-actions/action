@@ -24,7 +24,7 @@ export function getArchitecture(kind: Kind): Architecture {
   return arch
 }
 
-const hostString = host.toString(host.kind)
+const hostString = host.host.toString()
 
 const architectures: ReadonlyMap<Kind, Architecture> = (() => {
   const map = new Map<Kind, Architecture>()
