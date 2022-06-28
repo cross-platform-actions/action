@@ -7,6 +7,67 @@ export enum Kind {
   x86_64
 }
 
+export abstract class Architecture2 {
+  readonly kind: Kind
+  protected readonly resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
+
+  constructor(kind: Kind) {
+    this.kind = kind
+  }
+
+  static for(kind: Kind): Architecture2 {
+    switch (kind) {
+      case Kind.arm64:
+        return new this.Arm64(kind)
+      case Kind.x86_64:
+        return new this.X86_64(kind)
+    }
+  }
+
+  abstract get resourceUrl(): string
+  abstract get cpu(): string
+  abstract get machineType(): string
+  abstract get accelerator(): vm.Accelerator
+
+  private static readonly Arm64 = class extends Architecture2 {
+    override get resourceUrl(): string {
+      return `${this.resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`
+    }
+
+    override get cpu(): string {
+      return 'cortex-a57'
+    }
+
+    override get machineType(): string {
+      return 'virt'
+    }
+
+    override get accelerator(): vm.Accelerator {
+      return vm.Accelerator.tcg
+    }
+  }
+
+  private static readonly X86_64 = class extends Architecture2 {
+    override get resourceUrl(): string {
+      return `${this.resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`
+    }
+
+    override get cpu(): string {
+      return host.kind === host.Kind.darwin ? 'host' : 'qemu64'
+    }
+
+    override get machineType(): string {
+      return 'pc'
+    }
+
+    override get accelerator(): vm.Accelerator {
+      return host.kind === host.Kind.darwin
+        ? vm.Accelerator.hvf
+        : vm.Accelerator.tcg
+    }
+  }
+}
+
 export interface Architecture {
   readonly kind: Kind
   readonly resourceUrl: string

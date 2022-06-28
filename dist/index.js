@@ -444,7 +444,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toString = exports.toKind = exports.getArchitecture = exports.Kind = void 0;
+exports.toString = exports.toKind = exports.getArchitecture = exports.Architecture2 = exports.Kind = void 0;
 const host = __importStar(__webpack_require__(8215));
 const resource_urls_1 = __webpack_require__(3990);
 const vm = __importStar(__webpack_require__(2772));
@@ -453,6 +453,51 @@ var Kind;
     Kind[Kind["arm64"] = 0] = "arm64";
     Kind[Kind["x86_64"] = 1] = "x86_64";
 })(Kind = exports.Kind || (exports.Kind = {}));
+class Architecture2 {
+    constructor(kind) {
+        this.resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
+        this.kind = kind;
+    }
+    static for(kind) {
+        switch (kind) {
+            case Kind.arm64:
+                return new this.Arm64(kind);
+            case Kind.x86_64:
+                return new this.X86_64(kind);
+        }
+    }
+}
+exports.Architecture2 = Architecture2;
+Architecture2.Arm64 = class extends Architecture2 {
+    get resourceUrl() {
+        return `${this.resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`;
+    }
+    get cpu() {
+        return 'cortex-a57';
+    }
+    get machineType() {
+        return 'virt';
+    }
+    get accelerator() {
+        return vm.Accelerator.tcg;
+    }
+};
+Architecture2.X86_64 = class extends Architecture2 {
+    get resourceUrl() {
+        return `${this.resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`;
+    }
+    get cpu() {
+        return host.kind === host.Kind.darwin ? 'host' : 'qemu64';
+    }
+    get machineType() {
+        return 'pc';
+    }
+    get accelerator() {
+        return host.kind === host.Kind.darwin
+            ? vm.Accelerator.hvf
+            : vm.Accelerator.tcg;
+    }
+};
 function getArchitecture(kind) {
     const arch = architectures.get(kind);
     if (arch === undefined)
@@ -460,7 +505,7 @@ function getArchitecture(kind) {
     return arch;
 }
 exports.getArchitecture = getArchitecture;
-const hostString = host.toString(host.kind);
+const hostString = host.host.toString();
 const architectures = (() => {
     const map = new Map();
     const resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
@@ -531,7 +576,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.host = exports.Host = exports.toString = exports.kind = exports.Kind = void 0;
+exports.host = exports.Host = exports.kind = exports.Kind = void 0;
 const process = __importStar(__webpack_require__(1765));
 const architecture = __importStar(__webpack_require__(4019));
 const qemu = __importStar(__webpack_require__(1106));
@@ -552,18 +597,10 @@ function toKind(value) {
             throw Error(`Unhandled host platform: ${value}`);
     }
 }
-function toString(value) {
-    switch (value) {
-        case Kind.darwin:
-            return 'macos';
-        case Kind.linux:
-            return 'linux';
-        default:
-            throw Error(`Unhandled host platform: ${value}`);
-    }
-}
-exports.toString = toString;
 class Host {
+    constructor() {
+        this.toString = () => this.constructor.name.toLocaleLowerCase();
+    }
     static create() {
         switch (exports.kind) {
             case Kind.darwin:
@@ -719,7 +756,7 @@ const xhyve = __importStar(__webpack_require__(2722));
 const qemu = __importStar(__webpack_require__(1106));
 const vmModule = __importStar(__webpack_require__(2772));
 const action = __importStar(__webpack_require__(6072));
-const host = __importStar(__webpack_require__(8215));
+const host_1 = __webpack_require__(8215);
 const resource_urls_1 = __webpack_require__(3990);
 const version_1 = __importDefault(__webpack_require__(8217));
 const utility_1 = __webpack_require__(2857);
@@ -746,7 +783,7 @@ class OperatingSystem {
         this.xhyveEfiFirmware = 'uefi.fd';
         this.qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`;
         this.qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`;
-        const hostString = host.toString(host.kind);
+        const hostString = host_1.host.toString();
         this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`;
         this.name = name;
         this.version = version;
@@ -807,13 +844,13 @@ class FreeBsd extends OperatingSystem {
         super('freebsd', arch, version);
     }
     get hypervisorUrl() {
-        if (host.host.canRunXhyve(this.architecture))
+        if (host_1.host.canRunXhyve(this.architecture))
             return this.xhyveHypervisorUrl;
         else
             return this.architecture.resourceUrl;
     }
     get ssHostPort() {
-        if (host.host.canRunXhyve(this.architecture))
+        if (host_1.host.canRunXhyve(this.architecture))
             return xhyve.Vm.sshPort;
         else
             return qemu.Vm.sshPort;
@@ -835,11 +872,11 @@ class FreeBsd extends OperatingSystem {
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
-            const firmwareFile = host.host.canRunXhyve(this.architecture)
+            const firmwareFile = host_1.host.canRunXhyve(this.architecture)
                 ? this.xhyveEfiFirmware
                 : this.qemuBiosFirmware;
             configuration.firmware = path.join(firmwareDirectory.toString(), firmwareFile);
-            return new host.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, configuration);
+            return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
             throw Error(`Not implemented: FreeBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
@@ -880,13 +917,13 @@ class OpenBsd extends OperatingSystem {
         super('openbsd', arch, version);
     }
     get hypervisorUrl() {
-        if (host.host.canRunXhyve(this.architecture))
+        if (host_1.host.canRunXhyve(this.architecture))
             return this.xhyveHypervisorUrl;
         else
             return this.architecture.resourceUrl;
     }
     get ssHostPort() {
-        if (host.host.canRunXhyve(this.architecture))
+        if (host_1.host.canRunXhyve(this.architecture))
             return xhyve.Vm.sshPort;
         else
             return qemu.Vm.sshPort;
@@ -908,11 +945,11 @@ class OpenBsd extends OperatingSystem {
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
-            const firmwareFile = host.host.canRunXhyve(this.architecture)
+            const firmwareFile = host_1.host.canRunXhyve(this.architecture)
                 ? this.xhyveEfiFirmware
                 : this.qemuEfiFirmware;
             configuration.firmware = path.join(firmwareDirectory.toString(), firmwareFile);
-            return new host.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
+            return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
             throw Error(`Not implemented: OpenBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
