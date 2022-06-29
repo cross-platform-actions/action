@@ -39,10 +39,11 @@ export class Action {
   constructor() {
     this.host = hostModule.Host.create()
     this.tempPath = fs.mkdtempSync('/tmp/resources')
+    const arch = architecture.Architecture.for(architecture.Kind.x86_64)
 
     this.operatingSystem = os.OperatingSystem.create(
       this.input.operatingSystem,
-      architecture.Kind.x86_64,
+      arch,
       this.input.version
     )
 

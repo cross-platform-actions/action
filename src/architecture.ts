@@ -1,5 +1,6 @@
 import * as host from './host'
 import {ResourceUrls} from './operating_systems/resource_urls'
+import {getOrThrow, getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
 
 export enum Kind {
@@ -7,7 +8,7 @@ export enum Kind {
   x86_64
 }
 
-export abstract class Architecture2 {
+export abstract class Architecture {
   readonly kind: Kind
   protected readonly resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
 
@@ -15,21 +16,26 @@ export abstract class Architecture2 {
     this.kind = kind
   }
 
-  static for(kind: Kind): Architecture2 {
-    switch (kind) {
-      case Kind.arm64:
-        return new this.Arm64(kind)
-      case Kind.x86_64:
-        return new this.X86_64(kind)
-    }
+  static for(kind: Kind): Architecture {
+    return new (getOrThrow(Architecture.architectureMap, kind))(kind)
   }
 
+  abstract get name(): string
   abstract get resourceUrl(): string
   abstract get cpu(): string
   abstract get machineType(): string
   abstract get accelerator(): vm.Accelerator
 
-  private static readonly Arm64 = class extends Architecture2 {
+  resolve<T>(implementation: Record<string, T>): T {
+    const name = this.constructor.name.toLocaleLowerCase()
+    return getOrDefaultOrThrow(implementation, name)
+  }
+
+  private static readonly Arm64 = class extends Architecture {
+    override get name(): string {
+      return 'arm64'
+    }
+
     override get resourceUrl(): string {
       return `${this.resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`
     }
@@ -47,7 +53,11 @@ export abstract class Architecture2 {
     }
   }
 
-  private static readonly X86_64 = class extends Architecture2 {
+  private static readonly X86_64 = class extends Architecture {
+    override get name(): string {
+      return 'x86-64'
+    }
+
     override get resourceUrl(): string {
       return `${this.resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`
     }
@@ -66,66 +76,23 @@ export abstract class Architecture2 {
         : vm.Accelerator.tcg
     }
   }
-}
 
-export interface Architecture {
-  readonly kind: Kind
-  readonly resourceUrl: string
-  readonly cpu: string
-  readonly machineType: string
-  readonly accelerator: vm.Accelerator
-}
-
-export function getArchitecture(kind: Kind): Architecture {
-  const arch = architectures.get(kind)
-
-  if (arch === undefined)
-    throw Error(`Unreachable: missing Kind.${kind} in 'architectures'`)
-
-  return arch
+  private static readonly architectureMap: ReadonlyMap<
+    Kind,
+    typeof Architecture.Arm64
+  > = new Map([
+    [Kind.arm64, Architecture.Arm64],
+    [Kind.x86_64, Architecture.X86_64]
+  ])
 }
 
 const hostString = host.host.toString()
 
-const architectures: ReadonlyMap<Kind, Architecture> = (() => {
-  const map = new Map<Kind, Architecture>()
-  const resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
-
-  map.set(Kind.arm64, {
-    kind: Kind.arm64,
-    cpu: 'cortex-a57',
-    machineType: 'virt',
-    accelerator: vm.Accelerator.tcg,
-    resourceUrl: `${resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`
-  })
-
-  map.set(Kind.x86_64, {
-    kind: Kind.x86_64,
-    cpu: host.kind === host.Kind.darwin ? 'host' : 'qemu64',
-    machineType: 'pc',
-    accelerator:
-      host.kind === host.Kind.darwin ? vm.Accelerator.hvf : vm.Accelerator.tcg,
-    resourceUrl: `${resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`
-  })
-
-  return map
-})()
-
 export function toKind(value: string): Kind | undefined {
-  return fromString.get(value.toLowerCase())
+  return architectureMap[value.toLocaleLowerCase()]
 }
 
-export function toString(kind: Kind): string {
-  for (const [key, value] of fromString) {
-    if (value === kind) return key
-  }
-
-  throw Error(`Unreachable: missing Kind.${kind} in 'fromString'`)
-}
-
-const fromString: ReadonlyMap<string, Kind> = (() => {
-  const map = new Map<string, Kind>()
-  map.set('arm64', Kind.arm64)
-  map.set('x86-64', Kind.x86_64)
-  return map
-})()
+const architectureMap: Record<string, Kind> = {
+  arm64: Kind.arm64,
+  'x86-64': Kind.x86_64
+} as const

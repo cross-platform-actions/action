@@ -69,7 +69,8 @@ class Action {
         this.targetDiskName = 'disk.raw';
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
-        this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, architecture.Kind.x86_64, this.input.version);
+        const arch = architecture.Architecture.for(architecture.Kind.x86_64);
+        this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, arch, this.input.version);
         this.resourceDisk = resource_disk_1.default.for(this);
         this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
         this.workDirectory = this.host.workDirectory;
@@ -444,31 +445,34 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toString = exports.toKind = exports.getArchitecture = exports.Architecture2 = exports.Kind = void 0;
+exports.toKind = exports.Architecture = exports.Kind = void 0;
 const host = __importStar(__webpack_require__(8215));
 const resource_urls_1 = __webpack_require__(3990);
+const utility_1 = __webpack_require__(2857);
 const vm = __importStar(__webpack_require__(2772));
 var Kind;
 (function (Kind) {
     Kind[Kind["arm64"] = 0] = "arm64";
     Kind[Kind["x86_64"] = 1] = "x86_64";
 })(Kind = exports.Kind || (exports.Kind = {}));
-class Architecture2 {
+class Architecture {
     constructor(kind) {
         this.resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
         this.kind = kind;
     }
     static for(kind) {
-        switch (kind) {
-            case Kind.arm64:
-                return new this.Arm64(kind);
-            case Kind.x86_64:
-                return new this.X86_64(kind);
-        }
+        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind);
+    }
+    resolve(implementation) {
+        const name = this.constructor.name.toLocaleLowerCase();
+        return (0, utility_1.getOrDefaultOrThrow)(implementation, name);
     }
 }
-exports.Architecture2 = Architecture2;
-Architecture2.Arm64 = class extends Architecture2 {
+exports.Architecture = Architecture;
+Architecture.Arm64 = class extends Architecture {
+    get name() {
+        return 'arm64';
+    }
     get resourceUrl() {
         return `${this.resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`;
     }
@@ -482,7 +486,10 @@ Architecture2.Arm64 = class extends Architecture2 {
         return vm.Accelerator.tcg;
     }
 };
-Architecture2.X86_64 = class extends Architecture2 {
+Architecture.X86_64 = class extends Architecture {
+    get name() {
+        return 'x86-64';
+    }
     get resourceUrl() {
         return `${this.resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`;
     }
@@ -498,51 +505,19 @@ Architecture2.X86_64 = class extends Architecture2 {
             : vm.Accelerator.tcg;
     }
 };
-function getArchitecture(kind) {
-    const arch = architectures.get(kind);
-    if (arch === undefined)
-        throw Error(`Unreachable: missing Kind.${kind} in 'architectures'`);
-    return arch;
-}
-exports.getArchitecture = getArchitecture;
+Architecture.architectureMap = new Map([
+    [Kind.arm64, Architecture.Arm64],
+    [Kind.x86_64, Architecture.X86_64]
+]);
 const hostString = host.host.toString();
-const architectures = (() => {
-    const map = new Map();
-    const resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
-    map.set(Kind.arm64, {
-        kind: Kind.arm64,
-        cpu: 'cortex-a57',
-        machineType: 'virt',
-        accelerator: vm.Accelerator.tcg,
-        resourceUrl: `${resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`
-    });
-    map.set(Kind.x86_64, {
-        kind: Kind.x86_64,
-        cpu: host.kind === host.Kind.darwin ? 'host' : 'qemu64',
-        machineType: 'pc',
-        accelerator: host.kind === host.Kind.darwin ? vm.Accelerator.hvf : vm.Accelerator.tcg,
-        resourceUrl: `${resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`
-    });
-    return map;
-})();
 function toKind(value) {
-    return fromString.get(value.toLowerCase());
+    return architectureMap[value.toLocaleLowerCase()];
 }
 exports.toKind = toKind;
-function toString(kind) {
-    for (const [key, value] of fromString) {
-        if (value === kind)
-            return key;
-    }
-    throw Error(`Unreachable: missing Kind.${kind} in 'fromString'`);
-}
-exports.toString = toString;
-const fromString = (() => {
-    const map = new Map();
-    map.set('arm64', Kind.arm64);
-    map.set('x86-64', Kind.x86_64);
-    return map;
-})();
+const architectureMap = {
+    arm64: Kind.arm64,
+    'x86-64': Kind.x86_64
+};
 //# sourceMappingURL=architecture.js.map
 
 /***/ }),
@@ -789,15 +764,14 @@ class OperatingSystem {
         this.version = version;
         this.architecture = arch;
     }
-    static create(operatingSystemKind, architectureKind, version) {
-        const arch = architecture.getArchitecture(architectureKind);
+    static create(operatingSystemKind, architecture, version) {
         switch (operatingSystemKind) {
             case Kind.freeBsd:
-                return new FreeBsd(arch, version);
+                return new FreeBsd(architecture, version);
             case Kind.netBsd:
-                return new NetBsd(arch, version);
+                return new NetBsd(architecture, version);
             case Kind.openBsd:
-                return new OpenBsd(arch, version);
+                return new OpenBsd(architecture, version);
         }
     }
     get virtualMachineImageUrl() {
@@ -827,8 +801,7 @@ class OperatingSystem {
     }
     get imageName() {
         const encodedVersion = encodeURIComponent(this.version);
-        const archString = architecture.toString(this.architecture.kind);
-        return `${this.name}-${encodedVersion}-${archString}.qcow2`;
+        return `${this.name}-${encodedVersion}-${this.architecture.name}.qcow2`;
     }
 }
 exports.OperatingSystem = OperatingSystem;
@@ -856,10 +829,7 @@ class FreeBsd extends OperatingSystem {
             return qemu.Vm.sshPort;
     }
     get actionImplementationKind() {
-        if (this.architecture.kind === architecture.Kind.x86_64)
-            return action.ImplementationKind.xhyve;
-        else
-            return action.ImplementationKind.qemu;
+        return this.architecture.resolve({ x86_64: action.ImplementationKind.xhyve, default: action.ImplementationKind.qemu });
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -879,7 +849,7 @@ class FreeBsd extends OperatingSystem {
             return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
-            throw Error(`Not implemented: FreeBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
+            throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
         }
     }
 }
@@ -908,7 +878,7 @@ class NetBsd extends Qemu {
             return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
-            throw Error(`Not implemented: NetBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
+            throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
         }
     }
 }
@@ -952,7 +922,7 @@ class OpenBsd extends OperatingSystem {
             return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
-            throw Error(`Not implemented: OpenBSD guests are not implemented on ${architecture.toString(this.architecture.kind)}`);
+            throw Error(`Not implemented: OpenBSD guests are not implemented on ${this.architecture.name}`);
         }
     }
 }
@@ -1428,7 +1398,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
+exports.getOrThrow = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
 const exec = __importStar(__webpack_require__(1514));
 function execWithOutput(commandLine, args, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -1454,6 +1424,13 @@ function getOrDefaultOrThrow(record, key) {
     return value;
 }
 exports.getOrDefaultOrThrow = getOrDefaultOrThrow;
+function getOrThrow(map, key) {
+    const value = map.get(key);
+    if (value === undefined)
+        throw new Error(`Key not found: ${key}`);
+    return value;
+}
+exports.getOrThrow = getOrThrow;
 //# sourceMappingURL=utility.js.map
 
 /***/ }),

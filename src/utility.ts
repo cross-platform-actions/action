@@ -36,3 +36,11 @@ export function getOrDefaultOrThrow<V>(record: Record<string, V>, key: string) {
 
   return value
 }
+
+export function getOrThrow<Key, Value>(map: ReadonlyMap<Key, Value>, key: Key) {
+  const value = map.get(key)
+
+  if (value === undefined) throw new Error(`Key not found: ${key}`)
+
+  return value
+}

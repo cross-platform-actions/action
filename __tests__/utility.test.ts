@@ -1,4 +1,4 @@
-import {execWithOutput, getOrDefaultOrThrow} from '../src/utility'
+import {execWithOutput, getOrDefaultOrThrow, getOrThrow} from '../src/utility'
 
 test('execWithOutput', async () => {
   const result = await execWithOutput('ls')
@@ -20,4 +20,14 @@ test('getOrDefaultOrThrow - throw', () => {
   expect(() => getOrDefaultOrThrow(record, 'bar')).toThrowError(
     /^Missing key and no default key/
   )
+})
+
+test('getOrThrow', () => {
+  let map = new Map([['foo', 3]])
+  expect(getOrThrow(map, 'foo')).toBe(3)
+})
+
+test('getOrThrow - throw', () => {
+  let map = new Map([['foo', 3]])
+  expect(() => getOrThrow(map, 'bar')).toThrowError(/^Key not found/)
 })

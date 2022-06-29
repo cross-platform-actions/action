@@ -61,18 +61,16 @@ export abstract class OperatingSystem {
 
   static create(
     operatingSystemKind: Kind,
-    architectureKind: architecture.Kind,
+    architecture: architecture.Architecture,
     version: string
   ): OperatingSystem {
-    const arch = architecture.getArchitecture(architectureKind)
-
     switch (operatingSystemKind) {
       case Kind.freeBsd:
-        return new FreeBsd(arch, version)
+        return new FreeBsd(architecture, version)
       case Kind.netBsd:
-        return new NetBsd(arch, version)
+        return new NetBsd(architecture, version)
       case Kind.openBsd:
-        return new OpenBsd(arch, version)
+        return new OpenBsd(architecture, version)
     }
   }
 
@@ -129,8 +127,7 @@ export abstract class OperatingSystem {
 
   private get imageName(): string {
     const encodedVersion = encodeURIComponent(this.version)
-    const archString = architecture.toString(this.architecture.kind)
-    return `${this.name}-${encodedVersion}-${archString}.qcow2`
+    return `${this.name}-${encodedVersion}-${this.architecture.name}.qcow2`
   }
 }
 
@@ -156,9 +153,10 @@ class FreeBsd extends OperatingSystem {
   }
 
   get actionImplementationKind(): action.ImplementationKind {
-    if (this.architecture.kind === architecture.Kind.x86_64)
-      return action.ImplementationKind.xhyve
-    else return action.ImplementationKind.qemu
+    return this.architecture.resolve({
+      x86_64: action.ImplementationKind.xhyve,
+      default: action.ImplementationKind.qemu
+    })
   }
 
   override async prepareDisk(
@@ -198,9 +196,7 @@ class FreeBsd extends OperatingSystem {
       )
     } else {
       throw Error(
-        `Not implemented: FreeBSD guests are not implemented on ${architecture.toString(
-          this.architecture.kind
-        )}`
+        `Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`
       )
     }
   }
@@ -252,9 +248,7 @@ class NetBsd extends Qemu {
       )
     } else {
       throw Error(
-        `Not implemented: NetBSD guests are not implemented on ${architecture.toString(
-          this.architecture.kind
-        )}`
+        `Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`
       )
     }
   }
@@ -318,9 +312,7 @@ class OpenBsd extends OperatingSystem {
       )
     } else {
       throw Error(
-        `Not implemented: OpenBSD guests are not implemented on ${architecture.toString(
-          this.architecture.kind
-        )}`
+        `Not implemented: OpenBSD guests are not implemented on ${this.architecture.name}`
       )
     }
   }

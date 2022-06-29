@@ -65,7 +65,7 @@ class MacOs extends Host {
     return implementation.macos
   }
 
-  canRunXhyve(arch: architecture.Architecture): boolean {
+  override canRunXhyve(arch: architecture.Architecture): boolean {
     return arch.kind === architecture.Kind.x86_64
   }
 }
@@ -80,7 +80,7 @@ class Linux extends Host {
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  canRunXhyve(_arch: architecture.Architecture): boolean {
+  override canRunXhyve(_arch: architecture.Architecture): boolean {
     /* eslint-enable @typescript-eslint/no-unused-vars */
     return false
   }
