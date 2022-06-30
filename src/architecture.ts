@@ -1,5 +1,6 @@
 import * as host from './host'
 import {ResourceUrls} from './operating_systems/resource_urls'
+import HostQemu from './host_qemu'
 import {getOrThrow, getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
 
@@ -11,13 +12,15 @@ export enum Kind {
 export abstract class Architecture {
   readonly kind: Kind
   protected readonly resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
+  protected readonly hostQemu: HostQemu
 
-  constructor(kind: Kind) {
+  constructor(kind: Kind, hostQemu: HostQemu) {
     this.kind = kind
+    this.hostQemu = hostQemu
   }
 
-  static for(kind: Kind): Architecture {
-    return new (getOrThrow(Architecture.architectureMap, kind))(kind)
+  static for(kind: Kind, hostQemu: HostQemu): Architecture {
+    return new (getOrThrow(Architecture.architectureMap, kind))(kind, hostQemu)
   }
 
   abstract get name(): string
@@ -31,13 +34,17 @@ export abstract class Architecture {
     return getOrDefaultOrThrow(implementation, name)
   }
 
+  protected get hostString(): string {
+    return host.host.toString()
+  }
+
   private static readonly Arm64 = class extends Architecture {
     override get name(): string {
       return 'arm64'
     }
 
     override get resourceUrl(): string {
-      return `${this.resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`
+      return `${this.resourceBaseUrl}/qemu-system-aarch64-${this.hostString}.tar`
     }
 
     override get cpu(): string {
@@ -59,11 +66,11 @@ export abstract class Architecture {
     }
 
     override get resourceUrl(): string {
-      return `${this.resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`
+      return `${this.resourceBaseUrl}/qemu-system-x86_64-${this.hostString}.tar`
     }
 
     override get cpu(): string {
-      return host.kind === host.Kind.darwin ? 'host' : 'qemu64'
+      return this.hostQemu.cpu
     }
 
     override get machineType(): string {
@@ -71,9 +78,7 @@ export abstract class Architecture {
     }
 
     override get accelerator(): vm.Accelerator {
-      return host.kind === host.Kind.darwin
-        ? vm.Accelerator.hvf
-        : vm.Accelerator.tcg
+      return this.hostQemu.accelerator
     }
   }
 
@@ -85,8 +90,6 @@ export abstract class Architecture {
     [Kind.x86_64, Architecture.X86_64]
   ])
 }
-
-const hostString = host.host.toString()
 
 export function toKind(value: string): Kind | undefined {
   return architectureMap[value.toLocaleLowerCase()]

@@ -28,14 +28,14 @@ interface Implementation<MacOsType, LinuxType> {
 }
 
 export abstract class Host {
-  static create(): Host {
-    switch (kind) {
+  static create(k: Kind = getCurrentKind()): Host {
+    switch (k) {
       case Kind.darwin:
         return new MacOs()
       case Kind.linux:
         return new Linux()
       default:
-        throw Error(`Unhandled host platform: ${kind}`)
+        throw Error(`Unhandled host platform: ${k}`)
     }
   }
 
@@ -47,7 +47,9 @@ export abstract class Host {
 
   abstract canRunXhyve(arch: architecture.Architecture): boolean
 
-  toString = () => this.constructor.name.toLocaleLowerCase()
+  toString(): string {
+    return this.constructor.name.toLocaleLowerCase()
+  }
 }
 
 class MacOs extends Host {
@@ -92,4 +94,7 @@ class Linux extends Host {
   }
 }
 
+function getCurrentKind(): Kind {
+  return toKind(process.platform)
+}
 export const host = Host.create()

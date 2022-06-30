@@ -57,6 +57,7 @@ const os = __importStar(__webpack_require__(9385));
 const resource_disk_1 = __importDefault(__webpack_require__(7102));
 const input = __importStar(__webpack_require__(1099));
 const shell = __importStar(__webpack_require__(9044));
+const host_qemu_1 = __importDefault(__webpack_require__(9097));
 var ImplementationKind;
 (function (ImplementationKind) {
     ImplementationKind[ImplementationKind["qemu"] = 0] = "qemu";
@@ -69,7 +70,8 @@ class Action {
         this.targetDiskName = 'disk.raw';
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
-        const arch = architecture.Architecture.for(architecture.Kind.x86_64);
+        const qemu = host_qemu_1.default.for(this.host);
+        const arch = architecture.Architecture.for(architecture.Kind.x86_64, qemu);
         this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, arch, this.input.version);
         this.resourceDisk = resource_disk_1.default.for(this);
         this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
@@ -456,16 +458,20 @@ var Kind;
     Kind[Kind["x86_64"] = 1] = "x86_64";
 })(Kind = exports.Kind || (exports.Kind = {}));
 class Architecture {
-    constructor(kind) {
+    constructor(kind, hostQemu) {
         this.resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
         this.kind = kind;
+        this.hostQemu = hostQemu;
     }
-    static for(kind) {
-        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind);
+    static for(kind, hostQemu) {
+        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, hostQemu);
     }
     resolve(implementation) {
         const name = this.constructor.name.toLocaleLowerCase();
         return (0, utility_1.getOrDefaultOrThrow)(implementation, name);
+    }
+    get hostString() {
+        return host.host.toString();
     }
 }
 exports.Architecture = Architecture;
@@ -474,7 +480,7 @@ Architecture.Arm64 = class extends Architecture {
         return 'arm64';
     }
     get resourceUrl() {
-        return `${this.resourceBaseUrl}/qemu-system-aarch64-${hostString}.tar`;
+        return `${this.resourceBaseUrl}/qemu-system-aarch64-${this.hostString}.tar`;
     }
     get cpu() {
         return 'cortex-a57';
@@ -491,25 +497,22 @@ Architecture.X86_64 = class extends Architecture {
         return 'x86-64';
     }
     get resourceUrl() {
-        return `${this.resourceBaseUrl}/qemu-system-x86_64-${hostString}.tar`;
+        return `${this.resourceBaseUrl}/qemu-system-x86_64-${this.hostString}.tar`;
     }
     get cpu() {
-        return host.kind === host.Kind.darwin ? 'host' : 'qemu64';
+        return this.hostQemu.cpu;
     }
     get machineType() {
         return 'pc';
     }
     get accelerator() {
-        return host.kind === host.Kind.darwin
-            ? vm.Accelerator.hvf
-            : vm.Accelerator.tcg;
+        return this.hostQemu.accelerator;
     }
 };
 Architecture.architectureMap = new Map([
     [Kind.arm64, Architecture.Arm64],
     [Kind.x86_64, Architecture.X86_64]
 ]);
-const hostString = host.host.toString();
 function toKind(value) {
     return architectureMap[value.toLocaleLowerCase()];
 }
@@ -573,18 +576,18 @@ function toKind(value) {
     }
 }
 class Host {
-    constructor() {
-        this.toString = () => this.constructor.name.toLocaleLowerCase();
-    }
-    static create() {
-        switch (exports.kind) {
+    static create(k = getCurrentKind()) {
+        switch (k) {
             case Kind.darwin:
                 return new MacOs();
             case Kind.linux:
                 return new Linux();
             default:
-                throw Error(`Unhandled host platform: ${exports.kind}`);
+                throw Error(`Unhandled host platform: ${k}`);
         }
+    }
+    toString() {
+        return this.constructor.name.toLocaleLowerCase();
     }
 }
 exports.Host = Host;
@@ -618,8 +621,49 @@ class Linux extends Host {
         return implementation.linux;
     }
 }
+function getCurrentKind() {
+    return toKind(process.platform);
+}
 exports.host = Host.create();
 //# sourceMappingURL=host.js.map
+
+/***/ }),
+
+/***/ 9097:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const vm_1 = __webpack_require__(2772);
+// Contains host specific QEMU properties
+class HostQemu {
+    static for(host) {
+        const cls = host.resolve({
+            macos: this.MacosHostQemu,
+            linux: this.LinuxHostQemu
+        });
+        return new cls();
+    }
+}
+exports.default = HostQemu;
+HostQemu.LinuxHostQemu = class extends HostQemu {
+    get accelerator() {
+        return vm_1.Accelerator.tcg;
+    }
+    get cpu() {
+        return 'qemu64';
+    }
+};
+HostQemu.MacosHostQemu = class extends HostQemu {
+    get accelerator() {
+        return vm_1.Accelerator.hvf;
+    }
+    get cpu() {
+        return 'host';
+    }
+};
+//# sourceMappingURL=host_qemu.js.map
 
 /***/ }),
 
@@ -829,7 +873,10 @@ class FreeBsd extends OperatingSystem {
             return qemu.Vm.sshPort;
     }
     get actionImplementationKind() {
-        return this.architecture.resolve({ x86_64: action.ImplementationKind.xhyve, default: action.ImplementationKind.qemu });
+        return this.architecture.resolve({
+            x86_64: action.ImplementationKind.xhyve,
+            default: action.ImplementationKind.qemu
+        });
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
