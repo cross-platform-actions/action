@@ -57,7 +57,6 @@ const os = __importStar(__webpack_require__(9385));
 const resource_disk_1 = __importDefault(__webpack_require__(7102));
 const input = __importStar(__webpack_require__(1099));
 const shell = __importStar(__webpack_require__(9044));
-const host_qemu_1 = __importDefault(__webpack_require__(9097));
 var ImplementationKind;
 (function (ImplementationKind) {
     ImplementationKind[ImplementationKind["qemu"] = 0] = "qemu";
@@ -70,8 +69,7 @@ class Action {
         this.targetDiskName = 'disk.raw';
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
-        const qemu = host_qemu_1.default.for(this.host);
-        const arch = architecture.Architecture.for(architecture.Kind.x86_64, qemu);
+        const arch = architecture.Architecture.for(architecture.Kind.x86_64, this.host);
         this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, arch, this.input.version);
         this.resourceDisk = resource_disk_1.default.for(this);
         this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
@@ -449,6 +447,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.toKind = exports.Architecture = exports.Kind = void 0;
 const host = __importStar(__webpack_require__(8215));
+const hypervisor = __importStar(__webpack_require__(4288));
 const resource_urls_1 = __webpack_require__(3990);
 const utility_1 = __webpack_require__(2857);
 const vm = __importStar(__webpack_require__(2772));
@@ -458,13 +457,13 @@ var Kind;
     Kind[Kind["x86_64"] = 1] = "x86_64";
 })(Kind = exports.Kind || (exports.Kind = {}));
 class Architecture {
-    constructor(kind, hostQemu) {
+    constructor(kind, host) {
         this.resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
         this.kind = kind;
-        this.hostQemu = hostQemu;
+        this.host = host;
     }
-    static for(kind, hostQemu) {
-        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, hostQemu);
+    static for(kind, host) {
+        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host);
     }
     resolve(implementation) {
         const name = this.constructor.name.toLocaleLowerCase();
@@ -472,6 +471,9 @@ class Architecture {
     }
     get hostString() {
         return host.host.toString();
+    }
+    get hostQemu() {
+        return this.host.qemu;
     }
 }
 exports.Architecture = Architecture;
@@ -494,6 +496,9 @@ Architecture.Arm64 = class extends Architecture {
     get canRunXhyve() {
         return false;
     }
+    get hypervisor() {
+        return new hypervisor.Qemu();
+    }
 };
 Architecture.X86_64 = class extends Architecture {
     get name() {
@@ -513,6 +518,9 @@ Architecture.X86_64 = class extends Architecture {
     }
     get canRunXhyve() {
         return true;
+    }
+    get hypervisor() {
+        return this.host.hypervisor;
     }
 };
 Architecture.architectureMap = new Map([
@@ -559,9 +567,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.host = exports.Host = exports.kind = exports.Kind = void 0;
 const process = __importStar(__webpack_require__(1765));
+const host_qemu_1 = __importDefault(__webpack_require__(9097));
+const hypervisor = __importStar(__webpack_require__(4288));
 const qemu = __importStar(__webpack_require__(1106));
 const utility_1 = __webpack_require__(2857);
 const xhyve = __importStar(__webpack_require__(2722));
@@ -607,8 +620,14 @@ class MacOs extends Host {
     get vmModule() {
         return xhyve;
     }
+    get qemu() {
+        return new host_qemu_1.default.MacosHostQemu();
+    }
     canRunXhyve(arch) {
         return arch.canRunXhyve;
+    }
+    get hypervisor() {
+        return new hypervisor.Xhyve();
     }
 }
 class Linux extends Host {
@@ -618,10 +637,16 @@ class Linux extends Host {
     get vmModule() {
         return qemu;
     }
+    get qemu() {
+        return new host_qemu_1.default.LinuxHostQemu();
+    }
     /* eslint-disable @typescript-eslint/no-unused-vars */
     canRunXhyve(_arch) {
         /* eslint-enable @typescript-eslint/no-unused-vars */
         return false;
+    }
+    get hypervisor() {
+        return new hypervisor.Qemu();
     }
 }
 function getCurrentKind() {
@@ -641,13 +666,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const vm_1 = __webpack_require__(2772);
 // Contains host specific QEMU properties
 class HostQemu {
-    static for(host) {
-        const cls = host.resolve({
-            macos: this.MacosHostQemu,
-            linux: this.LinuxHostQemu
-        });
-        return new cls();
-    }
 }
 exports.default = HostQemu;
 HostQemu.LinuxHostQemu = class extends HostQemu {
@@ -667,6 +685,32 @@ HostQemu.MacosHostQemu = class extends HostQemu {
     }
 };
 //# sourceMappingURL=host_qemu.js.map
+
+/***/ }),
+
+/***/ 4288:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Qemu = exports.Xhyve = exports.Hypervisor = void 0;
+class Hypervisor {
+}
+exports.Hypervisor = Hypervisor;
+class Xhyve extends Hypervisor {
+    get sshPort() {
+        return 22;
+    }
+}
+exports.Xhyve = Xhyve;
+class Qemu extends Hypervisor {
+    get sshPort() {
+        return 2847;
+    }
+}
+exports.Qemu = Qemu;
+//# sourceMappingURL=hypervisor.js.map
 
 /***/ }),
 
@@ -870,10 +914,7 @@ class FreeBsd extends OperatingSystem {
             return this.architecture.resourceUrl;
     }
     get ssHostPort() {
-        if (host_1.host.canRunXhyve(this.architecture))
-            return xhyve.Vm.sshPort;
-        else
-            return qemu.Vm.sshPort;
+        return this.architecture.hypervisor.sshPort;
     }
     get actionImplementationKind() {
         return this.architecture.resolve({

@@ -148,8 +148,7 @@ class FreeBsd extends OperatingSystem {
   }
 
   get ssHostPort(): number {
-    if (host.canRunXhyve(this.architecture)) return xhyve.Vm.sshPort
-    else return qemu.Vm.sshPort
+    return this.architecture.hypervisor.sshPort
   }
 
   get actionImplementationKind(): action.ImplementationKind {

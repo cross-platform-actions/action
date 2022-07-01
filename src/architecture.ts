@@ -1,6 +1,7 @@
 import * as host from './host'
-import {ResourceUrls} from './operating_systems/resource_urls'
 import HostQemu from './host_qemu'
+import * as hypervisor from './hypervisor'
+import {ResourceUrls} from './operating_systems/resource_urls'
 import {getOrThrow, getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
 
@@ -12,15 +13,15 @@ export enum Kind {
 export abstract class Architecture {
   readonly kind: Kind
   protected readonly resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
-  protected readonly hostQemu: HostQemu
+  protected readonly host: host.Host
 
-  constructor(kind: Kind, hostQemu: HostQemu) {
+  constructor(kind: Kind, host: host.Host) {
     this.kind = kind
-    this.hostQemu = hostQemu
+    this.host = host
   }
 
-  static for(kind: Kind, hostQemu: HostQemu): Architecture {
-    return new (getOrThrow(Architecture.architectureMap, kind))(kind, hostQemu)
+  static for(kind: Kind, host: host.Host): Architecture {
+    return new (getOrThrow(Architecture.architectureMap, kind))(kind, host)
   }
 
   abstract get name(): string
@@ -29,6 +30,7 @@ export abstract class Architecture {
   abstract get machineType(): string
   abstract get accelerator(): vm.Accelerator
   abstract get canRunXhyve(): boolean
+  abstract get hypervisor(): hypervisor.Hypervisor
 
   resolve<T>(implementation: Record<string, T>): T {
     const name = this.constructor.name.toLocaleLowerCase()
@@ -37,6 +39,10 @@ export abstract class Architecture {
 
   protected get hostString(): string {
     return host.host.toString()
+  }
+
+  protected get hostQemu(): HostQemu {
+    return this.host.qemu
   }
 
   private static readonly Arm64 = class extends Architecture {
@@ -63,6 +69,10 @@ export abstract class Architecture {
     override get canRunXhyve(): boolean {
       return false
     }
+
+    override get hypervisor(): hypervisor.Hypervisor {
+      return new hypervisor.Qemu()
+    }
   }
 
   private static readonly X86_64 = class extends Architecture {
@@ -88,6 +98,10 @@ export abstract class Architecture {
 
     override get canRunXhyve(): boolean {
       return true
+    }
+
+    override get hypervisor(): hypervisor.Hypervisor {
+      return this.host.hypervisor
     }
   }
 

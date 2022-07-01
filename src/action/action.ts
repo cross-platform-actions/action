@@ -15,7 +15,6 @@ import ResourceDisk from '../resource_disk'
 import * as vmModule from '../vm'
 import * as input from './input'
 import * as shell from './shell'
-import HostQemu from '../host_qemu'
 
 export enum ImplementationKind {
   qemu,
@@ -40,8 +39,10 @@ export class Action {
   constructor() {
     this.host = hostModule.Host.create()
     this.tempPath = fs.mkdtempSync('/tmp/resources')
-    const qemu = HostQemu.for(this.host)
-    const arch = architecture.Architecture.for(architecture.Kind.x86_64, qemu)
+    const arch = architecture.Architecture.for(
+      architecture.Kind.x86_64,
+      this.host
+    )
 
     this.operatingSystem = os.OperatingSystem.create(
       this.input.operatingSystem,
