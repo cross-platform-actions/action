@@ -812,14 +812,15 @@ class OperatingSystem {
         this.architecture = arch;
     }
     static create(operatingSystemKind, architecture, version) {
-        switch (operatingSystemKind) {
-            case Kind.freeBsd:
-                return new FreeBsd(architecture, version);
-            case Kind.netBsd:
-                return new NetBsd(architecture, version);
-            case Kind.openBsd:
-                return new OpenBsd(architecture, version);
-        }
+        const cls = (0, utility_1.getOrThrow)(this.operatingSystemMap, operatingSystemKind);
+        return new cls(architecture, version);
+    }
+    static get operatingSystemMap() {
+        return new Map([
+            [Kind.freeBsd, FreeBsd],
+            [Kind.netBsd, NetBsd],
+            [Kind.openBsd, OpenBsd]
+        ]);
     }
     get virtualMachineImageUrl() {
         return [

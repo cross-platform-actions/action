@@ -10,7 +10,7 @@ import * as qemu from './qemu_vm'
 import * as vmModule from './vm'
 import * as action from './action/action'
 import {host} from './host'
-import {Class, getImplementation} from './utility'
+import {Class, getImplementation, getOrThrow} from './utility'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import versions from './version'
 
@@ -63,14 +63,16 @@ export abstract class OperatingSystem {
     architecture: architecture.Architecture,
     version: string
   ): OperatingSystem {
-    switch (operatingSystemKind) {
-      case Kind.freeBsd:
-        return new FreeBsd(architecture, version)
-      case Kind.netBsd:
-        return new NetBsd(architecture, version)
-      case Kind.openBsd:
-        return new OpenBsd(architecture, version)
-    }
+    const cls = getOrThrow(this.operatingSystemMap, operatingSystemKind)
+    return new cls(architecture, version)
+  }
+
+  private static get operatingSystemMap(): ReadonlyMap<Kind, typeof FreeBsd> {
+    return new Map([
+      [Kind.freeBsd, FreeBsd],
+      [Kind.netBsd, NetBsd],
+      [Kind.openBsd, OpenBsd]
+    ])
   }
 
   abstract get virtualMachineImageReleaseVersion(): string
