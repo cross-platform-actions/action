@@ -1,4 +1,9 @@
-import {execWithOutput, getOrDefaultOrThrow, getOrThrow} from '../src/utility'
+import {
+  execWithOutput,
+  getOrDefaultOrThrow,
+  getOrThrow,
+  getImplementation
+} from '../src/utility'
 
 test('execWithOutput', async () => {
   const result = await execWithOutput('ls')
@@ -30,4 +35,19 @@ test('getOrThrow', () => {
 test('getOrThrow - throw', () => {
   let map = new Map([['foo', 3]])
   expect(() => getOrThrow(map, 'bar')).toThrowError(/^Key not found/)
+})
+
+test('getImplementation - matching implementation', () => {
+  class Foo {}
+  expect(getImplementation(new Foo(), {foo: 3})).toBe(3)
+})
+
+test('getImplementation - default implementation', () => {
+  class Foo {}
+  expect(getImplementation(new Foo(), {bar: 3, default: 4})).toBe(4)
+})
+
+test('getImplementation - no matching implementation', () => {
+  class Foo {}
+  expect(() => getImplementation(new Foo(), {bar: 3})).toThrowError
 })

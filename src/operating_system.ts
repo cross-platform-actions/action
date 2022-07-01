@@ -10,10 +10,9 @@ import * as qemu from './qemu_vm'
 import * as vmModule from './vm'
 import * as action from './action/action'
 import {host} from './host'
-import {Class} from './utility'
+import {Class, getImplementation} from './utility'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import versions from './version'
-import {getOrDefaultOrThrow} from './utility'
 
 export enum Kind {
   freeBsd,
@@ -91,8 +90,7 @@ export abstract class OperatingSystem {
   }
 
   resolve<Base>(implementation: Record<string, Class<Base>>): Class<Base> {
-    const name = this.constructor.name.toLocaleLowerCase()
-    return getOrDefaultOrThrow(implementation, name)
+    return getImplementation(this, implementation)
   }
 
   abstract createVirtualMachine(

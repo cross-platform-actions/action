@@ -558,6 +558,7 @@ exports.host = exports.Host = exports.kind = exports.Kind = void 0;
 const process = __importStar(__webpack_require__(1765));
 const architecture = __importStar(__webpack_require__(4019));
 const qemu = __importStar(__webpack_require__(1106));
+const utility_1 = __webpack_require__(2857);
 const xhyve = __importStar(__webpack_require__(2722));
 var Kind;
 (function (Kind) {
@@ -586,6 +587,9 @@ class Host {
                 throw Error(`Unhandled host platform: ${k}`);
         }
     }
+    resolve(implementation) {
+        return (0, utility_1.getImplementation)(this, implementation);
+    }
     toString() {
         return this.constructor.name.toLocaleLowerCase();
     }
@@ -597,9 +601,6 @@ class MacOs extends Host {
     }
     get vmModule() {
         return xhyve;
-    }
-    resolve(implementation) {
-        return implementation.macos;
     }
     canRunXhyve(arch) {
         return arch.kind === architecture.Kind.x86_64;
@@ -616,9 +617,6 @@ class Linux extends Host {
     canRunXhyve(_arch) {
         /* eslint-enable @typescript-eslint/no-unused-vars */
         return false;
-    }
-    resolve(implementation) {
-        return implementation.linux;
     }
 }
 function getCurrentKind() {
@@ -776,9 +774,9 @@ const qemu = __importStar(__webpack_require__(1106));
 const vmModule = __importStar(__webpack_require__(2772));
 const action = __importStar(__webpack_require__(6072));
 const host_1 = __webpack_require__(8215);
+const utility_1 = __webpack_require__(2857);
 const resource_urls_1 = __webpack_require__(3990);
 const version_1 = __importDefault(__webpack_require__(8217));
-const utility_1 = __webpack_require__(2857);
 var Kind;
 (function (Kind) {
     Kind[Kind["freeBsd"] = 0] = "freeBsd";
@@ -829,8 +827,7 @@ class OperatingSystem {
         ].join('/');
     }
     resolve(implementation) {
-        const name = this.constructor.name.toLocaleLowerCase();
-        return (0, utility_1.getOrDefaultOrThrow)(implementation, name);
+        return (0, utility_1.getImplementation)(this, implementation);
     }
     setupWorkDirectory(vm, workDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1445,7 +1442,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getOrThrow = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
+exports.getImplementation = exports.getOrThrow = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
 const exec = __importStar(__webpack_require__(1514));
 function execWithOutput(commandLine, args, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -1478,6 +1475,11 @@ function getOrThrow(map, key) {
     return value;
 }
 exports.getOrThrow = getOrThrow;
+function getImplementation(object, implementation) {
+    const name = object.constructor.name.toLocaleLowerCase();
+    return getOrDefaultOrThrow(implementation, name);
+}
+exports.getImplementation = getImplementation;
 //# sourceMappingURL=utility.js.map
 
 /***/ }),

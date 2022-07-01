@@ -44,3 +44,11 @@ export function getOrThrow<Key, Value>(map: ReadonlyMap<Key, Value>, key: Key) {
 
   return value
 }
+
+export function getImplementation<T>(
+  object: Object,
+  implementation: Record<string, T>
+): T {
+  const name = object.constructor.name.toLocaleLowerCase()
+  return getOrDefaultOrThrow(implementation, name)
+}

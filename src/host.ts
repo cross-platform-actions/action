@@ -2,6 +2,7 @@ import * as process from 'process'
 
 import * as architecture from './architecture'
 import * as qemu from './qemu_vm'
+import {getImplementation} from './utility'
 import * as xhyve from './xhyve_vm'
 
 export enum Kind {
@@ -22,11 +23,6 @@ function toKind(value: string): Kind {
   }
 }
 
-interface Implementation<MacOsType, LinuxType> {
-  macos: MacOsType
-  linux: LinuxType
-}
-
 export abstract class Host {
   static create(k: Kind = getCurrentKind()): Host {
     switch (k) {
@@ -41,11 +37,11 @@ export abstract class Host {
 
   abstract get workDirectory(): string
   abstract get vmModule(): typeof xhyve | typeof qemu
-  abstract resolve<MacOsType, LinuxType>(
-    implementation: Implementation<MacOsType, LinuxType>
-  ): MacOsType | LinuxType
-
   abstract canRunXhyve(arch: architecture.Architecture): boolean
+
+  resolve<T>(implementation: Record<string, T>): T {
+    return getImplementation(this, implementation)
+  }
 
   toString(): string {
     return this.constructor.name.toLocaleLowerCase()
@@ -59,12 +55,6 @@ class MacOs extends Host {
 
   get vmModule(): typeof xhyve | typeof qemu {
     return xhyve
-  }
-
-  resolve<MacOs, Linux>(
-    implementation: Implementation<MacOs, Linux>
-  ): MacOs | Linux {
-    return implementation.macos
   }
 
   override canRunXhyve(arch: architecture.Architecture): boolean {
@@ -85,12 +75,6 @@ class Linux extends Host {
   override canRunXhyve(_arch: architecture.Architecture): boolean {
     /* eslint-enable @typescript-eslint/no-unused-vars */
     return false
-  }
-
-  resolve<MacOs, Linux>(
-    implementation: Implementation<MacOs, Linux>
-  ): MacOs | Linux {
-    return implementation.linux
   }
 }
 
