@@ -491,6 +491,9 @@ Architecture.Arm64 = class extends Architecture {
     get accelerator() {
         return vm.Accelerator.tcg;
     }
+    get canRunXhyve() {
+        return false;
+    }
 };
 Architecture.X86_64 = class extends Architecture {
     get name() {
@@ -507,6 +510,9 @@ Architecture.X86_64 = class extends Architecture {
     }
     get accelerator() {
         return this.hostQemu.accelerator;
+    }
+    get canRunXhyve() {
+        return true;
     }
 };
 Architecture.architectureMap = new Map([
@@ -556,7 +562,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.host = exports.Host = exports.kind = exports.Kind = void 0;
 const process = __importStar(__webpack_require__(1765));
-const architecture = __importStar(__webpack_require__(4019));
 const qemu = __importStar(__webpack_require__(1106));
 const utility_1 = __webpack_require__(2857);
 const xhyve = __importStar(__webpack_require__(2722));
@@ -603,7 +608,7 @@ class MacOs extends Host {
         return xhyve;
     }
     canRunXhyve(arch) {
-        return arch.kind === architecture.Kind.x86_64;
+        return arch.canRunXhyve;
     }
 }
 class Linux extends Host {

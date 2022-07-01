@@ -58,7 +58,7 @@ class MacOs extends Host {
   }
 
   override canRunXhyve(arch: architecture.Architecture): boolean {
-    return arch.kind === architecture.Kind.x86_64
+    return arch.canRunXhyve
   }
 }
 

@@ -28,6 +28,7 @@ export abstract class Architecture {
   abstract get cpu(): string
   abstract get machineType(): string
   abstract get accelerator(): vm.Accelerator
+  abstract get canRunXhyve(): boolean
 
   resolve<T>(implementation: Record<string, T>): T {
     const name = this.constructor.name.toLocaleLowerCase()
@@ -58,6 +59,10 @@ export abstract class Architecture {
     override get accelerator(): vm.Accelerator {
       return vm.Accelerator.tcg
     }
+
+    override get canRunXhyve(): boolean {
+      return false
+    }
   }
 
   private static readonly X86_64 = class extends Architecture {
@@ -79,6 +84,10 @@ export abstract class Architecture {
 
     override get accelerator(): vm.Accelerator {
       return this.hostQemu.accelerator
+    }
+
+    override get canRunXhyve(): boolean {
+      return true
     }
   }
 
