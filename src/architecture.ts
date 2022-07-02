@@ -1,4 +1,4 @@
-import * as host from './host'
+import {Host} from './host'
 import HostQemu from './host_qemu'
 import * as hypervisor from './hypervisor'
 import {ResourceUrls} from './operating_systems/resource_urls'
@@ -13,14 +13,14 @@ export enum Kind {
 export abstract class Architecture {
   readonly kind: Kind
   protected readonly resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
-  protected readonly host: host.Host
+  protected readonly host: Host
 
-  constructor(kind: Kind, host: host.Host) {
+  constructor(kind: Kind, host: Host) {
     this.kind = kind
     this.host = host
   }
 
-  static for(kind: Kind, host: host.Host): Architecture {
+  static for(kind: Kind, host: Host): Architecture {
     return new (getOrThrow(Architecture.architectureMap, kind))(kind, host)
   }
 
@@ -38,7 +38,7 @@ export abstract class Architecture {
   }
 
   protected get hostString(): string {
-    return host.host.toString()
+    return this.host.toString()
   }
 
   protected get hostQemu(): HostQemu {
