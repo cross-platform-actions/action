@@ -42,6 +42,7 @@ export abstract class Host {
   abstract get qemu(): HostQemu
   abstract canRunXhyve(arch: architecture.Architecture): boolean
   abstract get hypervisor(): hypervisor.Hypervisor
+  abstract get efiHypervisor(): hypervisor.Hypervisor
 
   resolve<T>(implementation: Record<string, T>): T {
     return getImplementation(this, implementation)
@@ -72,6 +73,10 @@ class MacOs extends Host {
   override get hypervisor(): hypervisor.Hypervisor {
     return new hypervisor.Xhyve()
   }
+
+  override get efiHypervisor(): hypervisor.Hypervisor {
+    return this.hypervisor
+  }
 }
 
 class Linux extends Host {
@@ -95,6 +100,10 @@ class Linux extends Host {
 
   override get hypervisor(): hypervisor.Hypervisor {
     return new hypervisor.Qemu()
+  }
+
+  override get efiHypervisor(): hypervisor.Hypervisor {
+    return new hypervisor.QemuEfi()
   }
 }
 

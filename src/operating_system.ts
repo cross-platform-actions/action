@@ -33,8 +33,6 @@ export function toKind(value: string): Kind | undefined {
 }
 
 export abstract class OperatingSystem {
-  protected static readonly qemuFirmwareDirectory = 'share/qemu'
-
   readonly name: string
 
   readonly resourcesUrl: string
@@ -45,10 +43,6 @@ export abstract class OperatingSystem {
   protected readonly xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`
 
   private readonly version: string
-
-  protected readonly xhyveEfiFirmware = 'uefi.fd'
-  protected readonly qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`
-  protected readonly qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`
 
   constructor(name: string, arch: architecture.Architecture, version: string) {
     const hostString = host.toString()
@@ -178,13 +172,9 @@ class FreeBsd extends OperatingSystem {
     core.debug('Creating FreeBSD VM')
 
     if (this.architecture.kind === architecture.Kind.x86_64) {
-      const firmwareFile = host.canRunXhyve(this.architecture)
-        ? this.xhyveEfiFirmware
-        : this.qemuBiosFirmware
-
       configuration.firmware = path.join(
         firmwareDirectory.toString(),
-        firmwareFile
+        host.hypervisor.firmwareFile
       )
 
       return new host.vmModule.FreeBsd(
@@ -236,7 +226,7 @@ class NetBsd extends Qemu {
     if (this.architecture.kind === architecture.Kind.x86_64) {
       configuration.firmware = path.join(
         firmwareDirectory.toString(),
-        this.qemuBiosFirmware
+        host.hypervisor.firmwareFile
       )
 
       return new qemu.NetBsd(
@@ -294,13 +284,9 @@ class OpenBsd extends OperatingSystem {
     core.debug('Creating OpenBSD VM')
 
     if (this.architecture.kind === architecture.Kind.x86_64) {
-      const firmwareFile = host.canRunXhyve(this.architecture)
-        ? this.xhyveEfiFirmware
-        : this.qemuEfiFirmware
-
       configuration.firmware = path.join(
         firmwareDirectory.toString(),
-        firmwareFile
+        host.efiHypervisor.firmwareFile
       )
 
       return new host.vmModule.OpenBsd(

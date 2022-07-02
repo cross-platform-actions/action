@@ -612,6 +612,9 @@ class MacOs extends Host {
     get hypervisor() {
         return new hypervisor.Xhyve();
     }
+    get efiHypervisor() {
+        return this.hypervisor;
+    }
 }
 class Linux extends Host {
     get workDirectory() {
@@ -630,6 +633,9 @@ class Linux extends Host {
     }
     get hypervisor() {
         return new hypervisor.Qemu();
+    }
+    get efiHypervisor() {
+        return new hypervisor.QemuEfi();
     }
 }
 function getCurrentKind() {
@@ -677,7 +683,7 @@ HostQemu.MacosHostQemu = class extends HostQemu {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Qemu = exports.Xhyve = exports.Hypervisor = void 0;
+exports.QemuEfi = exports.Qemu = exports.Xhyve = exports.Hypervisor = void 0;
 const resource_urls_1 = __webpack_require__(3990);
 class Hypervisor {
 }
@@ -686,6 +692,9 @@ class Xhyve extends Hypervisor {
     get sshPort() {
         return 22;
     }
+    get firmwareFile() {
+        return 'uefi.fd';
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getResourceUrl(_architecture) {
         return `${resource_urls_1.ResourceUrls.create().resourceBaseUrl}/xhyve-macos.tar`;
@@ -693,14 +702,27 @@ class Xhyve extends Hypervisor {
 }
 exports.Xhyve = Xhyve;
 class Qemu extends Hypervisor {
+    constructor() {
+        super(...arguments);
+        this.firmwareDirectory = 'share/qemu';
+    }
     get sshPort() {
         return 2847;
+    }
+    get firmwareFile() {
+        return `${this.firmwareDirectory}/bios-256k.bin`;
     }
     getResourceUrl(architecture) {
         return architecture.resourceUrl;
     }
 }
 exports.Qemu = Qemu;
+class QemuEfi extends Qemu {
+    get firmwareFile() {
+        return `${this.firmwareDirectory}/OVMF.fd`;
+    }
+}
+exports.QemuEfi = QemuEfi;
 //# sourceMappingURL=hypervisor.js.map
 
 /***/ }),
@@ -829,9 +851,6 @@ exports.toKind = toKind;
 class OperatingSystem {
     constructor(name, arch, version) {
         this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`;
-        this.xhyveEfiFirmware = 'uefi.fd';
-        this.qemuEfiFirmware = `${OperatingSystem.qemuFirmwareDirectory}/OVMF.fd`;
-        this.qemuBiosFirmware = `${OperatingSystem.qemuFirmwareDirectory}/bios-256k.bin`;
         const hostString = host_1.host.toString();
         this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`;
         this.name = name;
@@ -879,7 +898,6 @@ class OperatingSystem {
     }
 }
 exports.OperatingSystem = OperatingSystem;
-OperatingSystem.qemuFirmwareDirectory = 'share/qemu';
 OperatingSystem.resourceUrls = resource_urls_1.ResourceUrls.create();
 class Qemu extends OperatingSystem {
     get ssHostPort() {
@@ -913,10 +931,7 @@ class FreeBsd extends OperatingSystem {
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
-            const firmwareFile = host_1.host.canRunXhyve(this.architecture)
-                ? this.xhyveEfiFirmware
-                : this.qemuBiosFirmware;
-            configuration.firmware = path.join(firmwareDirectory.toString(), firmwareFile);
+            configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile);
             return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
@@ -945,7 +960,7 @@ class NetBsd extends Qemu {
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating NetBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
-            configuration.firmware = path.join(firmwareDirectory.toString(), this.qemuBiosFirmware);
+            configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile);
             return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
@@ -986,10 +1001,7 @@ class OpenBsd extends OperatingSystem {
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
-            const firmwareFile = host_1.host.canRunXhyve(this.architecture)
-                ? this.xhyveEfiFirmware
-                : this.qemuEfiFirmware;
-            configuration.firmware = path.join(firmwareDirectory.toString(), firmwareFile);
+            configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile);
             return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
         }
         else {
