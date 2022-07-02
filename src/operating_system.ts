@@ -60,11 +60,11 @@ export abstract class OperatingSystem {
 
   static create(
     operatingSystemKind: Kind,
-    architecture: architecture.Architecture,
+    arch: architecture.Architecture,
     version: string
   ): OperatingSystem {
     const cls = getOrThrow(this.operatingSystemMap, operatingSystemKind)
-    return new cls(architecture, version)
+    return new cls(arch, version)
   }
 
   private static get operatingSystemMap(): ReadonlyMap<Kind, typeof FreeBsd> {
@@ -143,8 +143,7 @@ class FreeBsd extends OperatingSystem {
   }
 
   get hypervisorUrl(): string {
-    if (host.canRunXhyve(this.architecture)) return this.xhyveHypervisorUrl
-    else return this.architecture.resourceUrl
+    return host.hypervisor.getResourceUrl(this.architecture)
   }
 
   get ssHostPort(): number {
