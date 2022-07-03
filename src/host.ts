@@ -1,6 +1,5 @@
 import * as process from 'process'
 
-import * as architecture from './architecture'
 import HostQemu from './host_qemu'
 import * as hypervisor from './hypervisor'
 import * as qemu from './qemu_vm'
@@ -40,7 +39,6 @@ export abstract class Host {
   abstract get workDirectory(): string
   abstract get vmModule(): typeof xhyve | typeof qemu
   abstract get qemu(): HostQemu
-  abstract canRunXhyve(arch: architecture.Architecture): boolean
   abstract get hypervisor(): hypervisor.Hypervisor
   abstract get efiHypervisor(): hypervisor.Hypervisor
 
@@ -66,10 +64,6 @@ class MacOs extends Host {
     return new HostQemu.MacosHostQemu()
   }
 
-  override canRunXhyve(arch: architecture.Architecture): boolean {
-    return arch.canRunXhyve
-  }
-
   override get hypervisor(): hypervisor.Hypervisor {
     return new hypervisor.Xhyve()
   }
@@ -90,12 +84,6 @@ class Linux extends Host {
 
   override get qemu(): HostQemu {
     return new HostQemu.LinuxHostQemu()
-  }
-
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  override canRunXhyve(_arch: architecture.Architecture): boolean {
-    /* eslint-enable @typescript-eslint/no-unused-vars */
-    return false
   }
 
   override get hypervisor(): hypervisor.Hypervisor {

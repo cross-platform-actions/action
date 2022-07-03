@@ -606,9 +606,6 @@ class MacOs extends Host {
     get qemu() {
         return new host_qemu_1.default.MacosHostQemu();
     }
-    canRunXhyve(arch) {
-        return arch.canRunXhyve;
-    }
     get hypervisor() {
         return new hypervisor.Xhyve();
     }
@@ -625,11 +622,6 @@ class Linux extends Host {
     }
     get qemu() {
         return new host_qemu_1.default.LinuxHostQemu();
-    }
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    canRunXhyve(_arch) {
-        /* eslint-enable @typescript-eslint/no-unused-vars */
-        return false;
     }
     get hypervisor() {
         return new hypervisor.Qemu();
@@ -823,7 +815,6 @@ const path = __importStar(__webpack_require__(5622));
 const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
 const architecture = __importStar(__webpack_require__(4019));
-const xhyve = __importStar(__webpack_require__(2722));
 const qemu = __importStar(__webpack_require__(1106));
 const vmModule = __importStar(__webpack_require__(2772));
 const action = __importStar(__webpack_require__(6072));
@@ -973,16 +964,10 @@ class OpenBsd extends OperatingSystem {
         super('openbsd', arch, version);
     }
     get hypervisorUrl() {
-        if (host_1.host.canRunXhyve(this.architecture))
-            return this.xhyveHypervisorUrl;
-        else
-            return this.architecture.resourceUrl;
+        return host_1.host.hypervisor.getResourceUrl(this.architecture);
     }
     get ssHostPort() {
-        if (host_1.host.canRunXhyve(this.architecture))
-            return xhyve.Vm.sshPort;
-        else
-            return qemu.Vm.sshPort;
+        return host_1.host.hypervisor.sshPort;
     }
     get actionImplementationKind() {
         if (this.architecture.kind === architecture.Kind.x86_64)

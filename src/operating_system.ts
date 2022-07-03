@@ -5,7 +5,6 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
 import * as architecture from './architecture'
-import * as xhyve from './xhyve_vm'
 import * as qemu from './qemu_vm'
 import * as vmModule from './vm'
 import * as action from './action/action'
@@ -248,13 +247,11 @@ class OpenBsd extends OperatingSystem {
   }
 
   get hypervisorUrl(): string {
-    if (host.canRunXhyve(this.architecture)) return this.xhyveHypervisorUrl
-    else return this.architecture.resourceUrl
+    return host.hypervisor.getResourceUrl(this.architecture)
   }
 
   get ssHostPort(): number {
-    if (host.canRunXhyve(this.architecture)) return xhyve.Vm.sshPort
-    else return qemu.Vm.sshPort
+    return host.hypervisor.sshPort
   }
 
   get actionImplementationKind(): action.ImplementationKind {
