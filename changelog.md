@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2022-07-03
+### Changed
+- Only print files synced in debug mode ([#11])(https://github.com/cross-platform-actions/action/issues/11)
+
 ## [0.6.0] - 2022-06-14
 ### Added
 - Add support for OpenBSD 7.1 ([openbsd-builder#9](https://github.com/cross-platform-actions/openbsd-builder/pull/9))
