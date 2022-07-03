@@ -554,38 +554,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.host = exports.Host = exports.kind = exports.Kind = void 0;
+exports.host = exports.Host = void 0;
 const process = __importStar(__webpack_require__(1765));
 const host_qemu_1 = __importDefault(__webpack_require__(9097));
 const hypervisor = __importStar(__webpack_require__(4288));
 const qemu = __importStar(__webpack_require__(1106));
 const utility_1 = __webpack_require__(2857);
 const xhyve = __importStar(__webpack_require__(2722));
-var Kind;
-(function (Kind) {
-    Kind[Kind["darwin"] = 0] = "darwin";
-    Kind[Kind["linux"] = 1] = "linux";
-})(Kind = exports.Kind || (exports.Kind = {}));
-exports.kind = toKind(process.platform);
-function toKind(value) {
-    switch (value) {
-        case 'darwin':
-            return Kind.darwin;
-        case 'linux':
-            return Kind.linux;
-        default:
-            throw Error(`Unhandled host platform: ${value}`);
-    }
-}
 class Host {
-    static create(k = getCurrentKind()) {
-        switch (k) {
-            case Kind.darwin:
+    static create(platform = process.platform) {
+        switch (platform) {
+            case 'darwin':
                 return new MacOs();
-            case Kind.linux:
+            case 'linux':
                 return new Linux();
             default:
-                throw Error(`Unhandled host platform: ${k}`);
+                throw Error(`Unhandled host platform: ${platform}`);
         }
     }
     resolve(implementation) {
@@ -629,9 +613,6 @@ class Linux extends Host {
     get efiHypervisor() {
         return new hypervisor.QemuEfi();
     }
-}
-function getCurrentKind() {
-    return toKind(process.platform);
 }
 exports.host = Host.create();
 //# sourceMappingURL=host.js.map

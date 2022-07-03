@@ -6,33 +6,15 @@ import * as qemu from './qemu_vm'
 import {getImplementation} from './utility'
 import * as xhyve from './xhyve_vm'
 
-export enum Kind {
-  darwin,
-  linux
-}
-
-export const kind = toKind(process.platform)
-
-function toKind(value: string): Kind {
-  switch (value) {
-    case 'darwin':
-      return Kind.darwin
-    case 'linux':
-      return Kind.linux
-    default:
-      throw Error(`Unhandled host platform: ${value}`)
-  }
-}
-
 export abstract class Host {
-  static create(k: Kind = getCurrentKind()): Host {
-    switch (k) {
-      case Kind.darwin:
+  static create(platform: string = process.platform): Host {
+    switch (platform) {
+      case 'darwin':
         return new MacOs()
-      case Kind.linux:
+      case 'linux':
         return new Linux()
       default:
-        throw Error(`Unhandled host platform: ${k}`)
+        throw Error(`Unhandled host platform: ${platform}`)
     }
   }
 
@@ -95,7 +77,4 @@ class Linux extends Host {
   }
 }
 
-function getCurrentKind(): Kind {
-  return toKind(process.platform)
-}
 export const host = Host.create()
