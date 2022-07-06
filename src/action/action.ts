@@ -223,7 +223,7 @@ export class Action {
   }
 
   private get syncVerboseFlag(): string {
-    return core.isDebug() ? '-v' : ''
+    return core.isDebug() ? 'v' : ''
   }
 
   private async syncFiles(
@@ -233,8 +233,7 @@ export class Action {
     core.debug(`Syncing files to VM, excluding: ${excludePaths}`)
     // prettier-ignore
     await exec.exec('rsync', [
-      '-auzrtopg',
-      this.syncVerboseFlag,
+      `-auzrtopg${this.syncVerboseFlag}`,
       '--exclude', '_actions/cross-platform-actions/action',
       ...flatMap(excludePaths, p => ['--exclude', p]),
       `${this.workDirectory}/`,
@@ -246,8 +245,7 @@ export class Action {
     core.info('Syncing back files')
     // prettier-ignore
     await exec.exec('rsync', [
-      '-uzrtopg',
-      this.syncVerboseFlag,
+      `-uzrtopg${this.syncVerboseFlag}`,
       `runner@${ipAddress}:work/`,
       this.workDirectory
     ])

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2022-07-06
+### Fixed
+- v0.6.1 only works if debug mode is enabled ([#12])(https://github.com/cross-platform-actions/action/issues/12)
+
 ## [0.6.1] - 2022-07-03
 ### Changed
 - Only print files synced in debug mode ([#11])(https://github.com/cross-platform-actions/action/issues/11)

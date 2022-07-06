@@ -200,15 +200,14 @@ class Action {
         });
     }
     get syncVerboseFlag() {
-        return core.isDebug() ? '-v' : '';
+        return core.isDebug() ? 'v' : '';
     }
     syncFiles(ipAddress, ...excludePaths) {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug(`Syncing files to VM, excluding: ${excludePaths}`);
             // prettier-ignore
             yield exec.exec('rsync', [
-                '-auzrtopg',
-                this.syncVerboseFlag,
+                `-auzrtopg${this.syncVerboseFlag}`,
                 '--exclude', '_actions/cross-platform-actions/action',
                 ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
                 `${this.workDirectory}/`,
@@ -221,8 +220,7 @@ class Action {
             core.info('Syncing back files');
             // prettier-ignore
             yield exec.exec('rsync', [
-                '-uzrtopg',
-                this.syncVerboseFlag,
+                `-uzrtopg${this.syncVerboseFlag}`,
                 `runner@${ipAddress}:work/`,
                 this.workDirectory
             ]);
