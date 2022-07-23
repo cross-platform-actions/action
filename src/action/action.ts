@@ -40,7 +40,7 @@ export class Action {
     this.host = hostModule.Host.create()
     this.tempPath = fs.mkdtempSync('/tmp/resources')
     const arch = architecture.Architecture.for(
-      architecture.Kind.x86_64,
+      this.input.architecture,
       this.host
     )
 
