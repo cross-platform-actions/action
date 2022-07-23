@@ -280,22 +280,16 @@ class OpenBsd extends OperatingSystem {
   ): vmModule.Vm {
     core.debug('Creating OpenBSD VM')
 
-    if (this.architecture.kind === architecture.Kind.x86_64) {
-      configuration.firmware = path.join(
-        firmwareDirectory.toString(),
-        host.efiHypervisor.firmwareFile
-      )
+    configuration.firmware = path.join(
+      firmwareDirectory.toString(),
+      host.efiHypervisor.firmwareFile
+    )
 
-      return new host.vmModule.OpenBsd(
-        hypervisorDirectory,
-        resourcesDirectory,
-        configuration
-      )
-    } else {
-      throw Error(
-        `Not implemented: OpenBSD guests are not implemented on ${this.architecture.name}`
-      )
-    }
+    return new host.vmModule.OpenBsd(
+      hypervisorDirectory,
+      resourcesDirectory,
+      configuration
+    )
   }
 }
 

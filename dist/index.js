@@ -65,7 +65,7 @@ class Action {
         this.targetDiskName = 'disk.raw';
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
-        const arch = architecture.Architecture.for(architecture.Kind.x86_64, this.host);
+        const arch = architecture.Architecture.for(this.input.architecture, this.host);
         this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, arch, this.input.version);
         this.resourceDisk = resource_disk_1.default.for(this);
         this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
@@ -102,7 +102,7 @@ class Action {
             try {
                 yield vm.run();
                 this.configSSH(vm.ipAddress);
-                yield vm.wait(60);
+                yield vm.wait(120);
                 yield this.operatingSystem.setupWorkDirectory(vm, this.workDirectory);
                 yield this.syncFiles(vm.ipAddress, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
@@ -523,7 +523,9 @@ function toKind(value) {
 exports.toKind = toKind;
 const architectureMap = {
     arm64: Kind.arm64,
-    'x86-64': Kind.x86_64
+    aarch64: Kind.arm64,
+    'x86-64': Kind.x86_64,
+    x86_64: Kind.x86_64
 };
 //# sourceMappingURL=architecture.js.map
 
@@ -695,7 +697,7 @@ class Qemu extends Hypervisor {
 exports.Qemu = Qemu;
 class QemuEfi extends Qemu {
     get firmwareFile() {
-        return `${this.firmwareDirectory}/OVMF.fd`;
+        return `${this.firmwareDirectory}/uefi.fd`;
     }
 }
 exports.QemuEfi = QemuEfi;
@@ -969,13 +971,8 @@ class OpenBsd extends OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
-        if (this.architecture.kind === architecture.Kind.x86_64) {
-            configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile);
-            return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
-        }
-        else {
-            throw Error(`Not implemented: OpenBSD guests are not implemented on ${this.architecture.name}`);
-        }
+        configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile);
+        return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
     }
 }
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
@@ -1492,7 +1489,7 @@ const version = {
         netbsd: 'v0.0.1',
         openbsd: 'v0.3.0'
     },
-    resources: 'v0.5.1'
+    resources: 'v0.6.0-rc3'
 };
 exports.default = version;
 //# sourceMappingURL=version.js.map

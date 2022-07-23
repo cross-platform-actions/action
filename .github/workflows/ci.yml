@@ -17,7 +17,7 @@ jobs:
       - run: npm run all
 
   test: # make sure the action works on a clean machine without building
-    name: ${{ matrix.os.name }} ${{ matrix.os.version }} on ${{ matrix.os.host }}
+    name: ${{ matrix.os.name }} ${{ matrix.os.architecture }} ${{ matrix.os.version }} on ${{ matrix.os.host }}
     runs-on: ${{ matrix.os.host }}
     strategy:
       fail-fast: false
@@ -99,6 +99,14 @@ jobs:
             uname:
               hardware: amd64
 
+          - name: OpenBSD
+            architecture: arm64
+            version: '7.1'
+            host: ubuntu-latest
+            workDirectory: /home/runner/work/action/action
+            uname:
+              hardware: arm64
+
           - name: NetBSD
             version: '9.2'
             host: ubuntu-latest
@@ -126,6 +134,7 @@ jobs:
         with:
           environment_variables: FOO BAR
           operating_system: ${{ matrix.os.name }}
+          architecture: ${{ matrix.os.architecture }}
           version: '${{ matrix.os.version }}'
           run: |
             uname -a

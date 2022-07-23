@@ -40,7 +40,7 @@ export class Action {
     this.host = hostModule.Host.create()
     this.tempPath = fs.mkdtempSync('/tmp/resources')
     const arch = architecture.Architecture.for(
-      architecture.Kind.x86_64,
+      this.input.architecture,
       this.host
     )
 
@@ -101,7 +101,7 @@ export class Action {
     try {
       await vm.run()
       this.configSSH(vm.ipAddress)
-      await vm.wait(60)
+      await vm.wait(120)
       await this.operatingSystem.setupWorkDirectory(vm, this.workDirectory)
       await this.syncFiles(
         vm.ipAddress,

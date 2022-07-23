@@ -40,6 +40,6 @@ export class Qemu extends Hypervisor {
 
 export class QemuEfi extends Qemu {
   override get firmwareFile(): string {
-    return `${this.firmwareDirectory}/OVMF.fd`
+    return `${this.firmwareDirectory}/uefi.fd`
   }
 }
