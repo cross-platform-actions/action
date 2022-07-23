@@ -8,6 +8,7 @@ import * as exec from '@actions/exec'
 import * as vm from './vm'
 import {ExecuteOptions} from './utility'
 import {wait} from './wait'
+import * as architecture from './architecture'
 
 export enum Accelerator {
   hvf,
@@ -37,6 +38,7 @@ export abstract class Vm {
 
   static readonly user = 'runner'
   protected vmProcess!: ChildProcess
+  protected readonly architecture: architecture.Architecture
   protected readonly configuration: vm.Configuration
   protected readonly hypervisorDirectory: fs.PathLike
   protected readonly resourcesDirectory: fs.PathLike
@@ -46,10 +48,12 @@ export abstract class Vm {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     hypervisorBinary: fs.PathLike,
+    architecture: architecture.Architecture,
     configuration: vm.Configuration
   ) {
     this.hypervisorDirectory = hypervisorDirectory
     this.resourcesDirectory = resourcesDirectory
+    this.architecture = architecture
     this.configuration = configuration
     this.hypervisorPath = path.join(
       hypervisorDirectory.toString(),

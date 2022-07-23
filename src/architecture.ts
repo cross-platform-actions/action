@@ -4,6 +4,7 @@ import * as hypervisor from './hypervisor'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import {getOrThrow, getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
+import * as os from './operating_system'
 
 export enum Kind {
   arm64,
@@ -20,7 +21,10 @@ export abstract class Architecture {
     this.host = host
   }
 
-  static for(kind: Kind, host: Host): Architecture {
+  static for(kind: Kind, host: Host, operating_system: os.Kind): Architecture {
+    if (kind == Kind.x86_64 && operating_system == os.Kind.openBsd)
+      return new Architecture.X86_64OpenBsd(kind, host)
+
     return new (getOrThrow(Architecture.architectureMap, kind))(kind, host)
   }
 
@@ -31,6 +35,10 @@ export abstract class Architecture {
   abstract get accelerator(): vm.Accelerator
   abstract get canRunXhyve(): boolean
   abstract get hypervisor(): hypervisor.Hypervisor
+
+  get networkDevice(): string {
+    return 'virtio-net'
+  }
 
   resolve<T>(implementation: Record<string, T>): T {
     const name = this.constructor.name.toLocaleLowerCase()
@@ -105,6 +113,12 @@ export abstract class Architecture {
     }
   }
 
+  private static readonly X86_64OpenBsd = class extends this.X86_64 {
+    override get networkDevice(): string {
+      return 'e1000'
+    }
+  }
+
   private static readonly architectureMap: ReadonlyMap<
     Kind,
     typeof Architecture.Arm64
@@ -120,5 +134,7 @@ export function toKind(value: string): Kind | undefined {
 
 const architectureMap: Record<string, Kind> = {
   arm64: Kind.arm64,
-  'x86-64': Kind.x86_64
+  aarch64: Kind.arm64,
+  'x86-64': Kind.x86_64,
+  x86_64: Kind.x86_64
 } as const

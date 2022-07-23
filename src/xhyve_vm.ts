@@ -5,6 +5,7 @@ import * as core from '@actions/core'
 import * as vm from './vm'
 import {execWithOutput} from './utility'
 import {wait} from './wait'
+import * as architecture from './architecture'
 
 export abstract class Vm extends vm.Vm {
   static readonly sshPort = 22
@@ -13,9 +14,16 @@ export abstract class Vm extends vm.Vm {
   constructor(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
+    architecture: architecture.Architecture,
     configuration: vm.Configuration
   ) {
-    super(hypervisorDirectory, resourcesDirectory, 'xhyve', configuration)
+    super(
+      hypervisorDirectory,
+      resourcesDirectory,
+      'xhyve',
+      architecture,
+      configuration
+    )
   }
 
   override async init(): Promise<void> {

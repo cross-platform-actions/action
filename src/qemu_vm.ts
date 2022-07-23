@@ -1,4 +1,5 @@
 import * as fs from 'fs'
+import * as architecture from './architecture'
 import * as vm from './vm'
 
 export abstract class Vm extends vm.Vm {
@@ -7,9 +8,16 @@ export abstract class Vm extends vm.Vm {
   constructor(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
+    architecture: architecture.Architecture,
     configuration: vm.Configuration
   ) {
-    super(hypervisorDirectory, resourcesDirectory, 'qemu', configuration)
+    super(
+      hypervisorDirectory,
+      resourcesDirectory,
+      'qemu',
+      architecture,
+      configuration
+    )
   }
 
   protected override async getIpAddress(): Promise<string> {
@@ -94,7 +102,7 @@ export class OpenBsd extends Vm {
   }
 
   protected override get netDevive(): string {
-    return 'e1000'
+    return this.architecture.networkDevice
   }
 
   protected override async shutdown(): Promise<void> {

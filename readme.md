@@ -16,8 +16,9 @@ Some of the features that are supported include:
 
 ## Usage
 
-Here's a sample workflow file which will setup a matrix resulting in two jobs.
-One which will run on FreeBSD 12.2 and one which runs on OpenBSD 6.8.
+Here's a sample workflow file which will setup a matrix resulting in four jobs.
+One which will run on FreeBSD 13.0, one which runs OpenBSD 7.1, one which runs
+NetBSD 9.2 and one which runs OpenBSD 7.1 on ARM64.
 
 ```yaml
 name: CI
@@ -26,14 +27,29 @@ on: [push]
 
 jobs:
   test:
-    runs-on: macos-10.15
+    runs-on: ${{ matrix.os.host }}
     strategy:
       matrix:
         os:
           - name: freebsd
-            version: '12.2'
+            architecture: x86-64
+            version: '13.0'
+            host: macos-10.15
+
           - name: openbsd
-            version: '6.8'
+            architecture: x86-64
+            version: '7.1'
+            host: macos-10.15
+
+          - name: openbsd
+            architecture: arm64
+            version: '7.1'
+            host: ubuntu-latest
+
+          - name: netbsd
+            architecture: x86-64
+            version: '9.2'
+            host: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -46,6 +62,7 @@ jobs:
         with:
           environment_variables: MY_ENV1 MY_ENV2
           operating_system: ${{ matrix.os.name }}
+          architecture: ${{ matrix.os.architecture }}
           version: ${{ matrix.os.version }}
           shell: bash
           run: |
@@ -88,11 +105,11 @@ operating system will list which versions are supported.
 
 ### [OpenBSD][openbsd_builder] (`openbsd`)
 
-| Version | x86-64 |
-| ------- | ------ |
-| 7.1     | ✓      |
-| 6.9     | ✓      |
-| 6.8     | ✓      |
+| Version | x86-64 | arm64  |
+| ------- | ------ | ------ |
+| 7.1     | ✓      | ✓      |
+| 6.9     | ✓      | ✓      |
+| 6.8     | ✓      | ✗      |
 
 ### [FreeBSD][freebsd_builder] (`freebsd`)
 

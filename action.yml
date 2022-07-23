@@ -10,6 +10,10 @@ inputs:
   operating_system:
     required: true
     description: The type of operating system to run the job on
+  architecture:
+    required: false
+    description: The architecture of the operating system.
+    default: x86-64
   version:
     required: true
     description: The version of the operating system to use

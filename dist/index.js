@@ -9,7 +9,11 @@ require('./sourcemap-register.js');module.exports =
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -65,7 +69,7 @@ class Action {
         this.targetDiskName = 'disk.raw';
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
-        const arch = architecture.Architecture.for(architecture.Kind.x86_64, this.host);
+        const arch = architecture.Architecture.for(this.input.architecture, this.host, this.input.operatingSystem);
         this.operatingSystem = os.OperatingSystem.create(this.input.operatingSystem, arch, this.input.version);
         this.resourceDisk = resource_disk_1.default.for(this);
         this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
@@ -102,7 +106,7 @@ class Action {
             try {
                 yield vm.run();
                 this.configSSH(vm.ipAddress);
-                yield vm.wait(60);
+                yield vm.wait(120);
                 yield this.operatingSystem.setupWorkDirectory(vm, this.workDirectory);
                 yield this.syncFiles(vm.ipAddress, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
@@ -295,7 +299,11 @@ class QemuImplementation extends Implementation {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -418,7 +426,11 @@ exports.toString = toString;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -435,12 +447,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.toKind = exports.Architecture = exports.Kind = void 0;
 const hypervisor = __importStar(__webpack_require__(4288));
 const resource_urls_1 = __webpack_require__(3990);
 const utility_1 = __webpack_require__(2857);
 const vm = __importStar(__webpack_require__(2772));
+const os = __importStar(__webpack_require__(9385));
 var Kind;
 (function (Kind) {
     Kind[Kind["arm64"] = 0] = "arm64";
@@ -452,8 +466,13 @@ class Architecture {
         this.kind = kind;
         this.host = host;
     }
-    static for(kind, host) {
+    static for(kind, host, operating_system) {
+        if (kind == Kind.x86_64 && operating_system == os.Kind.openBsd)
+            return new Architecture.X86_64OpenBsd(kind, host);
         return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host);
+    }
+    get networkDevice() {
+        return 'virtio-net';
     }
     resolve(implementation) {
         const name = this.constructor.name.toLocaleLowerCase();
@@ -467,6 +486,7 @@ class Architecture {
     }
 }
 exports.Architecture = Architecture;
+_a = Architecture;
 Architecture.Arm64 = class extends Architecture {
     get name() {
         return 'arm64';
@@ -513,6 +533,11 @@ Architecture.X86_64 = class extends Architecture {
         return this.host.hypervisor;
     }
 };
+Architecture.X86_64OpenBsd = class extends _a.X86_64 {
+    get networkDevice() {
+        return 'e1000';
+    }
+};
 Architecture.architectureMap = new Map([
     [Kind.arm64, Architecture.Arm64],
     [Kind.x86_64, Architecture.X86_64]
@@ -523,7 +548,9 @@ function toKind(value) {
 exports.toKind = toKind;
 const architectureMap = {
     arm64: Kind.arm64,
-    'x86-64': Kind.x86_64
+    aarch64: Kind.arm64,
+    'x86-64': Kind.x86_64,
+    x86_64: Kind.x86_64
 };
 //# sourceMappingURL=architecture.js.map
 
@@ -536,7 +563,11 @@ const architectureMap = {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -695,7 +726,7 @@ class Qemu extends Hypervisor {
 exports.Qemu = Qemu;
 class QemuEfi extends Qemu {
     get firmwareFile() {
-        return `${this.firmwareDirectory}/OVMF.fd`;
+        return `${this.firmwareDirectory}/uefi.fd`;
     }
 }
 exports.QemuEfi = QemuEfi;
@@ -710,7 +741,11 @@ exports.QemuEfi = QemuEfi;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -764,7 +799,11 @@ main();
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -907,7 +946,7 @@ class FreeBsd extends OperatingSystem {
         core.debug('Creating FreeBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
             configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile);
-            return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, configuration);
+            return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, this.architecture, configuration);
         }
         else {
             throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
@@ -936,7 +975,7 @@ class NetBsd extends Qemu {
         core.debug('Creating NetBSD VM');
         if (this.architecture.kind === architecture.Kind.x86_64) {
             configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile);
-            return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, configuration);
+            return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, this.architecture, configuration);
         }
         else {
             throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
@@ -969,13 +1008,8 @@ class OpenBsd extends OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
-        if (this.architecture.kind === architecture.Kind.x86_64) {
-            configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile);
-            return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, configuration);
-        }
-        else {
-            throw Error(`Not implemented: OpenBSD guests are not implemented on ${this.architecture.name}`);
-        }
+        configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile);
+        return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, this.architecture, configuration);
     }
 }
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
@@ -1039,7 +1073,11 @@ ResourceUrls.defaultDomain = 'https://github.com';
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1069,8 +1107,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OpenBsd = exports.NetBsd = exports.FreeBsd = exports.Vm = void 0;
 const vm = __importStar(__webpack_require__(2772));
 class Vm extends vm.Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, configuration) {
-        super(hypervisorDirectory, resourcesDirectory, 'qemu', configuration);
+    constructor(hypervisorDirectory, resourcesDirectory, architecture, configuration) {
+        super(hypervisorDirectory, resourcesDirectory, 'qemu', architecture, configuration);
     }
     getIpAddress() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1146,7 +1184,7 @@ class OpenBsd extends Vm {
         return this.defaultHardDriveFlags;
     }
     get netDevive() {
-        return 'e1000';
+        return this.architecture.networkDevice;
     }
     shutdown() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1166,7 +1204,11 @@ exports.OpenBsd = OpenBsd;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1411,7 +1453,11 @@ LinuxDiskDeviceCreator.FullDiskDeviceCreator = class extends LinuxDiskDeviceCrea
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1490,9 +1536,9 @@ const version = {
     operating_system: {
         freebsd: 'v0.2.0',
         netbsd: 'v0.0.1',
-        openbsd: 'v0.3.0'
+        openbsd: 'v0.4.0'
     },
-    resources: 'v0.5.1'
+    resources: 'v0.6.0'
 };
 exports.default = version;
 //# sourceMappingURL=version.js.map
@@ -1506,7 +1552,11 @@ exports.default = version;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1545,9 +1595,10 @@ var Accelerator;
     Accelerator[Accelerator["tcg"] = 1] = "tcg";
 })(Accelerator = exports.Accelerator || (exports.Accelerator = {}));
 class Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, configuration) {
+    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, architecture, configuration) {
         this.hypervisorDirectory = hypervisorDirectory;
         this.resourcesDirectory = resourcesDirectory;
+        this.architecture = architecture;
         this.configuration = configuration;
         this.hypervisorPath = path.join(hypervisorDirectory.toString(), hypervisorBinary.toString());
     }
@@ -1674,7 +1725,11 @@ exports.wait = wait;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1707,8 +1762,8 @@ const vm = __importStar(__webpack_require__(2772));
 const utility_1 = __webpack_require__(2857);
 const wait_1 = __webpack_require__(5817);
 class Vm extends vm.Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, configuration) {
-        super(hypervisorDirectory, resourcesDirectory, 'xhyve', configuration);
+    constructor(hypervisorDirectory, resourcesDirectory, architecture, configuration) {
+        super(hypervisorDirectory, resourcesDirectory, 'xhyve', architecture, configuration);
     }
     init() {
         const _super = Object.create(null, {
