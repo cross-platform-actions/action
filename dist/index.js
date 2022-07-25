@@ -102,7 +102,7 @@ class Action {
             try {
                 yield vm.run();
                 this.configSSH(vm.ipAddress);
-                yield vm.wait(60);
+                yield vm.wait(120);
                 yield this.operatingSystem.setupWorkDirectory(vm, this.workDirectory);
                 yield this.syncFiles(vm.ipAddress, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');

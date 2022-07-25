@@ -101,7 +101,7 @@ export class Action {
     try {
       await vm.run()
       this.configSSH(vm.ipAddress)
-      await vm.wait(60)
+      await vm.wait(120)
       await this.operatingSystem.setupWorkDirectory(vm, this.workDirectory)
       await this.syncFiles(
         vm.ipAddress,
