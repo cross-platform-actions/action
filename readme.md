@@ -34,12 +34,12 @@ jobs:
           - name: freebsd
             architecture: x86-64
             version: '13.0'
-            host: macos-10.15
+            host: macos-12
 
           - name: openbsd
             architecture: x86-64
             version: '7.1'
-            host: macos-10.15
+            host: macos-12
 
           - name: openbsd
             architecture: arm64
@@ -129,10 +129,10 @@ operating system will list which versions are supported.
 This section list the different combinations of platforms and on which runners
 they can run.
 
-| Runner            | OpenBSD | FreeBSD | NetBSD |
-| ----------------- | ------- | ------- | ------ |
-| **Linux**         | ✓       | ✓       | ✓      |
-| **macos-10.15**   | ✓       | ✓       | ✗      |
+| Runner                                        | OpenBSD | FreeBSD | NetBSD |
+| ----------------------------------------------| ------- | ------- | ------ |
+| **Linux**                                     | ✓       | ✓       | ✓      |
+| **macos-10.15**, **macos-11**, **macos-12**   | ✓       | ✓       | ✗      |
 
 ## Under the Hood
 
