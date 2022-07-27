@@ -26,7 +26,7 @@ on: [push]
 
 jobs:
   test:
-    runs-on: macos-10.15
+    runs-on: macos-12
     strategy:
       matrix:
         os:
@@ -112,10 +112,10 @@ operating system will list which versions are supported.
 This section list the different combinations of platforms and on which runners
 they can run.
 
-| Runner            | OpenBSD | FreeBSD | NetBSD |
-| ----------------- | ------- | ------- | ------ |
-| **Linux**         | ✓       | ✓       | ✓      |
-| **macos-10.15**   | ✓       | ✓       | ✗      |
+| Runner                                        | OpenBSD | FreeBSD | NetBSD |
+| ----------------------------------------------| ------- | ------- | ------ |
+| **Linux**                                     | ✓       | ✓       | ✓      |
+| **macos-10.15**, **macos-11**, **macos-12**   | ✓       | ✓       | ✗      |
 
 ## Under the Hood
 
