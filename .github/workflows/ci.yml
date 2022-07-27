@@ -25,7 +25,7 @@ jobs:
         os:
           - name: FreeBSD
             version: '12.2'
-            host: macos-10.15
+            host: macos-12
             workDirectory: /Users/runner/work/action/action
             uname:
               hardware: amd64
@@ -42,7 +42,7 @@ jobs:
 
           - name: FreeBSD
             version: '13.0'
-            host: macos-10.15
+            host: macos-12
             workDirectory: /Users/runner/work/action/action
             uname:
               hardware: amd64
@@ -59,7 +59,7 @@ jobs:
 
           - name: OpenBSD
             version: '6.8'
-            host: macos-10.15
+            host: macos-12
             workDirectory: /Users/runner/work/action/action
             uname:
               hardware: amd64
@@ -73,7 +73,7 @@ jobs:
 
           - name: OpenBSD
             version: '6.9'
-            host: macos-10.15
+            host: macos-12
             workDirectory: /Users/runner/work/action/action
             uname:
               hardware: amd64
@@ -87,7 +87,7 @@ jobs:
 
           - name: OpenBSD
             version: '7.1'
-            host: macos-10.15
+            host: macos-12
             workDirectory: /Users/runner/work/action/action
             uname:
               hardware: amd64
