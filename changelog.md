@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for running on macOS 12 hosts
+- Add support for OpenBSD ARM64
 
 ## [0.6.2] - 2022-07-06
 ### Fixed
