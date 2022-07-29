@@ -26,14 +26,29 @@ on: [push]
 
 jobs:
   test:
-    runs-on: macos-12
+    runs-on: ${{ matrix.os.host }}
     strategy:
       matrix:
         os:
           - name: freebsd
-            version: '12.2'
+            architecture: x86-64
+            version: '13.0'
+            host: macos-12
+
           - name: openbsd
-            version: '6.8'
+            architecture: x86-64
+            version: '7.1'
+            host: macos-12
+
+          - name: openbsd
+            architecture: arm64
+            version: '7.1'
+            host: ubuntu-latest
+
+          - name: netbsd
+            architecture: x86-64
+            version: '9.2'
+            host: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -46,6 +61,7 @@ jobs:
         with:
           environment_variables: MY_ENV1 MY_ENV2
           operating_system: ${{ matrix.os.name }}
+          architecture: ${{ matrix.os.architecture }}
           version: ${{ matrix.os.version }}
           shell: bash
           run: |
