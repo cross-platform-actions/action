@@ -104,11 +104,11 @@ operating system will list which versions are supported.
 
 ### [OpenBSD][openbsd_builder] (`openbsd`)
 
-| Version | x86-64 |
-| ------- | ------ |
-| 7.1     | ✓      |
-| 6.9     | ✓      |
-| 6.8     | ✓      |
+| Version | x86-64 | arm64  |
+| ------- | ------ | ------ |
+| 7.1     | ✓      | ✓      |
+| 6.9     | ✓      | ✓      |
+| 6.8     | ✓      | ✓      |
 
 ### [FreeBSD][freebsd_builder] (`freebsd`)
 
