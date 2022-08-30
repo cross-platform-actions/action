@@ -11,12 +11,14 @@ on:
 jobs:
   build: # make sure build/ci work properly
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v2
       - run: npm install
       - run: npm run all
 
   test: # make sure the action works on a clean machine without building
+    timeout-minutes: 5
     name: ${{ matrix.os.name }} ${{ matrix.os.architecture }} ${{ matrix.os.version }} on ${{ matrix.os.host }}
     runs-on: ${{ matrix.os.host }}
     strategy:
