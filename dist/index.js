@@ -941,17 +941,15 @@ class FreeBsd extends OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
+        if (this.architecture.kind !== architecture.Kind.x86_64) {
+            throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
+        }
         let config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        if (this.architecture.kind === architecture.Kind.x86_64) {
-            return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
-        }
-        else {
-            throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
-        }
+        return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
 }
 class NetBsd extends Qemu {
@@ -974,17 +972,15 @@ class NetBsd extends Qemu {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating NetBSD VM');
+        if (this.architecture.kind !== architecture.Kind.x86_64) {
+            throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
+        }
         let config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        if (this.architecture.kind === architecture.Kind.x86_64) {
-            return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
-        }
-        else {
-            throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
-        }
+        return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
 }
 class OpenBsd extends OperatingSystem {

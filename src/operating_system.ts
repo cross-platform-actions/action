@@ -183,6 +183,12 @@ class FreeBsd extends OperatingSystem {
   ): vmModule.Vm {
     core.debug('Creating FreeBSD VM')
 
+    if (this.architecture.kind !== architecture.Kind.x86_64) {
+      throw Error(
+        `Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`
+      )
+    }
+
     let config: vmModule.Configuration = {
       ...configuration,
 
@@ -201,18 +207,12 @@ class FreeBsd extends OperatingSystem {
       uuid: this.uuid
     }
 
-    if (this.architecture.kind === architecture.Kind.x86_64) {
-      return new host.vmModule.FreeBsd(
-        hypervisorDirectory,
-        resourcesDirectory,
-        this.architecture,
-        config
-      )
-    } else {
-      throw Error(
-        `Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`
-      )
-    }
+    return new host.vmModule.FreeBsd(
+      hypervisorDirectory,
+      resourcesDirectory,
+      this.architecture,
+      config
+    )
   }
 }
 
@@ -249,6 +249,12 @@ class NetBsd extends Qemu {
   ): vmModule.Vm {
     core.debug('Creating NetBSD VM')
 
+    if (this.architecture.kind !== architecture.Kind.x86_64) {
+      throw Error(
+        `Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`
+      )
+    }
+
     let config: vmModule.Configuration = {
       ...configuration,
 
@@ -267,18 +273,12 @@ class NetBsd extends Qemu {
       uuid: this.uuid
     }
 
-    if (this.architecture.kind === architecture.Kind.x86_64) {
-      return new qemu.NetBsd(
-        hypervisorDirectory,
-        resourcesDirectory,
-        this.architecture,
-        config
-      )
-    } else {
-      throw Error(
-        `Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`
-      )
-    }
+    return new qemu.NetBsd(
+      hypervisorDirectory,
+      resourcesDirectory,
+      this.architecture,
+      config
+    )
   }
 }
 
