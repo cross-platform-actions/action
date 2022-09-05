@@ -31,6 +31,15 @@ export function toKind(value: string): Kind | undefined {
   return stringToKind.get(value.toLowerCase())
 }
 
+export interface VmConfiguration {
+  memory: string
+  cpuCount: number
+  diskImage: fs.PathLike
+
+  resourcesDiskImage: fs.PathLike
+  userboot: fs.PathLike
+}
+
 export abstract class OperatingSystem {
   readonly name: string
 
@@ -92,7 +101,7 @@ export abstract class OperatingSystem {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
-    configuration: vmModule.Configuration
+    configuration: VmConfiguration
   ): vmModule.Vm
 
   abstract prepareDisk(
@@ -116,6 +125,10 @@ export abstract class OperatingSystem {
         `rm -rf '${destination}' && mkdir -p '${workDirectory}' && ln -sf '${workDirectory}/' '${destination}'`
       )
     }
+  }
+
+  protected get uuid(): string {
+    return '864ED7F0-7876-4AA7-8511-816FABCFA87F'
   }
 
   private get imageName(): string {
@@ -166,21 +179,34 @@ class FreeBsd extends OperatingSystem {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
-    configuration: vmModule.Configuration
+    configuration: VmConfiguration
   ): vmModule.Vm {
     core.debug('Creating FreeBSD VM')
 
-    if (this.architecture.kind === architecture.Kind.x86_64) {
-      configuration.firmware = path.join(
+    let config: vmModule.Configuration = {
+      ...configuration,
+
+      ssHostPort: this.ssHostPort,
+      firmware: path.join(
         firmwareDirectory.toString(),
         host.hypervisor.firmwareFile
-      )
+      ),
 
+      // qemu
+      cpu: this.architecture.cpu,
+      accelerator: this.architecture.accelerator,
+      machineType: this.architecture.machineType,
+
+      // xhyve
+      uuid: this.uuid
+    }
+
+    if (this.architecture.kind === architecture.Kind.x86_64) {
       return new host.vmModule.FreeBsd(
         hypervisorDirectory,
         resourcesDirectory,
         this.architecture,
-        configuration
+        config
       )
     } else {
       throw Error(
@@ -219,21 +245,34 @@ class NetBsd extends Qemu {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
-    configuration: vmModule.Configuration
+    configuration: VmConfiguration
   ): vmModule.Vm {
     core.debug('Creating NetBSD VM')
 
-    if (this.architecture.kind === architecture.Kind.x86_64) {
-      configuration.firmware = path.join(
+    let config: vmModule.Configuration = {
+      ...configuration,
+
+      ssHostPort: this.ssHostPort,
+      firmware: path.join(
         firmwareDirectory.toString(),
         host.hypervisor.firmwareFile
-      )
+      ),
 
+      // qemu
+      cpu: this.architecture.cpu,
+      accelerator: this.architecture.accelerator,
+      machineType: this.architecture.machineType,
+
+      // xhyve
+      uuid: this.uuid
+    }
+
+    if (this.architecture.kind === architecture.Kind.x86_64) {
       return new qemu.NetBsd(
         hypervisorDirectory,
         resourcesDirectory,
         this.architecture,
-        configuration
+        config
       )
     } else {
       throw Error(
@@ -278,20 +317,33 @@ class OpenBsd extends OperatingSystem {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
-    configuration: vmModule.Configuration
+    configuration: VmConfiguration
   ): vmModule.Vm {
     core.debug('Creating OpenBSD VM')
 
-    configuration.firmware = path.join(
-      firmwareDirectory.toString(),
-      host.efiHypervisor.firmwareFile
-    )
+    let config: vmModule.Configuration = {
+      ...configuration,
+
+      ssHostPort: this.ssHostPort,
+      firmware: path.join(
+        firmwareDirectory.toString(),
+        host.efiHypervisor.firmwareFile
+      ),
+
+      // qemu
+      cpu: this.architecture.cpu,
+      accelerator: this.architecture.accelerator,
+      machineType: this.architecture.machineType,
+
+      // xhyve
+      uuid: this.uuid
+    }
 
     return new host.vmModule.OpenBsd(
       hypervisorDirectory,
       resourcesDirectory,
       this.architecture,
-      configuration
+      config
     )
   }
 }

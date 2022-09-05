@@ -163,15 +163,8 @@ export class Action {
         memory: '4G',
         cpuCount: 2,
         diskImage: path.join(resourcesDirectory, this.targetDiskName),
-        ssHostPort: this.operatingSystem.ssHostPort,
-
-        // qemu
-        cpu: this.operatingSystem.architecture.cpu,
-        accelerator: this.operatingSystem.architecture.accelerator,
-        machineType: this.operatingSystem.architecture.machineType,
 
         // xhyve
-        uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
         resourcesDiskImage: this.resourceDisk.diskPath,
         userboot: path.join(firmwareDirectory, 'userboot.so')
       }

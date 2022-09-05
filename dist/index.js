@@ -147,13 +147,7 @@ class Action {
                 memory: '4G',
                 cpuCount: 2,
                 diskImage: path.join(resourcesDirectory, this.targetDiskName),
-                ssHostPort: this.operatingSystem.ssHostPort,
-                // qemu
-                cpu: this.operatingSystem.architecture.cpu,
-                accelerator: this.operatingSystem.architecture.accelerator,
-                machineType: this.operatingSystem.architecture.machineType,
                 // xhyve
-                uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
                 resourcesDiskImage: this.resourceDisk.diskPath,
                 userboot: path.join(firmwareDirectory, 'userboot.so')
             });
@@ -906,6 +900,9 @@ class OperatingSystem {
             }
         });
     }
+    get uuid() {
+        return '864ED7F0-7876-4AA7-8511-816FABCFA87F';
+    }
     get imageName() {
         const encodedVersion = encodeURIComponent(this.version);
         return `${this.name}-${encodedVersion}-${this.architecture.name}.qcow2`;
@@ -944,9 +941,13 @@ class FreeBsd extends OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
+        let config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
+            // qemu
+            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            // xhyve
+            uuid: this.uuid });
         if (this.architecture.kind === architecture.Kind.x86_64) {
-            configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile);
-            return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, this.architecture, configuration);
+            return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
         }
         else {
             throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
@@ -973,9 +974,13 @@ class NetBsd extends Qemu {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating NetBSD VM');
+        let config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
+            // qemu
+            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            // xhyve
+            uuid: this.uuid });
         if (this.architecture.kind === architecture.Kind.x86_64) {
-            configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile);
-            return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, this.architecture, configuration);
+            return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
         }
         else {
             throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
@@ -1008,8 +1013,12 @@ class OpenBsd extends OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
-        configuration.firmware = path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile);
-        return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, this.architecture, configuration);
+        let config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile), 
+            // qemu
+            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            // xhyve
+            uuid: this.uuid });
+        return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
 }
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
