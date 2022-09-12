@@ -11,6 +11,7 @@ import flatMap from 'array.prototype.flatmap'
 import * as architecture from '../architecture'
 import * as hostModule from '../host'
 import * as os from '../operating_system'
+import * as os_factory from '../operating_systems/factory'
 import ResourceDisk from '../resource_disk'
 import * as vmModule from '../vm'
 import * as input from './input'
@@ -45,7 +46,7 @@ export class Action {
       this.input.operatingSystem
     )
 
-    this.operatingSystem = os.OperatingSystem.create(
+    this.operatingSystem = os_factory.create(
       this.input.operatingSystem,
       arch,
       this.input.version

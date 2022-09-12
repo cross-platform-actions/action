@@ -9,7 +9,7 @@ import * as qemu from './qemu_vm'
 import * as vmModule from './vm'
 import * as action from './action/action'
 import {host} from './host'
-import {Class, getImplementation, getOrThrow} from './utility'
+import {Class, getImplementation} from './utility'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import versions from './version'
 
@@ -58,23 +58,6 @@ export abstract class OperatingSystem {
     this.name = name
     this.version = version
     this.architecture = arch
-  }
-
-  static create(
-    operatingSystemKind: Kind,
-    arch: architecture.Architecture,
-    version: string
-  ): OperatingSystem {
-    const cls = getOrThrow(this.operatingSystemMap, operatingSystemKind)
-    return new cls(arch, version)
-  }
-
-  private static get operatingSystemMap(): ReadonlyMap<Kind, typeof FreeBsd> {
-    return new Map([
-      [Kind.freeBsd, FreeBsd],
-      [Kind.netBsd, NetBsd],
-      [Kind.openBsd, OpenBsd]
-    ])
   }
 
   abstract get virtualMachineImageReleaseVersion(): string
@@ -143,7 +126,7 @@ abstract class Qemu extends OperatingSystem {
   }
 }
 
-class FreeBsd extends OperatingSystem {
+export class FreeBsd extends OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
     super('freebsd', arch, version)
   }
@@ -216,7 +199,7 @@ class FreeBsd extends OperatingSystem {
   }
 }
 
-class NetBsd extends Qemu {
+export class NetBsd extends Qemu {
   constructor(arch: architecture.Architecture, version: string) {
     super('netbsd', arch, version)
   }
@@ -282,7 +265,7 @@ class NetBsd extends Qemu {
   }
 }
 
-class OpenBsd extends OperatingSystem {
+export class OpenBsd extends OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
     super('openbsd', arch, version)
   }
