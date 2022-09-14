@@ -1,21 +1,22 @@
 import * as architecture from '../architecture'
-import * as os from '../operating_system'
+import type {OperatingSystem} from '../operating_system'
+import {Kind} from './kind'
 import OpenBsd from './openbsd'
 import {getOrThrow} from '../utility'
 
 export function create(
-  operatingSystemKind: os.Kind,
+  operatingSystemKind: Kind,
   arch: architecture.Architecture,
   version: string
-): os.OperatingSystem {
+): OperatingSystem {
   const cls = getOrThrow(operatingSystemMap(), operatingSystemKind)
   return new cls(arch, version)
 }
 
-function operatingSystemMap(): ReadonlyMap<os.Kind, typeof os.FreeBsd> {
+function operatingSystemMap(): ReadonlyMap<Kind, typeof os.FreeBsd> {
   return new Map([
-    [os.Kind.freeBsd, os.FreeBsd],
-    [os.Kind.netBsd, os.NetBsd],
-    [os.Kind.openBsd, OpenBsd]
+    [Kind.freeBsd, os.FreeBsd],
+    [Kind.netBsd, os.NetBsd],
+    [Kind.openBsd, OpenBsd]
   ])
 }

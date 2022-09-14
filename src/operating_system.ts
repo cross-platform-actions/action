@@ -11,25 +11,6 @@ import * as action from './action/action'
 import {host} from './host'
 import {Class, getImplementation} from './utility'
 import {ResourceUrls} from './operating_systems/resource_urls'
-import versions from './version'
-
-export enum Kind {
-  freeBsd,
-  netBsd,
-  openBsd
-}
-
-const stringToKind: ReadonlyMap<string, Kind> = (() => {
-  const map = new Map<string, Kind>()
-  map.set('freebsd', Kind.freeBsd)
-  map.set('netbsd', Kind.netBsd)
-  map.set('openbsd', Kind.openBsd)
-  return map
-})()
-
-export function toKind(value: string): Kind | undefined {
-  return stringToKind.get(value.toLowerCase())
-}
 
 export interface VmConfiguration {
   memory: string
