@@ -5,7 +5,6 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
 import * as architecture from './architecture'
-import * as qemu from './qemu_vm'
 import * as vmModule from './vm'
 import * as action from './action/action'
 import {host} from './host'
@@ -101,12 +100,6 @@ export abstract class OperatingSystem {
   }
 }
 
-abstract class Qemu extends OperatingSystem {
-  get ssHostPort(): number {
-    return 2847
-  }
-}
-
 export class FreeBsd extends OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
     super('freebsd', arch, version)
@@ -172,72 +165,6 @@ export class FreeBsd extends OperatingSystem {
     }
 
     return new host.vmModule.FreeBsd(
-      hypervisorDirectory,
-      resourcesDirectory,
-      this.architecture,
-      config
-    )
-  }
-}
-
-export class NetBsd extends Qemu {
-  constructor(arch: architecture.Architecture, version: string) {
-    super('netbsd', arch, version)
-  }
-
-  get hypervisorUrl(): string {
-    return this.architecture.resourceUrl
-  }
-
-  get virtualMachineImageReleaseVersion(): string {
-    return versions.operating_system.netbsd
-  }
-
-  get actionImplementationKind(): action.ImplementationKind {
-    return action.ImplementationKind.qemu
-  }
-
-  override async prepareDisk(
-    diskImage: fs.PathLike,
-    targetDiskName: fs.PathLike,
-    resourcesDirectory: fs.PathLike
-  ): Promise<void> {
-    await convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
-  }
-
-  createVirtualMachine(
-    hypervisorDirectory: fs.PathLike,
-    resourcesDirectory: fs.PathLike,
-    firmwareDirectory: fs.PathLike,
-    configuration: VmConfiguration
-  ): vmModule.Vm {
-    core.debug('Creating NetBSD VM')
-
-    if (this.architecture.kind !== architecture.Kind.x86_64) {
-      throw Error(
-        `Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`
-      )
-    }
-
-    let config: vmModule.Configuration = {
-      ...configuration,
-
-      ssHostPort: this.ssHostPort,
-      firmware: path.join(
-        firmwareDirectory.toString(),
-        host.hypervisor.firmwareFile
-      ),
-
-      // qemu
-      cpu: this.architecture.cpu,
-      accelerator: this.architecture.accelerator,
-      machineType: this.architecture.machineType,
-
-      // xhyve
-      uuid: this.uuid
-    }
-
-    return new qemu.NetBsd(
       hypervisorDirectory,
       resourcesDirectory,
       this.architecture,
