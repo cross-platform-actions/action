@@ -1,5 +1,6 @@
 import * as architecture from '../architecture'
 import * as os from '../operating_system'
+import OpenBsd from './openbsd'
 import {getOrThrow} from '../utility'
 
 export function create(
@@ -15,6 +16,6 @@ function operatingSystemMap(): ReadonlyMap<os.Kind, typeof os.FreeBsd> {
   return new Map([
     [os.Kind.freeBsd, os.FreeBsd],
     [os.Kind.netBsd, os.NetBsd],
-    [os.Kind.openBsd, os.OpenBsd]
+    [os.Kind.openBsd, OpenBsd]
   ])
 }

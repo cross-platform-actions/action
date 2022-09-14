@@ -265,73 +265,7 @@ export class NetBsd extends Qemu {
   }
 }
 
-export class OpenBsd extends OperatingSystem {
-  constructor(arch: architecture.Architecture, version: string) {
-    super('openbsd', arch, version)
-  }
-
-  get hypervisorUrl(): string {
-    return host.hypervisor.getResourceUrl(this.architecture)
-  }
-
-  get ssHostPort(): number {
-    return host.hypervisor.sshPort
-  }
-
-  get actionImplementationKind(): action.ImplementationKind {
-    if (this.architecture.kind === architecture.Kind.x86_64)
-      return action.ImplementationKind.xhyve
-    else return action.ImplementationKind.qemu
-  }
-
-  override async prepareDisk(
-    diskImage: fs.PathLike,
-    targetDiskName: fs.PathLike,
-    resourcesDirectory: fs.PathLike
-  ): Promise<void> {
-    await convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
-  }
-
-  get virtualMachineImageReleaseVersion(): string {
-    return versions.operating_system.openbsd
-  }
-
-  createVirtualMachine(
-    hypervisorDirectory: fs.PathLike,
-    resourcesDirectory: fs.PathLike,
-    firmwareDirectory: fs.PathLike,
-    configuration: VmConfiguration
-  ): vmModule.Vm {
-    core.debug('Creating OpenBSD VM')
-
-    let config: vmModule.Configuration = {
-      ...configuration,
-
-      ssHostPort: this.ssHostPort,
-      firmware: path.join(
-        firmwareDirectory.toString(),
-        host.efiHypervisor.firmwareFile
-      ),
-
-      // qemu
-      cpu: this.architecture.cpu,
-      accelerator: this.architecture.accelerator,
-      machineType: this.architecture.machineType,
-
-      // xhyve
-      uuid: this.uuid
-    }
-
-    return new host.vmModule.OpenBsd(
-      hypervisorDirectory,
-      resourcesDirectory,
-      this.architecture,
-      config
-    )
-  }
-}
-
-async function convertToRawDisk(
+export async function convertToRawDisk(
   diskImage: fs.PathLike,
   targetDiskName: fs.PathLike,
   resourcesDirectory: fs.PathLike

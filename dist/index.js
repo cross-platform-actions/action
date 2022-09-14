@@ -803,7 +803,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OpenBsd = exports.NetBsd = exports.FreeBsd = exports.OperatingSystem = exports.toKind = exports.Kind = void 0;
+exports.convertToRawDisk = exports.NetBsd = exports.FreeBsd = exports.OperatingSystem = exports.toKind = exports.Kind = void 0;
 const path = __importStar(__webpack_require__(5622));
 const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
@@ -950,41 +950,6 @@ class NetBsd extends Qemu {
     }
 }
 exports.NetBsd = NetBsd;
-class OpenBsd extends OperatingSystem {
-    constructor(arch, version) {
-        super('openbsd', arch, version);
-    }
-    get hypervisorUrl() {
-        return host_1.host.hypervisor.getResourceUrl(this.architecture);
-    }
-    get ssHostPort() {
-        return host_1.host.hypervisor.sshPort;
-    }
-    get actionImplementationKind() {
-        if (this.architecture.kind === architecture.Kind.x86_64)
-            return action.ImplementationKind.xhyve;
-        else
-            return action.ImplementationKind.qemu;
-    }
-    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
-        });
-    }
-    get virtualMachineImageReleaseVersion() {
-        return version_1.default.operating_system.openbsd;
-    }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
-        core.debug('Creating OpenBSD VM');
-        let config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile), 
-            // qemu
-            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
-            // xhyve
-            uuid: this.uuid });
-        return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
-    }
-}
-exports.OpenBsd = OpenBsd;
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug('Converting qcow2 image to raw');
@@ -1000,6 +965,7 @@ function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
         ]);
     });
 }
+exports.convertToRawDisk = convertToRawDisk;
 //# sourceMappingURL=operating_system.js.map
 
 /***/ }),
@@ -1028,9 +994,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.create = void 0;
 const os = __importStar(__webpack_require__(9385));
+const openbsd_1 = __importDefault(__webpack_require__(8303));
 const utility_1 = __webpack_require__(2857);
 function create(operatingSystemKind, arch, version) {
     const cls = (0, utility_1.getOrThrow)(operatingSystemMap(), operatingSystemKind);
@@ -1041,10 +1011,93 @@ function operatingSystemMap() {
     return new Map([
         [os.Kind.freeBsd, os.FreeBsd],
         [os.Kind.netBsd, os.NetBsd],
-        [os.Kind.openBsd, os.OpenBsd]
+        [os.Kind.openBsd, openbsd_1.default]
     ]);
 }
 //# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 8303:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const path = __importStar(__webpack_require__(5622));
+const core = __importStar(__webpack_require__(2186));
+const architecture = __importStar(__webpack_require__(4019));
+const action = __importStar(__webpack_require__(6072));
+const host_1 = __webpack_require__(8215);
+const os = __importStar(__webpack_require__(9385));
+const version_1 = __importDefault(__webpack_require__(8217));
+class OpenBsd extends os.OperatingSystem {
+    constructor(arch, version) {
+        super('openbsd', arch, version);
+    }
+    get hypervisorUrl() {
+        return host_1.host.hypervisor.getResourceUrl(this.architecture);
+    }
+    get ssHostPort() {
+        return host_1.host.hypervisor.sshPort;
+    }
+    get actionImplementationKind() {
+        if (this.architecture.kind === architecture.Kind.x86_64)
+            return action.ImplementationKind.xhyve;
+        else
+            return action.ImplementationKind.qemu;
+    }
+    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
+        });
+    }
+    get virtualMachineImageReleaseVersion() {
+        return version_1.default.operating_system.openbsd;
+    }
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
+        core.debug('Creating OpenBSD VM');
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile), 
+            // qemu
+            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            // xhyve
+            uuid: this.uuid });
+        return new host_1.host.vmModule.OpenBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+    }
+}
+exports.default = OpenBsd;
+//# sourceMappingURL=openbsd.js.map
 
 /***/ }),
 
