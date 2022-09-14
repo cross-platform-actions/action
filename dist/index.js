@@ -310,7 +310,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Input = void 0;
 const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
-const os = __importStar(__webpack_require__(9385));
+const os_kind = __importStar(__webpack_require__(6713));
 const shell_1 = __webpack_require__(9044);
 class Input {
     get version() {
@@ -324,7 +324,7 @@ class Input {
         if (this.operatingSystem_ !== undefined)
             return this.operatingSystem_;
         const input = core.getInput('operating_system', { required: true });
-        const kind = os.toKind(input);
+        const kind = os_kind.toKind(input);
         core.debug(`operating_system input: '${input}'`);
         core.debug(`kind: '${kind}'`);
         if (kind === undefined)
@@ -436,7 +436,7 @@ const hypervisor = __importStar(__webpack_require__(4288));
 const resource_urls_1 = __webpack_require__(3990);
 const utility_1 = __webpack_require__(2857);
 const vm = __importStar(__webpack_require__(2772));
-const os = __importStar(__webpack_require__(9385));
+const os_kind = __importStar(__webpack_require__(6713));
 var Kind;
 (function (Kind) {
     Kind[Kind["arm64"] = 0] = "arm64";
@@ -449,7 +449,7 @@ class Architecture {
         this.host = host;
     }
     static for(kind, host, operating_system) {
-        if (kind == Kind.x86_64 && operating_system == os.Kind.openBsd)
+        if (kind == Kind.x86_64 && operating_system == os_kind.Kind.openBsd)
             return new Architecture.X86_64OpenBsd(kind, host);
         return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host);
     }
@@ -799,39 +799,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.convertToRawDisk = exports.NetBsd = exports.FreeBsd = exports.OperatingSystem = exports.toKind = exports.Kind = void 0;
+exports.convertToRawDisk = exports.OperatingSystem = void 0;
 const path = __importStar(__webpack_require__(5622));
 const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
-const architecture = __importStar(__webpack_require__(4019));
-const qemu = __importStar(__webpack_require__(1106));
 const vmModule = __importStar(__webpack_require__(2772));
-const action = __importStar(__webpack_require__(6072));
 const host_1 = __webpack_require__(8215);
 const utility_1 = __webpack_require__(2857);
 const resource_urls_1 = __webpack_require__(3990);
-const version_1 = __importDefault(__webpack_require__(8217));
-var Kind;
-(function (Kind) {
-    Kind[Kind["freeBsd"] = 0] = "freeBsd";
-    Kind[Kind["netBsd"] = 1] = "netBsd";
-    Kind[Kind["openBsd"] = 2] = "openBsd";
-})(Kind = exports.Kind || (exports.Kind = {}));
-const stringToKind = (() => {
-    const map = new Map();
-    map.set('freebsd', Kind.freeBsd);
-    map.set('netbsd', Kind.netBsd);
-    map.set('openbsd', Kind.openBsd);
-    return map;
-})();
-function toKind(value) {
-    return stringToKind.get(value.toLowerCase());
-}
-exports.toKind = toKind;
 class OperatingSystem {
     constructor(name, arch, version) {
         this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`;
@@ -875,81 +851,6 @@ class OperatingSystem {
 }
 exports.OperatingSystem = OperatingSystem;
 OperatingSystem.resourceUrls = resource_urls_1.ResourceUrls.create();
-class Qemu extends OperatingSystem {
-    get ssHostPort() {
-        return 2847;
-    }
-}
-class FreeBsd extends OperatingSystem {
-    constructor(arch, version) {
-        super('freebsd', arch, version);
-    }
-    get hypervisorUrl() {
-        return host_1.host.hypervisor.getResourceUrl(this.architecture);
-    }
-    get ssHostPort() {
-        return this.architecture.hypervisor.sshPort;
-    }
-    get actionImplementationKind() {
-        return this.architecture.resolve({
-            x86_64: action.ImplementationKind.xhyve,
-            default: action.ImplementationKind.qemu
-        });
-    }
-    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
-        });
-    }
-    get virtualMachineImageReleaseVersion() {
-        return version_1.default.operating_system.freebsd;
-    }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
-        core.debug('Creating FreeBSD VM');
-        if (this.architecture.kind !== architecture.Kind.x86_64) {
-            throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
-        }
-        let config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
-            // qemu
-            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
-            // xhyve
-            uuid: this.uuid });
-        return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
-    }
-}
-exports.FreeBsd = FreeBsd;
-class NetBsd extends Qemu {
-    constructor(arch, version) {
-        super('netbsd', arch, version);
-    }
-    get hypervisorUrl() {
-        return this.architecture.resourceUrl;
-    }
-    get virtualMachineImageReleaseVersion() {
-        return version_1.default.operating_system.netbsd;
-    }
-    get actionImplementationKind() {
-        return action.ImplementationKind.qemu;
-    }
-    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
-        });
-    }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
-        core.debug('Creating NetBSD VM');
-        if (this.architecture.kind !== architecture.Kind.x86_64) {
-            throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
-        }
-        let config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
-            // qemu
-            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
-            // xhyve
-            uuid: this.uuid });
-        return new qemu.NetBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
-    }
-}
-exports.NetBsd = NetBsd;
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug('Converting qcow2 image to raw');
@@ -975,6 +876,37 @@ exports.convertToRawDisk = convertToRawDisk;
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.create = void 0;
+const kind_1 = __webpack_require__(6713);
+const freebsd_1 = __importDefault(__webpack_require__(2741));
+const netbsd_1 = __importDefault(__webpack_require__(4572));
+const openbsd_1 = __importDefault(__webpack_require__(8303));
+const utility_1 = __webpack_require__(2857);
+function create(operatingSystemKind, arch, version) {
+    const cls = (0, utility_1.getOrThrow)(operatingSystemMap(), operatingSystemKind);
+    return new cls(arch, version);
+}
+exports.create = create;
+function operatingSystemMap() {
+    return new Map([
+        [kind_1.Kind.freeBsd, freebsd_1.default],
+        [kind_1.Kind.netBsd, netbsd_1.default],
+        [kind_1.Kind.openBsd, openbsd_1.default]
+    ]);
+}
+//# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 2741:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
@@ -994,27 +926,175 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.create = void 0;
+const path = __importStar(__webpack_require__(5622));
+const core = __importStar(__webpack_require__(2186));
+const architecture = __importStar(__webpack_require__(4019));
+const action = __importStar(__webpack_require__(6072));
+const host_1 = __webpack_require__(8215);
 const os = __importStar(__webpack_require__(9385));
-const openbsd_1 = __importDefault(__webpack_require__(8303));
-const utility_1 = __webpack_require__(2857);
-function create(operatingSystemKind, arch, version) {
-    const cls = (0, utility_1.getOrThrow)(operatingSystemMap(), operatingSystemKind);
-    return new cls(arch, version);
+const version_1 = __importDefault(__webpack_require__(8217));
+class FreeBsd extends os.OperatingSystem {
+    constructor(arch, version) {
+        super('freebsd', arch, version);
+    }
+    get hypervisorUrl() {
+        return host_1.host.hypervisor.getResourceUrl(this.architecture);
+    }
+    get ssHostPort() {
+        return this.architecture.hypervisor.sshPort;
+    }
+    get actionImplementationKind() {
+        return this.architecture.resolve({
+            x86_64: action.ImplementationKind.xhyve,
+            default: action.ImplementationKind.qemu
+        });
+    }
+    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
+        });
+    }
+    get virtualMachineImageReleaseVersion() {
+        return version_1.default.operating_system.freebsd;
+    }
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
+        core.debug('Creating FreeBSD VM');
+        if (this.architecture.kind !== architecture.Kind.x86_64) {
+            throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
+        }
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
+            // qemu
+            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            // xhyve
+            uuid: this.uuid });
+        return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+    }
 }
-exports.create = create;
-function operatingSystemMap() {
-    return new Map([
-        [os.Kind.freeBsd, os.FreeBsd],
-        [os.Kind.netBsd, os.NetBsd],
-        [os.Kind.openBsd, openbsd_1.default]
-    ]);
+exports.default = FreeBsd;
+//# sourceMappingURL=freebsd.js.map
+
+/***/ }),
+
+/***/ 6713:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toKind = exports.Kind = void 0;
+var Kind;
+(function (Kind) {
+    Kind[Kind["freeBsd"] = 0] = "freeBsd";
+    Kind[Kind["netBsd"] = 1] = "netBsd";
+    Kind[Kind["openBsd"] = 2] = "openBsd";
+})(Kind = exports.Kind || (exports.Kind = {}));
+function toKind(value) {
+    return stringToKind.get(value.toLowerCase());
 }
-//# sourceMappingURL=factory.js.map
+exports.toKind = toKind;
+const stringToKind = (() => {
+    const map = new Map();
+    map.set('freebsd', Kind.freeBsd);
+    map.set('netbsd', Kind.netBsd);
+    map.set('openbsd', Kind.openBsd);
+    return map;
+})();
+//# sourceMappingURL=kind.js.map
+
+/***/ }),
+
+/***/ 4572:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const path = __importStar(__webpack_require__(5622));
+const core = __importStar(__webpack_require__(2186));
+const architecture = __importStar(__webpack_require__(4019));
+const action = __importStar(__webpack_require__(6072));
+const host_1 = __webpack_require__(8215);
+const os = __importStar(__webpack_require__(9385));
+const version_1 = __importDefault(__webpack_require__(8217));
+const qemu_1 = __webpack_require__(1526);
+const qemu_vm = __importStar(__webpack_require__(1106));
+class NetBsd extends qemu_1.Qemu {
+    constructor(arch, version) {
+        super('netbsd', arch, version);
+    }
+    get hypervisorUrl() {
+        return this.architecture.resourceUrl;
+    }
+    get virtualMachineImageReleaseVersion() {
+        return version_1.default.operating_system.netbsd;
+    }
+    get actionImplementationKind() {
+        return action.ImplementationKind.qemu;
+    }
+    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
+        });
+    }
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
+        core.debug('Creating NetBSD VM');
+        if (this.architecture.kind !== architecture.Kind.x86_64) {
+            throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
+        }
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
+            // qemu
+            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            // xhyve
+            uuid: this.uuid });
+        return new qemu_vm.NetBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+    }
+}
+exports.default = NetBsd;
+//# sourceMappingURL=netbsd.js.map
 
 /***/ }),
 
@@ -1098,6 +1178,24 @@ class OpenBsd extends os.OperatingSystem {
 }
 exports.default = OpenBsd;
 //# sourceMappingURL=openbsd.js.map
+
+/***/ }),
+
+/***/ 1526:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Qemu = void 0;
+const operating_system_1 = __webpack_require__(9385);
+class Qemu extends operating_system_1.OperatingSystem {
+    get ssHostPort() {
+        return 2847;
+    }
+}
+exports.Qemu = Qemu;
+//# sourceMappingURL=qemu.js.map
 
 /***/ }),
 
