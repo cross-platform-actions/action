@@ -3,14 +3,14 @@ import * as path from 'path'
 
 import * as core from '@actions/core'
 
-import * as architecture from '../architecture'
-import * as action from '../action/action'
-import * as vmModule from '../vm'
-import {host} from '../host'
-import * as os from '../operating_system'
-import versions from '../version'
-import {Qemu} from './qemu'
-import * as qemu_vm from './netbsd/qemu_vm'
+import * as architecture from '../../architecture'
+import * as action from '../../action/action'
+import * as vmModule from '../../vm'
+import {host} from '../../host'
+import * as os from '../../operating_system'
+import versions from '../../version'
+import {Qemu} from '../qemu'
+import * as qemu_vm from './qemu_vm'
 
 export default class NetBsd extends Qemu {
   constructor(arch: architecture.Architecture, version: string) {
