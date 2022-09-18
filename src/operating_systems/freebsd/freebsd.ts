@@ -3,12 +3,12 @@ import * as path from 'path'
 
 import * as core from '@actions/core'
 
-import * as architecture from '../architecture'
-import * as action from '../action/action'
-import * as vmModule from '../vm'
-import {host} from '../host'
-import * as os from '../operating_system'
-import versions from '../version'
+import * as architecture from '../../architecture'
+import * as action from '../../action/action'
+import * as vmModule from '../../vm'
+import {host} from '../../host'
+import * as os from '../../operating_system'
+import versions from '../../version'
 
 export default class FreeBsd extends os.OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {

@@ -882,8 +882,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.create = void 0;
 const kind_1 = __webpack_require__(6713);
-const freebsd_1 = __importDefault(__webpack_require__(2741));
-const netbsd_1 = __importDefault(__webpack_require__(4572));
+const freebsd_1 = __importDefault(__webpack_require__(791));
+const netbsd_1 = __importDefault(__webpack_require__(7372));
 const openbsd_1 = __importDefault(__webpack_require__(8303));
 const utility_1 = __webpack_require__(2857);
 function create(operatingSystemKind, arch, version) {
@@ -902,7 +902,7 @@ function operatingSystemMap() {
 
 /***/ }),
 
-/***/ 2741:
+/***/ 791:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1016,7 +1016,7 @@ const stringToKind = (() => {
 
 /***/ }),
 
-/***/ 4572:
+/***/ 7372:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1061,7 +1061,7 @@ const host_1 = __webpack_require__(8215);
 const os = __importStar(__webpack_require__(9385));
 const version_1 = __importDefault(__webpack_require__(8217));
 const qemu_1 = __webpack_require__(1526);
-const qemu_vm = __importStar(__webpack_require__(1106));
+const qemu_vm = __importStar(__webpack_require__(7598));
 class NetBsd extends qemu_1.Qemu {
     constructor(arch, version) {
         super('netbsd', arch, version);
@@ -1090,11 +1090,43 @@ class NetBsd extends qemu_1.Qemu {
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        return new qemu_vm.NetBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+        return new qemu_vm.Vm(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
 }
 exports.default = NetBsd;
 //# sourceMappingURL=netbsd.js.map
+
+/***/ }),
+
+/***/ 7598:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Vm = void 0;
+const qemu_vm_1 = __webpack_require__(1106);
+class Vm extends qemu_vm_1.Vm {
+    get hardDriverFlags() {
+        return this.defaultHardDriveFlags;
+    }
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute('sudo shutdown -h -p now');
+        });
+    }
+}
+exports.Vm = Vm;
+//# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
 
@@ -1268,7 +1300,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OpenBsd = exports.NetBsd = exports.FreeBsd = exports.Vm = void 0;
+exports.OpenBsd = exports.FreeBsd = exports.Vm = void 0;
 const vm = __importStar(__webpack_require__(2772));
 class Vm extends vm.Vm {
     constructor(hypervisorDirectory, resourcesDirectory, architecture, configuration) {
@@ -1332,17 +1364,6 @@ class FreeBsd extends Vm {
     }
 }
 exports.FreeBsd = FreeBsd;
-class NetBsd extends Vm {
-    get hardDriverFlags() {
-        return this.defaultHardDriveFlags;
-    }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute('sudo shutdown -h -p now');
-        });
-    }
-}
-exports.NetBsd = NetBsd;
 class OpenBsd extends Vm {
     get hardDriverFlags() {
         return this.defaultHardDriveFlags;

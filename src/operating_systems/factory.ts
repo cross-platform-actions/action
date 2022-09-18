@@ -1,7 +1,7 @@
 import * as architecture from '../architecture'
 import type {OperatingSystem} from '../operating_system'
 import {Kind} from './kind'
-import FreeBsd from './freebsd'
+import FreeBsd from './freebsd/freebsd'
 import NetBsd from './netbsd/netbsd'
 import OpenBsd from './openbsd'
 import {getOrThrow} from '../utility'
