@@ -86,16 +86,6 @@ export class FreeBsd extends Vm {
   }
 }
 
-export class NetBsd extends Vm {
-  protected get hardDriverFlags(): string[] {
-    return this.defaultHardDriveFlags
-  }
-
-  protected override async shutdown(): Promise<void> {
-    await this.execute('sudo shutdown -h -p now')
-  }
-}
-
 export class OpenBsd extends Vm {
   protected get hardDriverFlags(): string[] {
     return this.defaultHardDriveFlags
