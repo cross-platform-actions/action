@@ -133,12 +133,12 @@ export class Action {
   }
 
   async downloadDiskImage(): Promise<string> {
-    core.info(
-      `Downloading disk image: ${this.operatingSystem.virtualMachineImageUrl}`
-    )
-    const result = await cache.downloadTool(
-      this.operatingSystem.virtualMachineImageUrl
-    )
+    const imageURL =
+      this.input.imageURL !== ''
+        ? this.input.imageURL
+        : this.operatingSystem.virtualMachineImageUrl
+    core.info(`Downloading disk image: ${imageURL}`)
+    const result = await cache.downloadTool(imageURL)
     core.info(`Downloaded file: ${result}`)
 
     return result
