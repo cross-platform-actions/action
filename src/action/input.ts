@@ -7,6 +7,7 @@ export class Input {
   private run_?: string
   private operatingSystem_?: os.Kind
   private version_?: string
+  private imageURL_?: string
   private shell_?: Shell
   private environmentVariables_?: string
   private architecture_?: architecture.Kind
@@ -16,6 +17,13 @@ export class Input {
     return (this.version_ = core.getInput('version', {
       required: true
     }))
+  }
+
+  get imageURL(): string {
+    if (this.imageURL_ !== undefined) return this.imageURL_
+    const input = core.getInput('image_url')
+    const imageURL = input ? input : ''
+    return (this.imageURL_ = imageURL)
   }
 
   get operatingSystem(): os.Kind {

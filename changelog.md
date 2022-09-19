@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for OpenBSD ARM64
 - Add support for running on macOS 12 hosts
+- Add support for custom image URLs
 
 ### Changed
 - Strip resource binaries to reduce space

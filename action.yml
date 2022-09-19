@@ -29,6 +29,11 @@ inputs:
       A list of environment variables to forward to the virtual machine.
       The list should be separated with spaces.
     default: ''
+  image_url:
+    required: false
+    description: |
+      URL for running the action with a custom image.
+    default: ''
 
 runs:
   using: node12
