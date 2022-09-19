@@ -115,7 +115,6 @@ jobs:
           uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
           work_directory: ${{ matrix.host.work_directory }}
 
-
   NetBSD:
     name: NetBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
     runs-on: ${{ matrix.host.name }}
@@ -214,3 +213,23 @@ jobs:
           version: '13.1'
           hypervisor: qemu
           run: sysctl hw.model
+
+  test-custom-vm-image:
+    timeout-minutes: 5
+    name: Test custom VM image
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: openbsd
+          architecture: x86-64
+          version: '7.3'
+          image_url: https://github.com/cross-platform-actions/test-custom-image-builder/releases/download/v1.0.0/openbsd-7.3-x86-64.qcow2
+          run: test -f /foo

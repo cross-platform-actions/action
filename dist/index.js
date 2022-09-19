@@ -133,8 +133,11 @@ class Action {
     }
     downloadDiskImage() {
         return __awaiter(this, void 0, void 0, function* () {
-            core.info(`Downloading disk image: ${this.operatingSystem.virtualMachineImageUrl}`);
-            const result = yield cache.downloadTool(this.operatingSystem.virtualMachineImageUrl);
+            const imageURL = this.input.imageURL !== ''
+                ? this.input.imageURL
+                : this.operatingSystem.virtualMachineImageUrl;
+            core.info(`Downloading disk image: ${imageURL}`);
+            const result = yield cache.downloadTool(imageURL);
             core.info(`Downloaded file: ${result}`);
             return result;
         });
@@ -337,6 +340,11 @@ class Input {
         return (this.version_ = core.getInput('version', {
             required: true
         }));
+    }
+    get imageURL() {
+        if (this.imageURL_ !== undefined)
+            return this.imageURL_;
+        return (this.imageURL_ = core.getInput('image_url'));
     }
     get operatingSystem() {
         if (this.operatingSystem_ !== undefined)
