@@ -944,8 +944,10 @@ const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
 const action = __importStar(__webpack_require__(6072));
 const host_1 = __webpack_require__(8215);
+const qemu_vm_1 = __webpack_require__(9250);
 const os = __importStar(__webpack_require__(9385));
 const version_1 = __importDefault(__webpack_require__(8217));
+const xhyve_vm = __importStar(__webpack_require__(2722));
 class FreeBsd extends os.OperatingSystem {
     constructor(arch, version) {
         super('freebsd', arch, version);
@@ -980,11 +982,50 @@ class FreeBsd extends os.OperatingSystem {
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        return new host_1.host.vmModule.FreeBsd(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+        const cls = host_1.host.vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm.FreeBsd });
+        return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
 }
 exports.default = FreeBsd;
 //# sourceMappingURL=freebsd.js.map
+
+/***/ }),
+
+/***/ 9250:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QemuVm = void 0;
+const qemu_vm_1 = __webpack_require__(1106);
+class QemuVm extends qemu_vm_1.Vm {
+    get hardDriverFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+            '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
+        ];
+    }
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute('sudo shutdown -p now');
+        });
+    }
+}
+exports.QemuVm = QemuVm;
+//# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
 
@@ -1300,7 +1341,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OpenBsd = exports.FreeBsd = exports.Vm = void 0;
+exports.resolve = exports.OpenBsd = exports.Vm = void 0;
+const utility_1 = __webpack_require__(2857);
 const vm = __importStar(__webpack_require__(2772));
 class Vm extends vm.Vm {
     constructor(hypervisorDirectory, resourcesDirectory, architecture, configuration) {
@@ -1347,23 +1389,6 @@ class Vm extends vm.Vm {
 }
 exports.Vm = Vm;
 Vm.sshPort = 2847;
-class FreeBsd extends Vm {
-    get hardDriverFlags() {
-        // prettier-ignore
-        return [
-            '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
-            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
-            '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
-            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
-        ];
-    }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute('sudo shutdown -p now');
-        });
-    }
-}
-exports.FreeBsd = FreeBsd;
 class OpenBsd extends Vm {
     get hardDriverFlags() {
         return this.defaultHardDriveFlags;
@@ -1378,6 +1403,10 @@ class OpenBsd extends Vm {
     }
 }
 exports.OpenBsd = OpenBsd;
+function resolve(implementation) {
+    return (0, utility_1.getOrDefaultOrThrow)(implementation, 'qemu');
+}
+exports.resolve = resolve;
 //# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
@@ -1925,7 +1954,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OpenBsd = exports.FreeBsd = exports.extractIpAddress = exports.Vm = void 0;
+exports.resolve = exports.OpenBsd = exports.FreeBsd = exports.extractIpAddress = exports.Vm = void 0;
 const core = __importStar(__webpack_require__(2186));
 const vm = __importStar(__webpack_require__(2772));
 const utility_1 = __webpack_require__(2857);
@@ -2037,6 +2066,10 @@ function getIpAddressFromArp(macAddress) {
         throw Error(`Failed to get IP address for MAC address: ${macAddress}`);
     });
 }
+function resolve(implementation) {
+    return (0, utility_1.getOrDefaultOrThrow)(implementation, 'xhyve');
+}
+exports.resolve = resolve;
 //# sourceMappingURL=xhyve_vm.js.map
 
 /***/ }),

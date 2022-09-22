@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import * as architecture from './architecture'
+import {getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
 
 export abstract class Vm extends vm.Vm {
@@ -69,23 +70,6 @@ export abstract class Vm extends vm.Vm {
   }
 }
 
-export class FreeBsd extends Vm {
-  protected get hardDriverFlags(): string[] {
-    // prettier-ignore
-    return [
-      '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
-      '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
-
-      '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
-      '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
-    ]
-  }
-
-  protected override async shutdown(): Promise<void> {
-    await this.execute('sudo shutdown -p now')
-  }
-}
-
 export class OpenBsd extends Vm {
   protected get hardDriverFlags(): string[] {
     return this.defaultHardDriveFlags
@@ -98,4 +82,8 @@ export class OpenBsd extends Vm {
   protected override async shutdown(): Promise<void> {
     await this.execute('sudo shutdown -h -p now')
   }
+}
+
+export function resolve<T>(implementation: Record<string, T>): T {
+  return getOrDefaultOrThrow(implementation, 'qemu')
 }

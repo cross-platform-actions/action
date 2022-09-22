@@ -7,8 +7,10 @@ import * as architecture from '../../architecture'
 import * as action from '../../action/action'
 import * as vmModule from '../../vm'
 import {host} from '../../host'
+import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
 import versions from '../../version'
+import * as xhyve_vm from '../../xhyve_vm'
 
 export default class FreeBsd extends os.OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
@@ -74,7 +76,8 @@ export default class FreeBsd extends os.OperatingSystem {
       uuid: this.uuid
     }
 
-    return new host.vmModule.FreeBsd(
+    const cls = host.vmModule.resolve({qemu: QemuVm, xhyve: xhyve_vm.FreeBsd})
+    return new cls(
       hypervisorDirectory,
       resourcesDirectory,
       this.architecture,
