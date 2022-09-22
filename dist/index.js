@@ -947,7 +947,7 @@ const host_1 = __webpack_require__(8215);
 const qemu_vm_1 = __webpack_require__(9250);
 const os = __importStar(__webpack_require__(9385));
 const version_1 = __importDefault(__webpack_require__(8217));
-const xhyve_vm = __importStar(__webpack_require__(2722));
+const xhyve_vm_1 = __webpack_require__(6176);
 class FreeBsd extends os.OperatingSystem {
     constructor(arch, version) {
         super('freebsd', arch, version);
@@ -982,7 +982,7 @@ class FreeBsd extends os.OperatingSystem {
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        const cls = host_1.host.vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm.FreeBsd });
+        const cls = host_1.host.vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
         return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
 }
@@ -1026,6 +1026,42 @@ class QemuVm extends qemu_vm_1.Vm {
 }
 exports.QemuVm = QemuVm;
 //# sourceMappingURL=qemu_vm.js.map
+
+/***/ }),
+
+/***/ 6176:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.XhyveVm = void 0;
+const xhyve_vm_1 = __webpack_require__(2722);
+class XhyveVm extends xhyve_vm_1.Vm {
+    get command() {
+        // prettier-ignore
+        return super.command.concat('-f', `fbsd,${this.configuration.userboot},${this.configuration.diskImage},`);
+    }
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute('sudo shutdown -p now');
+        });
+    }
+    get networkDevice() {
+        return 'virtio-net';
+    }
+}
+exports.XhyveVm = XhyveVm;
+//# sourceMappingURL=xhyve_vm.js.map
 
 /***/ }),
 
@@ -1248,7 +1284,7 @@ class OpenBsd extends os.OperatingSystem {
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        const cls = host_1.host.vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm.FreeBsd });
+        const cls = host_1.host.vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm.OpenBsd });
         return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
 }
@@ -1978,7 +2014,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.resolve = exports.OpenBsd = exports.FreeBsd = exports.extractIpAddress = exports.Vm = void 0;
+exports.resolve = exports.OpenBsd = exports.extractIpAddress = exports.Vm = void 0;
 const core = __importStar(__webpack_require__(2186));
 const vm = __importStar(__webpack_require__(2772));
 const utility_1 = __webpack_require__(2857);
@@ -2046,21 +2082,6 @@ function extractIpAddress(arpOutput, macAddress) {
     return ipAddress;
 }
 exports.extractIpAddress = extractIpAddress;
-class FreeBsd extends Vm {
-    get command() {
-        // prettier-ignore
-        return super.command.concat('-f', `fbsd,${this.configuration.userboot},${this.configuration.diskImage},`);
-    }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute('sudo shutdown -p now');
-        });
-    }
-    get networkDevice() {
-        return 'virtio-net';
-    }
-}
-exports.FreeBsd = FreeBsd;
 class OpenBsd extends Vm {
     get command() {
         // prettier-ignore
