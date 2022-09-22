@@ -884,7 +884,7 @@ exports.create = void 0;
 const kind_1 = __webpack_require__(6713);
 const freebsd_1 = __importDefault(__webpack_require__(791));
 const netbsd_1 = __importDefault(__webpack_require__(7372));
-const openbsd_1 = __importDefault(__webpack_require__(8303));
+const openbsd_1 = __importDefault(__webpack_require__(9243));
 const utility_1 = __webpack_require__(2857);
 function create(operatingSystemKind, arch, version) {
     const cls = (0, utility_1.getOrThrow)(operatingSystemMap(), operatingSystemKind);
@@ -1171,7 +1171,7 @@ exports.Vm = Vm;
 
 /***/ }),
 
-/***/ 8303:
+/***/ 9243:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
