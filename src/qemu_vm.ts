@@ -70,20 +70,6 @@ export abstract class Vm extends vm.Vm {
   }
 }
 
-export class OpenBsd extends Vm {
-  protected get hardDriverFlags(): string[] {
-    return this.defaultHardDriveFlags
-  }
-
-  protected override get netDevive(): string {
-    return this.architecture.networkDevice
-  }
-
-  protected override async shutdown(): Promise<void> {
-    await this.execute('sudo shutdown -h -p now')
-  }
-}
-
 export function resolve<T>(implementation: Record<string, T>): T {
   return getOrDefaultOrThrow(implementation, 'qemu')
 }
