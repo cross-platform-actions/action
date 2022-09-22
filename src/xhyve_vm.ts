@@ -88,24 +88,6 @@ export function extractIpAddress(
   return ipAddress
 }
 
-export class OpenBsd extends Vm {
-  override get command(): string[] {
-    // prettier-ignore
-    return super.command.concat(
-      '-l', `bootrom,${this.configuration.firmware}`,
-      '-w'
-    )
-  }
-
-  protected override async shutdown(): Promise<void> {
-    await this.execute('sudo shutdown -h -p now')
-  }
-
-  protected get networkDevice(): string {
-    return 'e1000'
-  }
-}
-
 async function getIpAddressFromArp(macAddress: string): Promise<string> {
   core.info(`Getting IP address for MAC address: ${macAddress}`)
   for (let i = 0; i < 500; i++) {

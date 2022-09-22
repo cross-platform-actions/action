@@ -10,7 +10,7 @@ import {host} from '../../host'
 import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
 import versions from '../../version'
-import * as xhyve_vm from '../../xhyve_vm'
+import {XhyveVm} from './xhyve_vm'
 
 export default class OpenBsd extends os.OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
@@ -69,7 +69,7 @@ export default class OpenBsd extends os.OperatingSystem {
       uuid: this.uuid
     }
 
-    const cls = host.vmModule.resolve({qemu: QemuVm, xhyve: xhyve_vm.OpenBsd})
+    const cls = host.vmModule.resolve({qemu: QemuVm, xhyve: XhyveVm})
     return new cls(
       hypervisorDirectory,
       resourcesDirectory,
