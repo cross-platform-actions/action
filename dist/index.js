@@ -831,6 +831,9 @@ class OperatingSystem {
     get linuxDiskFileCreator() {
         return new resource_disk_1.LinuxDiskFileCreator.NoopDiskFileCreator();
     }
+    get linuxDiskDeviceCreator() {
+        return new resource_disk_1.LinuxDiskDeviceCreator.FullDiskDeviceCreator();
+    }
     resolve(implementation) {
         return (0, utility_1.getImplementation)(this, implementation);
     }
@@ -979,6 +982,9 @@ class FreeBsd extends os.OperatingSystem {
     }
     get linuxDiskFileCreator() {
         return new resource_disk_1.LinuxDiskFileCreator.FdiskDiskFileCreator();
+    }
+    get linuxDiskDeviceCreator() {
+        return new resource_disk_1.LinuxDiskDeviceCreator.FdiskDiskDeviceCreator();
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
@@ -1552,7 +1558,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.LinuxDiskFileCreator = void 0;
+exports.LinuxDiskDeviceCreator = exports.LinuxDiskFileCreator = void 0;
 const fs_1 = __webpack_require__(5747);
 const path_1 = __importDefault(__webpack_require__(5622));
 const os = __importStar(__webpack_require__(2087));
@@ -1654,7 +1660,7 @@ class Linux extends ResourceDisk {
     createDiskDevice(diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Creating disk device');
-            return yield LinuxDiskDeviceCreator.for(this.operatingSystem).create(diskPath);
+            return yield this.operatingSystem.linuxDiskDeviceCreator.create(diskPath);
         });
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1710,13 +1716,6 @@ LinuxDiskFileCreator.NoopDiskFileCreator = class extends LinuxDiskFileCreator {
     }
 };
 class LinuxDiskDeviceCreator {
-    static for(operatingSystem) {
-        const implementationClass = operatingSystem.resolve({
-            freebsd: this.FdiskDiskDeviceCreator,
-            default: this.FullDiskDeviceCreator
-        });
-        return new implementationClass();
-    }
     create(diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
             // prettier-ignore
@@ -1732,6 +1731,7 @@ class LinuxDiskDeviceCreator {
         });
     }
 }
+exports.LinuxDiskDeviceCreator = LinuxDiskDeviceCreator;
 LinuxDiskDeviceCreator.FdiskDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
     // the offset and size limit are retrieved by running:
     // `sfdisk -d ${diskPath}` and multiply the start and size by 512.

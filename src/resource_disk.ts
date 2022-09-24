@@ -136,9 +136,7 @@ class Linux extends ResourceDisk {
 
   override async createDiskDevice(diskPath: string): Promise<string> {
     core.debug('Creating disk device')
-    return await LinuxDiskDeviceCreator.for(this.operatingSystem).create(
-      diskPath
-    )
+    return await this.operatingSystem.linuxDiskDeviceCreator.create(diskPath)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -190,16 +188,7 @@ export abstract class LinuxDiskFileCreator {
   }
 }
 
-abstract class LinuxDiskDeviceCreator {
-  static for(operatingSystem: OperatingSystem): LinuxDiskDeviceCreator {
-    const implementationClass = operatingSystem.resolve({
-      freebsd: this.FdiskDiskDeviceCreator,
-      default: this.FullDiskDeviceCreator
-    })
-
-    return new implementationClass()
-  }
-
+export abstract class LinuxDiskDeviceCreator {
   async create(diskPath: string): Promise<string> {
     // prettier-ignore
     const devicePath = await execWithOutput(
@@ -221,7 +210,7 @@ abstract class LinuxDiskDeviceCreator {
   /*protected*/ abstract get offset(): string
   /*protected*/ abstract get sizeLimit(): string
 
-  private static readonly FdiskDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
+  static readonly FdiskDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
     // the offset and size limit are retrieved by running:
     // `sfdisk -d ${diskPath}` and multiply the start and size by 512.
     // https://checkmk.com/linux-knowledge/mounting-partition-loop-device
@@ -235,7 +224,7 @@ abstract class LinuxDiskDeviceCreator {
     }
   }
 
-  private static readonly FullDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
+  static readonly FullDiskDeviceCreator = class extends LinuxDiskDeviceCreator {
     /*protected*/ override get offset(): string {
       return '0'
     }

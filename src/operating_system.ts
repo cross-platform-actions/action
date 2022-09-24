@@ -10,7 +10,7 @@ import * as action from './action/action'
 import {host} from './host'
 import {Class, getImplementation} from './utility'
 import {ResourceUrls} from './operating_systems/resource_urls'
-import {LinuxDiskFileCreator} from './resource_disk'
+import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from './resource_disk'
 
 export interface VmConfiguration {
   memory: string
@@ -59,6 +59,10 @@ export abstract class OperatingSystem {
 
   get linuxDiskFileCreator(): LinuxDiskFileCreator {
     return new LinuxDiskFileCreator.NoopDiskFileCreator()
+  }
+
+  get linuxDiskDeviceCreator(): LinuxDiskDeviceCreator {
+    return new LinuxDiskDeviceCreator.FullDiskDeviceCreator()
   }
 
   resolve<Base>(implementation: Record<string, Class<Base>>): Class<Base> {
