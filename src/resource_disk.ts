@@ -7,7 +7,7 @@ import * as exec from '@actions/exec'
 
 import {Action} from './action/action'
 import {execWithOutput} from './utility'
-import {OperatingSystem} from './operating_system'
+import type {OperatingSystem} from './operating_system'
 
 export default abstract class ResourceDisk {
   protected readonly operatingSystem: OperatingSystem
@@ -131,7 +131,7 @@ class MacOs extends ResourceDisk {
 class Linux extends ResourceDisk {
   override async createDiskFile(size: string, diskPath: string): Promise<void> {
     core.debug('Creating disk file')
-    await LinuxDiskFileCreator.for(this.operatingSystem).create(size, diskPath)
+    await this.operatingSystem.linuxDiskFileCreator.create(size, diskPath)
   }
 
   override async createDiskDevice(diskPath: string): Promise<string> {
@@ -169,16 +169,7 @@ class Linux extends ResourceDisk {
   }
 }
 
-abstract class LinuxDiskFileCreator {
-  static for(operatingSystem: OperatingSystem): LinuxDiskFileCreator {
-    const implementationClass = operatingSystem.resolve({
-      freebsd: this.FdiskDiskFileCreator,
-      default: this.NoopDiskFileCreator
-    })
-
-    return new implementationClass()
-  }
-
+export abstract class LinuxDiskFileCreator {
   async create(size: string, diskPath: string): Promise<void> {
     await exec.exec('truncate', ['-s', size, diskPath])
     await this.partition(diskPath)

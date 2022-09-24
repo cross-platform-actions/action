@@ -808,6 +808,7 @@ const vmModule = __importStar(__webpack_require__(2772));
 const host_1 = __webpack_require__(8215);
 const utility_1 = __webpack_require__(2857);
 const resource_urls_1 = __webpack_require__(3990);
+const resource_disk_1 = __webpack_require__(7102);
 class OperatingSystem {
     constructor(name, arch, version) {
         this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`;
@@ -826,6 +827,9 @@ class OperatingSystem {
             this.virtualMachineImageReleaseVersion,
             this.imageName
         ].join('/');
+    }
+    get linuxDiskFileCreator() {
+        return new resource_disk_1.LinuxDiskFileCreator.NoopDiskFileCreator();
     }
     resolve(implementation) {
         return (0, utility_1.getImplementation)(this, implementation);
@@ -946,6 +950,7 @@ const action = __importStar(__webpack_require__(6072));
 const host_1 = __webpack_require__(8215);
 const qemu_vm_1 = __webpack_require__(9250);
 const os = __importStar(__webpack_require__(9385));
+const resource_disk_1 = __webpack_require__(7102);
 const version_1 = __importDefault(__webpack_require__(8217));
 const xhyve_vm_1 = __webpack_require__(6176);
 class FreeBsd extends os.OperatingSystem {
@@ -971,6 +976,9 @@ class FreeBsd extends os.OperatingSystem {
     }
     get virtualMachineImageReleaseVersion() {
         return version_1.default.operating_system.freebsd;
+    }
+    get linuxDiskFileCreator() {
+        return new resource_disk_1.LinuxDiskFileCreator.FdiskDiskFileCreator();
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
@@ -1544,6 +1552,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LinuxDiskFileCreator = void 0;
 const fs_1 = __webpack_require__(5747);
 const path_1 = __importDefault(__webpack_require__(5622));
 const os = __importStar(__webpack_require__(2087));
@@ -1639,7 +1648,7 @@ class Linux extends ResourceDisk {
     createDiskFile(size, diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Creating disk file');
-            yield LinuxDiskFileCreator.for(this.operatingSystem).create(size, diskPath);
+            yield this.operatingSystem.linuxDiskFileCreator.create(size, diskPath);
         });
     }
     createDiskDevice(diskPath) {
@@ -1678,13 +1687,6 @@ class Linux extends ResourceDisk {
     }
 }
 class LinuxDiskFileCreator {
-    static for(operatingSystem) {
-        const implementationClass = operatingSystem.resolve({
-            freebsd: this.FdiskDiskFileCreator,
-            default: this.NoopDiskFileCreator
-        });
-        return new implementationClass();
-    }
     create(size, diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
             yield exec.exec('truncate', ['-s', size, diskPath]);
@@ -1692,6 +1694,7 @@ class LinuxDiskFileCreator {
         });
     }
 }
+exports.LinuxDiskFileCreator = LinuxDiskFileCreator;
 LinuxDiskFileCreator.FdiskDiskFileCreator = class extends LinuxDiskFileCreator {
     /*protected*/ partition(diskPath) {
         return __awaiter(this, void 0, void 0, function* () {

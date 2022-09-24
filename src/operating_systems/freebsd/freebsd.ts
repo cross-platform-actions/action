@@ -9,6 +9,7 @@ import * as vmModule from '../../vm'
 import {host} from '../../host'
 import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
+import {LinuxDiskFileCreator} from '../../resource_disk'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
 
@@ -42,6 +43,10 @@ export default class FreeBsd extends os.OperatingSystem {
 
   get virtualMachineImageReleaseVersion(): string {
     return versions.operating_system.freebsd
+  }
+
+  override get linuxDiskFileCreator(): LinuxDiskFileCreator {
+    return new LinuxDiskFileCreator.FdiskDiskFileCreator()
   }
 
   createVirtualMachine(
