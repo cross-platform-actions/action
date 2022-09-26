@@ -748,6 +748,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(2186));
 const action_1 = __webpack_require__(6072);
+__webpack_require__(791);
+__webpack_require__(7372);
+__webpack_require__(9243);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -879,32 +882,30 @@ exports.convertToRawDisk = convertToRawDisk;
 /***/ }),
 
 /***/ 133:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.create = void 0;
+exports.create = exports.operatingSystem = void 0;
 const kind_1 = __webpack_require__(6713);
-const freebsd_1 = __importDefault(__webpack_require__(791));
-const netbsd_1 = __importDefault(__webpack_require__(7372));
-const openbsd_1 = __importDefault(__webpack_require__(9243));
 const utility_1 = __webpack_require__(2857);
+function operatingSystem(classObject) {
+    const kind = (0, kind_1.toKind)(classObject.name);
+    if (kind === undefined)
+        throw Error(`Unrecognized operating system: ${classObject.name}`);
+    register(kind, classObject);
+}
+exports.operatingSystem = operatingSystem;
 function create(operatingSystemKind, arch, version) {
-    const cls = (0, utility_1.getOrThrow)(operatingSystemMap(), operatingSystemKind);
+    const cls = (0, utility_1.getOrThrow)(operatingSystems, operatingSystemKind);
     return new cls(arch, version);
 }
 exports.create = create;
-function operatingSystemMap() {
-    return new Map([
-        [kind_1.Kind.freeBsd, freebsd_1.default],
-        [kind_1.Kind.netBsd, netbsd_1.default],
-        [kind_1.Kind.openBsd, openbsd_1.default]
-    ]);
+function register(kind, type) {
+    operatingSystems.set(kind, type);
 }
+const operatingSystems = new Map();
 //# sourceMappingURL=factory.js.map
 
 /***/ }),
@@ -926,6 +927,12 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -950,13 +957,14 @@ const path = __importStar(__webpack_require__(5622));
 const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
 const action = __importStar(__webpack_require__(6072));
+const factory_1 = __webpack_require__(133);
 const host_1 = __webpack_require__(8215);
 const qemu_vm_1 = __webpack_require__(9250);
 const os = __importStar(__webpack_require__(9385));
 const resource_disk_1 = __webpack_require__(7102);
 const version_1 = __importDefault(__webpack_require__(8217));
 const xhyve_vm_1 = __webpack_require__(6176);
-class FreeBsd extends os.OperatingSystem {
+let FreeBsd = class FreeBsd extends os.OperatingSystem {
     constructor(arch, version) {
         super('freebsd', arch, version);
     }
@@ -999,7 +1007,10 @@ class FreeBsd extends os.OperatingSystem {
         const cls = host_1.host.vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
         return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
-}
+};
+FreeBsd = __decorate([
+    factory_1.operatingSystem
+], FreeBsd);
 exports.default = FreeBsd;
 //# sourceMappingURL=freebsd.js.map
 
@@ -1124,6 +1135,12 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -1148,12 +1165,13 @@ const path = __importStar(__webpack_require__(5622));
 const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
 const action = __importStar(__webpack_require__(6072));
+const factory_1 = __webpack_require__(133);
 const host_1 = __webpack_require__(8215);
 const os = __importStar(__webpack_require__(9385));
 const version_1 = __importDefault(__webpack_require__(8217));
 const qemu_1 = __webpack_require__(1526);
 const qemu_vm = __importStar(__webpack_require__(7598));
-class NetBsd extends qemu_1.Qemu {
+let NetBsd = class NetBsd extends qemu_1.Qemu {
     constructor(arch, version) {
         super('netbsd', arch, version);
     }
@@ -1183,7 +1201,10 @@ class NetBsd extends qemu_1.Qemu {
             uuid: this.uuid });
         return new qemu_vm.Vm(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
-}
+};
+NetBsd = __decorate([
+    factory_1.operatingSystem
+], NetBsd);
 exports.default = NetBsd;
 //# sourceMappingURL=netbsd.js.map
 
@@ -1238,6 +1259,12 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -1262,12 +1289,13 @@ const path = __importStar(__webpack_require__(5622));
 const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
 const action = __importStar(__webpack_require__(6072));
+const factory_1 = __webpack_require__(133);
 const host_1 = __webpack_require__(8215);
 const qemu_vm_1 = __webpack_require__(8841);
 const os = __importStar(__webpack_require__(9385));
 const version_1 = __importDefault(__webpack_require__(8217));
 const xhyve_vm_1 = __webpack_require__(9662);
-class OpenBsd extends os.OperatingSystem {
+let OpenBsd = class OpenBsd extends os.OperatingSystem {
     constructor(arch, version) {
         super('openbsd', arch, version);
     }
@@ -1301,7 +1329,10 @@ class OpenBsd extends os.OperatingSystem {
         const cls = host_1.host.vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
         return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
-}
+};
+OpenBsd = __decorate([
+    factory_1.operatingSystem
+], OpenBsd);
 exports.default = OpenBsd;
 //# sourceMappingURL=openbsd.js.map
 

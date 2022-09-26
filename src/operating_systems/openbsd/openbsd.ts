@@ -5,6 +5,7 @@ import * as core from '@actions/core'
 
 import * as architecture from '../../architecture'
 import * as action from '../../action/action'
+import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
 import {host} from '../../host'
 import {QemuVm} from './qemu_vm'
@@ -12,6 +13,7 @@ import * as os from '../../operating_system'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
 
+@operatingSystem
 export default class OpenBsd extends os.OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
     super('openbsd', arch, version)

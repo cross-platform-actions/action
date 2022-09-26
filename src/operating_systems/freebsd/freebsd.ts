@@ -5,6 +5,7 @@ import * as core from '@actions/core'
 
 import * as architecture from '../../architecture'
 import * as action from '../../action/action'
+import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
 import {host} from '../../host'
 import {QemuVm} from './qemu_vm'
@@ -13,6 +14,7 @@ import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from '../../resource_disk'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
 
+@operatingSystem
 export default class FreeBsd extends os.OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
     super('freebsd', arch, version)

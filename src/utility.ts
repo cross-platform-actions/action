@@ -1,6 +1,6 @@
 import * as exec from '@actions/exec'
 
-export type Class<T> = new () => T
+export type Class<T> = new (...args: any[]) => T
 
 export interface ExecuteOptions {
   log?: boolean

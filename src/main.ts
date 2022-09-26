@@ -1,6 +1,10 @@
 import * as core from '@actions/core'
 import {Action} from './action/action'
 
+import './operating_systems/freebsd/freebsd'
+import './operating_systems/netbsd/netbsd'
+import './operating_systems/openbsd/openbsd'
+
 async function main(): Promise<void> {
   try {
     await new Action().run()
