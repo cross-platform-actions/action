@@ -1,25 +1,31 @@
 import * as architecture from '../architecture'
 import type {OperatingSystem} from '../operating_system'
-import {Kind, toKind} from './kind'
+import * as os from '../operating_systems/kind'
 import {getOrThrow, Class} from '../utility'
 
 export function operatingSystem(classObject: Class<OperatingSystem>): void {
-  const kind = toKind(classObject.name)
-  if (kind === undefined) throw Error(`Unrecognized operating system: ${classObject.name}`)
-  register(kind, classObject)
+  const name = classObject.name.toLocaleLowerCase()
+  register(name, classObject)
 }
 
 export function create(
-  operatingSystemKind: Kind,
+  kind: os.Kind,
   arch: architecture.Architecture,
   version: string
 ): OperatingSystem {
-  const cls = getOrThrow(operatingSystems, operatingSystemKind)
+  const cls = getOrThrow(operatingSystems, kind.name)
   return new cls(arch, version)
 }
 
-function register(kind: Kind, type: Class<OperatingSystem>): void {
-  operatingSystems.set(kind, type)
+export function isValid(name: string): boolean {
+  return operatingSystems.has(name)
 }
 
-const operatingSystems: Map<Kind, Class<OperatingSystem>> = new Map<Kind, Class<OperatingSystem>>()
+function register(name: string, type: Class<OperatingSystem>): void {
+  operatingSystems.set(name, type)
+}
+
+const operatingSystems: Map<string, Class<OperatingSystem>> = new Map<
+  string,
+  Class<OperatingSystem>
+>()

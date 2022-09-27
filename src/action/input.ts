@@ -1,11 +1,11 @@
 import * as core from '@actions/core'
 import * as architecture from '../architecture'
-import * as os_kind from '../operating_systems/kind'
 import {Shell, toShell} from './shell'
+import * as os from '../operating_systems/kind'
 
 export class Input {
   private run_?: string
-  private operatingSystem_?: os_kind.Kind
+  private operatingSystem_?: os.Kind
   private version_?: string
   private shell_?: Shell
   private environmentVariables_?: string
@@ -18,14 +18,12 @@ export class Input {
     }))
   }
 
-  get operatingSystem(): os_kind.Kind {
+  get operatingSystem(): os.Kind {
     if (this.operatingSystem_ !== undefined) return this.operatingSystem_
     const input = core.getInput('operating_system', {required: true})
-    const kind = os_kind.toKind(input)
     core.debug(`operating_system input: '${input}'`)
-    core.debug(`kind: '${kind}'`)
-    if (kind === undefined) throw Error(`Invalid operating system: ${input}`)
-    return (this.operatingSystem_ = kind)
+
+    return (this.operatingSystem_ = os.Kind.for(input))
   }
 
   get run(): string {

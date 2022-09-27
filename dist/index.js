@@ -310,8 +310,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Input = void 0;
 const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
-const os_kind = __importStar(__webpack_require__(6713));
 const shell_1 = __webpack_require__(9044);
+const os = __importStar(__webpack_require__(6713));
 class Input {
     get version() {
         if (this.version_ !== undefined)
@@ -324,12 +324,8 @@ class Input {
         if (this.operatingSystem_ !== undefined)
             return this.operatingSystem_;
         const input = core.getInput('operating_system', { required: true });
-        const kind = os_kind.toKind(input);
         core.debug(`operating_system input: '${input}'`);
-        core.debug(`kind: '${kind}'`);
-        if (kind === undefined)
-            throw Error(`Invalid operating system: ${input}`);
-        return (this.operatingSystem_ = kind);
+        return (this.operatingSystem_ = os.Kind.for(input));
     }
     get run() {
         if (this.run_ !== undefined)
@@ -429,14 +425,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.toKind = exports.Architecture = exports.Kind = void 0;
 const hypervisor = __importStar(__webpack_require__(4288));
 const resource_urls_1 = __webpack_require__(3990);
+const openbsd_1 = __importDefault(__webpack_require__(9243));
 const utility_1 = __webpack_require__(2857);
 const vm = __importStar(__webpack_require__(2772));
-const os_kind = __importStar(__webpack_require__(6713));
 var Kind;
 (function (Kind) {
     Kind[Kind["arm64"] = 0] = "arm64";
@@ -449,7 +448,7 @@ class Architecture {
         this.host = host;
     }
     static for(kind, host, operating_system) {
-        if (kind == Kind.x86_64 && operating_system == os_kind.Kind.openBsd)
+        if (kind == Kind.x86_64 && operating_system.is(openbsd_1.default))
             return new Architecture.X86_64OpenBsd(kind, host);
         return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host);
     }
@@ -887,23 +886,24 @@ exports.convertToRawDisk = convertToRawDisk;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.create = exports.operatingSystem = void 0;
-const kind_1 = __webpack_require__(6713);
+exports.isValid = exports.create = exports.operatingSystem = void 0;
 const utility_1 = __webpack_require__(2857);
 function operatingSystem(classObject) {
-    const kind = (0, kind_1.toKind)(classObject.name);
-    if (kind === undefined)
-        throw Error(`Unrecognized operating system: ${classObject.name}`);
-    register(kind, classObject);
+    const name = classObject.name.toLocaleLowerCase();
+    register(name, classObject);
 }
 exports.operatingSystem = operatingSystem;
-function create(operatingSystemKind, arch, version) {
-    const cls = (0, utility_1.getOrThrow)(operatingSystems, operatingSystemKind);
+function create(kind, arch, version) {
+    const cls = (0, utility_1.getOrThrow)(operatingSystems, kind.name);
     return new cls(arch, version);
 }
 exports.create = create;
-function register(kind, type) {
-    operatingSystems.set(kind, type);
+function isValid(name) {
+    return operatingSystems.has(name);
+}
+exports.isValid = isValid;
+function register(name, type) {
+    operatingSystems.set(name, type);
 }
 const operatingSystems = new Map();
 //# sourceMappingURL=factory.js.map
@@ -1091,29 +1091,31 @@ exports.XhyveVm = XhyveVm;
 /***/ }),
 
 /***/ 6713:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toKind = exports.Kind = void 0;
-var Kind;
-(function (Kind) {
-    Kind[Kind["freeBsd"] = 0] = "freeBsd";
-    Kind[Kind["netBsd"] = 1] = "netBsd";
-    Kind[Kind["openBsd"] = 2] = "openBsd";
-})(Kind = exports.Kind || (exports.Kind = {}));
-function toKind(value) {
-    return stringToKind.get(value.toLowerCase());
+exports.Kind = void 0;
+const factory_1 = __webpack_require__(133);
+class Kind {
+    constructor(name) {
+        this.name = name;
+    }
+    static for(name) {
+        const canonicalizeName = Kind.canonicalize(name);
+        if (!(0, factory_1.isValid)(canonicalizeName))
+            throw Error(`Unrecognized operating system: ${name}`);
+        return new Kind(canonicalizeName);
+    }
+    is(classObject) {
+        return this.name === Kind.canonicalize(classObject.name);
+    }
+    static canonicalize(name) {
+        return name.toLocaleLowerCase();
+    }
 }
-exports.toKind = toKind;
-const stringToKind = (() => {
-    const map = new Map();
-    map.set('freebsd', Kind.freeBsd);
-    map.set('netbsd', Kind.netBsd);
-    map.set('openbsd', Kind.openBsd);
-    return map;
-})();
+exports.Kind = Kind;
 //# sourceMappingURL=kind.js.map
 
 /***/ }),

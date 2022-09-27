@@ -1,17 +1,28 @@
-export enum Kind {
-  freeBsd,
-  netBsd,
-  openBsd
-}
+import {OperatingSystem} from '../operating_system'
+import {Class} from '../utility'
+import {isValid} from './factory'
 
-export function toKind(value: string): Kind | undefined {
-  return stringToKind.get(value.toLowerCase())
-}
+export class Kind {
+  readonly name: string
 
-const stringToKind: ReadonlyMap<string, Kind> = (() => {
-  const map = new Map<string, Kind>()
-  map.set('freebsd', Kind.freeBsd)
-  map.set('netbsd', Kind.netBsd)
-  map.set('openbsd', Kind.openBsd)
-  return map
-})()
+  private constructor(name: string) {
+    this.name = name
+  }
+
+  static for(name: string): Kind {
+    const canonicalizeName = Kind.canonicalize(name)
+
+    if (!isValid(canonicalizeName))
+      throw Error(`Unrecognized operating system: ${name}`)
+
+    return new Kind(canonicalizeName)
+  }
+
+  is(classObject: Class<OperatingSystem>): boolean {
+    return this.name === Kind.canonicalize(classObject.name)
+  }
+
+  private static canonicalize(name: string): string {
+    return name.toLocaleLowerCase()
+  }
+}

@@ -2,9 +2,10 @@ import {Host} from './host'
 import HostQemu from './host_qemu'
 import * as hypervisor from './hypervisor'
 import {ResourceUrls} from './operating_systems/resource_urls'
+import * as os from './operating_systems/kind'
+import OpenBsd from './operating_systems/openbsd/openbsd'
 import {getOrThrow, getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
-import * as os_kind from './operating_systems/kind'
 
 export enum Kind {
   arm64,
@@ -21,12 +22,8 @@ export abstract class Architecture {
     this.host = host
   }
 
-  static for(
-    kind: Kind,
-    host: Host,
-    operating_system: os_kind.Kind
-  ): Architecture {
-    if (kind == Kind.x86_64 && operating_system == os_kind.Kind.openBsd)
+  static for(kind: Kind, host: Host, operating_system: os.Kind): Architecture {
+    if (kind == Kind.x86_64 && operating_system.is(OpenBsd))
       return new Architecture.X86_64OpenBsd(kind, host)
 
     return new (getOrThrow(Architecture.architectureMap, kind))(kind, host)
