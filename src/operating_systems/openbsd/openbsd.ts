@@ -16,7 +16,7 @@ import {XhyveVm} from './xhyve_vm'
 @operatingSystem
 export default class OpenBsd extends os.OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
-    super('openbsd', arch, version)
+    super(arch, version)
   }
 
   get hypervisorUrl(): string {

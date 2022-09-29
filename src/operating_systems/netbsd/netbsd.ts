@@ -16,7 +16,7 @@ import * as qemu_vm from './qemu_vm'
 @operatingSystem
 export default class NetBsd extends Qemu {
   constructor(arch: architecture.Architecture, version: string) {
-    super('netbsd', arch, version)
+    super(arch, version)
   }
 
   get hypervisorUrl(): string {

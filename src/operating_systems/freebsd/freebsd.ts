@@ -17,7 +17,7 @@ import {XhyveVm} from './xhyve_vm'
 @operatingSystem
 export default class FreeBsd extends os.OperatingSystem {
   constructor(arch: architecture.Architecture, version: string) {
-    super('freebsd', arch, version)
+    super(arch, version)
   }
 
   get hypervisorUrl(): string {

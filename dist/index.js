@@ -812,11 +812,10 @@ const utility_1 = __webpack_require__(2857);
 const resource_urls_1 = __webpack_require__(3990);
 const resource_disk_1 = __webpack_require__(7102);
 class OperatingSystem {
-    constructor(name, arch, version) {
+    constructor(arch, version) {
         this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`;
         const hostString = host_1.host.toString();
         this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`;
-        this.name = name;
         this.version = version;
         this.architecture = arch;
     }
@@ -835,6 +834,9 @@ class OperatingSystem {
     }
     get linuxDiskDeviceCreator() {
         return new resource_disk_1.LinuxDiskDeviceCreator.FullDiskDeviceCreator();
+    }
+    get name() {
+        return this.constructor.name.toLocaleLowerCase();
     }
     resolve(implementation) {
         return (0, utility_1.getImplementation)(this, implementation);
@@ -966,7 +968,7 @@ const version_1 = __importDefault(__webpack_require__(8217));
 const xhyve_vm_1 = __webpack_require__(6176);
 let FreeBsd = class FreeBsd extends os.OperatingSystem {
     constructor(arch, version) {
-        super('freebsd', arch, version);
+        super(arch, version);
     }
     get hypervisorUrl() {
         return host_1.host.hypervisor.getResourceUrl(this.architecture);
@@ -1175,7 +1177,7 @@ const qemu_1 = __webpack_require__(1526);
 const qemu_vm = __importStar(__webpack_require__(7598));
 let NetBsd = class NetBsd extends qemu_1.Qemu {
     constructor(arch, version) {
-        super('netbsd', arch, version);
+        super(arch, version);
     }
     get hypervisorUrl() {
         return this.architecture.resourceUrl;
@@ -1299,7 +1301,7 @@ const version_1 = __importDefault(__webpack_require__(8217));
 const xhyve_vm_1 = __webpack_require__(9662);
 let OpenBsd = class OpenBsd extends os.OperatingSystem {
     constructor(arch, version) {
-        super('openbsd', arch, version);
+        super(arch, version);
     }
     get hypervisorUrl() {
         return host_1.host.hypervisor.getResourceUrl(this.architecture);

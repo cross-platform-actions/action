@@ -22,8 +22,6 @@ export interface VmConfiguration {
 }
 
 export abstract class OperatingSystem {
-  readonly name: string
-
   readonly resourcesUrl: string
 
   readonly architecture: architecture.Architecture
@@ -33,10 +31,9 @@ export abstract class OperatingSystem {
 
   private readonly version: string
 
-  constructor(name: string, arch: architecture.Architecture, version: string) {
+  constructor(arch: architecture.Architecture, version: string) {
     const hostString = host.toString()
     this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`
-    this.name = name
     this.version = version
     this.architecture = arch
   }
@@ -63,6 +60,10 @@ export abstract class OperatingSystem {
 
   get linuxDiskDeviceCreator(): LinuxDiskDeviceCreator {
     return new LinuxDiskDeviceCreator.FullDiskDeviceCreator()
+  }
+
+  get name(): string {
+    return this.constructor.name.toLocaleLowerCase()
   }
 
   resolve<Base>(implementation: Record<string, Class<Base>>): Class<Base> {
