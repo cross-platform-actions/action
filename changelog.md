@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for running on macOS 12 hosts
 
 ### Changed
+- Run action using Node 16. This fixes a deprecation message
+
+### Changed
 - Strip resource binaries to reduce space
 
 ## [0.6.2] - 2022-07-06
