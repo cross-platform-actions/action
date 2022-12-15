@@ -808,7 +808,6 @@ const core = __importStar(__webpack_require__(2186));
 const exec = __importStar(__webpack_require__(1514));
 const vmModule = __importStar(__webpack_require__(2772));
 const host_1 = __webpack_require__(8215);
-const utility_1 = __webpack_require__(2857);
 const resource_urls_1 = __webpack_require__(3990);
 const resource_disk_1 = __webpack_require__(7102);
 class OperatingSystem {
@@ -837,9 +836,6 @@ class OperatingSystem {
     }
     get name() {
         return this.constructor.name.toLocaleLowerCase();
-    }
-    resolve(implementation) {
-        return (0, utility_1.getImplementation)(this, implementation);
     }
     setupWorkDirectory(vm, workDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
