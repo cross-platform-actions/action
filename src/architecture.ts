@@ -23,8 +23,11 @@ export abstract class Architecture {
   }
 
   static for(kind: Kind, host: Host, operating_system: os.Kind): Architecture {
-    if (kind == Kind.x86_64 && operating_system.is(OpenBsd))
-      return new Architecture.X86_64OpenBsd(kind, host)
+    if (operating_system.is(OpenBsd)) {
+      if (kind == Kind.x86_64) return new Architecture.X86_64OpenBsd(kind, host)
+      else if (kind == Kind.arm64)
+        return new Architecture.Arm64OpenBsd(kind, host)
+    }
 
     return new (getOrThrow(Architecture.architectureMap, kind))(kind, host)
   }
@@ -126,6 +129,18 @@ export abstract class Architecture {
   private static readonly X86_64OpenBsd = class extends this.X86_64 {
     override get networkDevice(): string {
       return 'e1000'
+    }
+  }
+
+  private static readonly Arm64OpenBsd = class extends this.Arm64 {
+    override get efiHypervisor(): hypervisor.Hypervisor {
+      return new Architecture.Arm64OpenBsd.QemuEfi()
+    }
+
+    private static readonly QemuEfi = class extends hypervisor.QemuEfi {
+      override get firmwareFile(): string {
+        return `${this.firmwareDirectory}/linaro_uefi.fd`
+      }
     }
   }
 
