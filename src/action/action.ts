@@ -194,12 +194,17 @@ export class Action {
       `Port ${this.operatingSystem.ssHostPort}`,
       `IdentityFile ${this.privateSshKey}`,
       'SendEnv CI GITHUB_*',
-      `SendEnv ${this.input.environmentVariables}`,
+      this.customSendEnv,
       'PasswordAuthentication no'
     ].join('\n')
 
     fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`)
     this.implementation.configSSH()
+  }
+
+  private get customSendEnv(): string {
+    const env = this.input.environmentVariables
+    return env ? `SendEnv ${env}` : ''
   }
 
   private async setupSSHKey(): Promise<void> {

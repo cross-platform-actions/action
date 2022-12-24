@@ -157,3 +157,22 @@ jobs:
             [ "`uname -r`" = '${{ matrix.os.uname.release || matrix.os.version }}' ]
             [ "`uname -m`" = '${{ matrix.os.uname.hardware }}' ]
             [ "`pwd`" = '${{ matrix.os.workDirectory }}' ]
+
+  test-no-env:
+    timeout-minutes: 5
+    name: Test without environment variables
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.0'
+          run: env | sort

@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Run action using Node 16. This fixes a deprecation message
-
-### Changed
 - Strip resource binaries to reduce space
+
+### Fixed
+- Error in /home/runner/.ssh/config ([#14](https://github.com/cross-platform-actions/action/issues/14))
 
 ## [0.6.2] - 2022-07-06
 ### Fixed
