@@ -20,11 +20,11 @@ export default class OpenBsd extends os.OperatingSystem {
   }
 
   get hypervisorUrl(): string {
-    return host.hypervisor.getResourceUrl(this.architecture)
+    return this.architecture.hypervisor.getResourceUrl(this.architecture)
   }
 
   get ssHostPort(): number {
-    return host.hypervisor.sshPort
+    return this.architecture.hypervisor.sshPort
   }
 
   get actionImplementationKind(): action.ImplementationKind {
@@ -59,7 +59,7 @@ export default class OpenBsd extends os.OperatingSystem {
       ssHostPort: this.ssHostPort,
       firmware: path.join(
         firmwareDirectory.toString(),
-        host.efiHypervisor.firmwareFile
+        this.architecture.efiHypervisor.firmwareFile
       ),
 
       // qemu

@@ -7,7 +7,6 @@ import * as architecture from '../../architecture'
 import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
-import {host} from '../../host'
 import * as os from '../../operating_system'
 import versions from '../../version'
 import {Qemu} from '../qemu'
@@ -59,7 +58,7 @@ export default class NetBsd extends Qemu {
       ssHostPort: this.ssHostPort,
       firmware: path.join(
         firmwareDirectory.toString(),
-        host.hypervisor.firmwareFile
+        this.architecture.hypervisor.firmwareFile
       ),
 
       // qemu

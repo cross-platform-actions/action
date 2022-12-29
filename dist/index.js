@@ -494,6 +494,9 @@ Architecture.Arm64 = class extends Architecture {
     get hypervisor() {
         return new hypervisor.Qemu();
     }
+    get efiHypervisor() {
+        return new hypervisor.QemuEfi();
+    }
 };
 Architecture.X86_64 = class extends Architecture {
     get name() {
@@ -516,6 +519,9 @@ Architecture.X86_64 = class extends Architecture {
     }
     get hypervisor() {
         return this.host.hypervisor;
+    }
+    get efiHypervisor() {
+        return this.host.efiHypervisor;
     }
 };
 Architecture.X86_64OpenBsd = class extends _a.X86_64 {
@@ -971,7 +977,7 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
         super(arch, version);
     }
     get hypervisorUrl() {
-        return host_1.host.hypervisor.getResourceUrl(this.architecture);
+        return this.architecture.hypervisor.getResourceUrl(this.architecture);
     }
     get ssHostPort() {
         return this.architecture.hypervisor.sshPort;
@@ -1001,7 +1007,7 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
         if (this.architecture.kind !== architecture.Kind.x86_64) {
             throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
         }
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
@@ -1170,7 +1176,6 @@ const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
 const action = __importStar(__webpack_require__(6072));
 const factory_1 = __webpack_require__(133);
-const host_1 = __webpack_require__(8215);
 const os = __importStar(__webpack_require__(9385));
 const version_1 = __importDefault(__webpack_require__(8217));
 const qemu_1 = __webpack_require__(1526);
@@ -1198,7 +1203,7 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
         if (this.architecture.kind !== architecture.Kind.x86_64) {
             throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
         }
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.hypervisor.firmwareFile), 
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
@@ -1304,10 +1309,10 @@ let OpenBsd = class OpenBsd extends os.OperatingSystem {
         super(arch, version);
     }
     get hypervisorUrl() {
-        return host_1.host.hypervisor.getResourceUrl(this.architecture);
+        return this.architecture.hypervisor.getResourceUrl(this.architecture);
     }
     get ssHostPort() {
-        return host_1.host.hypervisor.sshPort;
+        return this.architecture.hypervisor.sshPort;
     }
     get actionImplementationKind() {
         if (this.architecture.kind === architecture.Kind.x86_64)
@@ -1325,7 +1330,7 @@ let OpenBsd = class OpenBsd extends os.OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating OpenBSD VM');
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), host_1.host.efiHypervisor.firmwareFile), 
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.efiHypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve

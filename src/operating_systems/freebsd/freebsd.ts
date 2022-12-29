@@ -21,7 +21,7 @@ export default class FreeBsd extends os.OperatingSystem {
   }
 
   get hypervisorUrl(): string {
-    return host.hypervisor.getResourceUrl(this.architecture)
+    return this.architecture.hypervisor.getResourceUrl(this.architecture)
   }
 
   get ssHostPort(): number {
@@ -75,7 +75,7 @@ export default class FreeBsd extends os.OperatingSystem {
       ssHostPort: this.ssHostPort,
       firmware: path.join(
         firmwareDirectory.toString(),
-        host.hypervisor.firmwareFile
+        this.architecture.hypervisor.firmwareFile
       ),
 
       // qemu

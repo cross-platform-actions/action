@@ -36,6 +36,7 @@ export abstract class Architecture {
   abstract get accelerator(): vm.Accelerator
   abstract get canRunXhyve(): boolean
   abstract get hypervisor(): hypervisor.Hypervisor
+  abstract get efiHypervisor(): hypervisor.Hypervisor
 
   get networkDevice(): string {
     return 'virtio-net'
@@ -82,6 +83,10 @@ export abstract class Architecture {
     override get hypervisor(): hypervisor.Hypervisor {
       return new hypervisor.Qemu()
     }
+
+    override get efiHypervisor(): hypervisor.Hypervisor {
+      return new hypervisor.QemuEfi()
+    }
   }
 
   private static readonly X86_64 = class extends Architecture {
@@ -112,6 +117,10 @@ export abstract class Architecture {
     override get hypervisor(): hypervisor.Hypervisor {
       return this.host.hypervisor
     }
+
+    override get efiHypervisor(): hypervisor.Hypervisor {
+      return this.host.efiHypervisor
+    }
   }
 
   private static readonly X86_64OpenBsd = class extends this.X86_64 {
@@ -122,7 +131,7 @@ export abstract class Architecture {
 
   private static readonly architectureMap: ReadonlyMap<
     Kind,
-    typeof Architecture.Arm64
+    typeof Architecture.X86_64
   > = new Map([
     [Kind.arm64, Architecture.Arm64],
     [Kind.x86_64, Architecture.X86_64]
