@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for FreeBSD 13.1
 - Add support for FreeBSD 12.4
 
-## [0.8.0] - 2022-12-23
+## [0.8.0] - 2023-01-13
 ### Added
 - Add support for OpenBSD 7.2 ([openbsd-builder#13](https://github.com/cross-platform-actions/openbsd-builder/issues/13))
 
