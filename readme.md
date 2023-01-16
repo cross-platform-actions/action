@@ -33,7 +33,7 @@ jobs:
         os:
           - name: freebsd
             architecture: x86-64
-            version: '13.0'
+            version: '13.1'
             host: macos-12
 
           - name: openbsd
@@ -116,7 +116,9 @@ operating system will list which versions are supported.
 
 | Version | x86-64 |
 | ------- | ------ |
+| 13.1    | ✓      |
 | 13.0    | ✓      |
+| 12.4    | ✓      |
 | 12.2    | ✓      |
 
 ### [NetBSD][netbsd_builder] (`netbsd`)
