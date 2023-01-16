@@ -17,8 +17,8 @@ Some of the features that are supported include:
 ## Usage
 
 Here's a sample workflow file which will setup a matrix resulting in four jobs.
-One which will run on FreeBSD 13.0, one which runs OpenBSD 7.1, one which runs
-NetBSD 9.2 and one which runs OpenBSD 7.1 on ARM64.
+One which will run on FreeBSD 13.1, one which runs OpenBSD 7.2, one which runs
+NetBSD 9.2 and one which runs OpenBSD 7.2 on ARM64.
 
 ```yaml
 name: CI
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.3.1
+        uses: cross-platform-actions/action@v0.9.0
         env:
           MY_ENV1: MY_ENV1
           MY_ENV2: MY_ENV2
