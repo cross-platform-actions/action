@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as architecture from '../architecture'
 import {Shell, toShell} from './shell'
 import * as os from '../operating_systems/kind'
+import {host} from '../host'
 
 export class Input {
   private run_?: string
@@ -10,6 +11,7 @@ export class Input {
   private shell_?: Shell
   private environmentVariables_?: string
   private architecture_?: architecture.Kind
+  private memory_?: string
 
   get version(): string {
     if (this.version_ !== undefined) return this.version_
@@ -60,5 +62,16 @@ export class Input {
     if (kind === undefined) throw Error(`Invalid architecture: ${input}`)
 
     return (this.architecture_ = kind)
+  }
+
+  get memory(): string {
+    if (this.memory_ !== undefined) return this.memory_
+
+    const memory = core.getInput('memory')
+    core.debug(`memory input: '${memory}'`)
+    if (memory === undefined || memory === '')
+      return (this.memory_ = host.defaultMemory)
+
+    return (this.memory_ = memory)
   }
 }

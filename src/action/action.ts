@@ -85,7 +85,10 @@ export class Action {
       hypervisorDirectory,
       firmwareDirectory,
       resourcesDirectory,
-      diskImagePath
+      diskImagePath,
+      {
+        memory: this.input.memory
+      }
     )
 
     const excludes = [
@@ -148,7 +151,8 @@ export class Action {
     hypervisorDirectory: string,
     firmwareDirectory: string,
     resourcesDirectory: string,
-    diskImagePath: string
+    diskImagePath: string,
+    config: os.ExternalVmConfiguration
   ): Promise<vmModule.Vm> {
     await this.operatingSystem.prepareDisk(
       diskImagePath,
@@ -161,7 +165,7 @@ export class Action {
       resourcesDirectory,
       firmwareDirectory,
       {
-        memory: '4G',
+        ...config,
         cpuCount: 2,
         diskImage: path.join(resourcesDirectory, this.targetDiskName),
 

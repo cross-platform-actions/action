@@ -11,11 +11,13 @@ import {host} from './host'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from './resource_disk'
 
-export interface VmConfiguration {
+export interface ExternalVmConfiguration {
   memory: string
+}
+
+export interface VmConfiguration extends ExternalVmConfiguration {
   cpuCount: number
   diskImage: fs.PathLike
-
   resourcesDiskImage: fs.PathLike
   userboot: fs.PathLike
 }

@@ -88,7 +88,9 @@ class Action {
                 this.unarchive('resources', resourcesArchivePath)
             ]);
             const hypervisorDirectory = path.join(firmwareDirectory, 'bin');
-            const vmPromise = this.creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath);
+            const vmPromise = this.creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath, {
+                memory: this.input.memory
+            });
             const excludes = [
                 resourcesArchivePath,
                 resourcesDirectory,
@@ -136,17 +138,12 @@ class Action {
             return result;
         });
     }
-    creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath) {
+    creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath, config) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.operatingSystem.prepareDisk(diskImagePath, this.targetDiskName, resourcesDirectory);
-            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, {
-                memory: '4G',
-                cpuCount: 2,
-                diskImage: path.join(resourcesDirectory, this.targetDiskName),
+            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, Object.assign(Object.assign({}, config), { cpuCount: 2, diskImage: path.join(resourcesDirectory, this.targetDiskName), 
                 // xhyve
-                resourcesDiskImage: this.resourceDisk.diskPath,
-                userboot: path.join(firmwareDirectory, 'userboot.so')
-            });
+                resourcesDiskImage: this.resourceDisk.diskPath, userboot: path.join(firmwareDirectory, 'userboot.so') }));
         });
     }
     unarchive(type, archivePath) {
@@ -316,6 +313,7 @@ const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
 const shell_1 = __webpack_require__(9044);
 const os = __importStar(__webpack_require__(6713));
+const host_1 = __webpack_require__(8215);
 class Input {
     get version() {
         if (this.version_ !== undefined)
@@ -362,6 +360,15 @@ class Input {
         if (kind === undefined)
             throw Error(`Invalid architecture: ${input}`);
         return (this.architecture_ = kind);
+    }
+    get memory() {
+        if (this.memory_ !== undefined)
+            return this.memory_;
+        const memory = core.getInput('memory');
+        core.debug(`memory input: '${memory}'`);
+        if (memory === undefined || memory === '')
+            return (this.memory_ = host_1.host.defaultMemory);
+        return (this.memory_ = memory);
     }
 }
 exports.Input = Input;
@@ -590,7 +597,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.host = exports.Host = void 0;
+exports.getHost = exports.host = exports.Host = void 0;
 const process = __importStar(__webpack_require__(1765));
 const host_qemu_1 = __importDefault(__webpack_require__(9097));
 const hypervisor = __importStar(__webpack_require__(4288));
@@ -632,6 +639,9 @@ class MacOs extends Host {
     get efiHypervisor() {
         return this.hypervisor;
     }
+    get defaultMemory() {
+        return '13G';
+    }
 }
 class Linux extends Host {
     get workDirectory() {
@@ -649,8 +659,15 @@ class Linux extends Host {
     get efiHypervisor() {
         return new hypervisor.QemuEfi();
     }
+    get defaultMemory() {
+        return '6G';
+    }
 }
 exports.host = Host.create();
+function getHost() {
+    return exports.host;
+}
+exports.getHost = getHost;
 //# sourceMappingURL=host.js.map
 
 /***/ }),
@@ -1027,7 +1044,7 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        const cls = host_1.host.vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
+        const cls = (0, host_1.getHost)().vmModule.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
         return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
     }
 };

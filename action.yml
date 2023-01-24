@@ -29,6 +29,9 @@ inputs:
       A list of environment variables to forward to the virtual machine.
       The list should be separated with spaces.
     default: ''
+  memory:
+    required: false
+    description: The amout of memory for the virtual machine
 
 runs:
   using: node16

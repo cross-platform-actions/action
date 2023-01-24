@@ -23,6 +23,7 @@ export abstract class Host {
   abstract get qemu(): HostQemu
   abstract get hypervisor(): hypervisor.Hypervisor
   abstract get efiHypervisor(): hypervisor.Hypervisor
+  abstract get defaultMemory(): string
 
   resolve<T>(implementation: Record<string, T>): T {
     return getImplementation(this, implementation)
@@ -53,6 +54,10 @@ class MacOs extends Host {
   override get efiHypervisor(): hypervisor.Hypervisor {
     return this.hypervisor
   }
+
+  override get defaultMemory(): string {
+    return '13G'
+  }
 }
 
 class Linux extends Host {
@@ -75,6 +80,13 @@ class Linux extends Host {
   override get efiHypervisor(): hypervisor.Hypervisor {
     return new hypervisor.QemuEfi()
   }
+
+  override get defaultMemory(): string {
+    return '6G'
+  }
 }
 
 export const host = Host.create()
+export function getHost() {
+  return host
+}

@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Support for configuring memory ([#16](https://github.com/cross-platform-actions/action/issues/16))
+
+### Changed
+- Increased default memory to 13GB on macOS runner and to 6GB on Linux runners ([#16](https://github.com/cross-platform-actions/action/issues/16))
 
 ### Fixed
 - Action doesn't terminate when command fails ([#21](https://github.com/cross-platform-actions/action/issues/21))

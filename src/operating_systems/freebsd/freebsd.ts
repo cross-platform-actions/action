@@ -7,7 +7,7 @@ import * as architecture from '../../architecture'
 import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
-import {host} from '../../host'
+import {getHost} from '../../host'
 import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from '../../resource_disk'
@@ -87,7 +87,7 @@ export default class FreeBsd extends os.OperatingSystem {
       uuid: this.uuid
     }
 
-    const cls = host.vmModule.resolve({qemu: QemuVm, xhyve: XhyveVm})
+    const cls = getHost().vmModule.resolve({qemu: QemuVm, xhyve: XhyveVm})
     return new cls(
       hypervisorDirectory,
       resourcesDirectory,
