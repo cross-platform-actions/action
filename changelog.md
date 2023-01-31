@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Action doesn't terminate when command fails ([#21](https://github.com/cross-platform-actions/action/issues/21))
+
 ## [0.10.0] - 2023-01-24
 ### Added
 - Bundle all X11 sets for NetBSD ([netbsd-builder#3](https://github.com/cross-platform-actions/netbsd-builder/issues/3))

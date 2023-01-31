@@ -116,8 +116,8 @@ export class Action {
         await this.runCommand(vm)
       } finally {
         await this.syncBack(vm.ipAddress)
+        await vm.stop()
       }
-      await vm.stop()
     } finally {
       await vm.terminate()
       fs.rmdirSync(this.tempPath, {recursive: true})

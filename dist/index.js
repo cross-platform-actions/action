@@ -111,8 +111,8 @@ class Action {
                 }
                 finally {
                     yield this.syncBack(vm.ipAddress);
+                    yield vm.stop();
                 }
-                yield vm.stop();
             }
             finally {
                 yield vm.terminate();
