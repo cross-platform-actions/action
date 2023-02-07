@@ -13,6 +13,7 @@ import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from './resource_disk'
 
 export interface ExternalVmConfiguration {
   memory: string
+  cpuCount: number
 }
 
 export interface VmConfiguration extends ExternalVmConfiguration {

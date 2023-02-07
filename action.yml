@@ -32,6 +32,9 @@ inputs:
   memory:
     required: false
     description: The amout of memory for the virtual machine
+  cpu_count:
+    required: false
+    description: The number of CPU cores for the virtual machine
 
 runs:
   using: node16

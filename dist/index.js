@@ -89,7 +89,8 @@ class Action {
             ]);
             const hypervisorDirectory = path.join(firmwareDirectory, 'bin');
             const vmPromise = this.creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath, {
-                memory: this.input.memory
+                memory: this.input.memory,
+                cpuCount: this.input.cpuCount
             });
             const excludes = [
                 resourcesArchivePath,
@@ -141,7 +142,7 @@ class Action {
     creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath, config) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.operatingSystem.prepareDisk(diskImagePath, this.targetDiskName, resourcesDirectory);
-            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, Object.assign(Object.assign({}, config), { cpuCount: 2, diskImage: path.join(resourcesDirectory, this.targetDiskName), 
+            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, Object.assign(Object.assign({}, config), { diskImage: path.join(resourcesDirectory, this.targetDiskName), 
                 // xhyve
                 resourcesDiskImage: this.resourceDisk.diskPath, userboot: path.join(firmwareDirectory, 'userboot.so') }));
         });
@@ -369,6 +370,18 @@ class Input {
         if (memory === undefined || memory === '')
             return (this.memory_ = host_1.host.defaultMemory);
         return (this.memory_ = memory);
+    }
+    get cpuCount() {
+        if (this.cpuCount_ !== undefined)
+            return this.cpuCount_;
+        const cpuCount = core.getInput('cpu_count');
+        core.debug(`cpuCount input: '${cpuCount}'`);
+        if (cpuCount === undefined || cpuCount === '')
+            return (this.cpuCount_ = host_1.host.defaultCpuCount);
+        const parsedCpuCount = parseInt(cpuCount);
+        if (Number.isNaN(parsedCpuCount))
+            throw Error(`Invalid CPU count: ${cpuCount}`);
+        return (this.cpuCount_ = parsedCpuCount);
     }
 }
 exports.Input = Input;
@@ -642,6 +655,9 @@ class MacOs extends Host {
     get defaultMemory() {
         return '13G';
     }
+    get defaultCpuCount() {
+        return 3;
+    }
 }
 class Linux extends Host {
     get workDirectory() {
@@ -661,6 +677,9 @@ class Linux extends Host {
     }
     get defaultMemory() {
         return '6G';
+    }
+    get defaultCpuCount() {
+        return 2;
     }
 }
 exports.host = Host.create();
@@ -1556,7 +1575,7 @@ class Vm extends vm.Vm {
             this.hypervisorPath.toString(),
             '-machine', `type=${this.configuration.machineType},accel=${accel}`,
             '-cpu', this.configuration.cpu,
-            '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
+            '-smp', this.configuration.cpuCount.toString(),
             '-m', this.configuration.memory,
             '-device', `${this.netDevive},netdev=user.0`,
             '-netdev', `user,id=user.0,hostfwd=tcp::${this.configuration.ssHostPort}-:22`,

@@ -66,6 +66,7 @@ jobs:
           version: ${{ matrix.os.version }}
           shell: bash
           memory: 5G
+          cpu_count: 4
           run: |
             uname -a
             echo $SHELL
@@ -82,23 +83,25 @@ Different platforms need to run on different runners, see the
 
 This section lists the available inputs for the action.
 
-| Input                   | Required | Default Value | Description                                                                                                                                            |
-|-------------------------|----------|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `run`                   | ✓        | ✗             | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                       |
-| `operating_system`      | ✓        | ✗             | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                       |
-| `version`               | ✓        | ✗             | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                           |
-| `shell`                 | ✗        | `default`     | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash` |
-| `environment_variables` | ✗        | `""`          | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                           |
-| `memory`                | ✗        | `6G` or `13G` | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                 |
+| Input                   | Required | Default Value     | Type    | Description                                                                                                                                            |
+|-------------------------|----------|-------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `run`                   | ✓        | ✗                 | string  | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                       |
+| `operating_system`      | ✓        | ✗                 | string  | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                       |
+| `version`               | ✓        | ✗                 | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                           |
+| `shell`                 | ✗        | `default`         | string  | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash` |
+| `environment_variables` | ✗        | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                           |
+| `memory`                | ✗        | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                 |
+| `cpu_count`             | ✗        | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                 |
 
-All inputs are expected to be strings. It's important that especially the
-`version` is explicitly specified as a string, using single or double quotes.
-Otherwise YAML might interpet the value as a numeric value instead of a string.
-This might lead to some unexpected behavior. If the version is specified as
-`version: 13.0`, YAML will interpet `13.0` as a floating point number, drop the
-fraction part (because `13` and `13.0` are the same) and the GitHub action will
-only see `13` instead of `13.0`. The solution is to explicitly state that a
-string is required by using quotes: `version: '13.0'`.
+All inputs are expected to be of the specified type. It's important that
+especially the `version` is explicitly specified as a string, using single or
+double quotes. Otherwise YAML might interpet the value as a numeric value
+instead of a string. This might lead to some unexpected behavior. If the
+version is specified as `version: 13.0`, YAML will interpet `13.0` as a
+floating point number, drop the fraction part (because `13` and `13.0` are the
+same) and the GitHub action will only see `13` instead of `13.0`. The solution
+is to explicitly state that a string is required by using quotes: `version:
+'13.0'`.
 
 ## Supported Platforms
 

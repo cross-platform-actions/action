@@ -7,12 +7,13 @@ import '../../../src/operating_systems/freebsd/freebsd'
 
 describe('FreeBSD QemuVm', () => {
   let memory = '5G'
+  let cpuCount = 10
 
   let osKind = os.Kind.for('freebsd')
   let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind)
   let config = {
     memory: memory,
-    cpuCount: 0,
+    cpuCount: cpuCount,
     diskImage: '',
     ssHostPort: 0,
     cpu: '',
@@ -27,10 +28,15 @@ describe('FreeBSD QemuVm', () => {
 
   let getFlagValue = (flag: string) => vm.command[vm.command.indexOf(flag) + 1]
   let actualMemory = () => getFlagValue('-m')
+  let actualSmp = () => getFlagValue('-smp')
 
   describe('command', () => {
     it('constucts a command with the correct memory configuration', () => {
       expect(actualMemory()).toEqual(memory)
+    })
+
+    it('constucts a command with the correct SMP configuration', () => {
+      expect(actualSmp()).toEqual(cpuCount.toString())
     })
   })
 })

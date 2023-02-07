@@ -87,7 +87,8 @@ export class Action {
       resourcesDirectory,
       diskImagePath,
       {
-        memory: this.input.memory
+        memory: this.input.memory,
+        cpuCount: this.input.cpuCount
       }
     )
 
@@ -166,7 +167,6 @@ export class Action {
       firmwareDirectory,
       {
         ...config,
-        cpuCount: 2,
         diskImage: path.join(resourcesDirectory, this.targetDiskName),
 
         // xhyve

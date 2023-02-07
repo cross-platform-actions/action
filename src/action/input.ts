@@ -12,6 +12,7 @@ export class Input {
   private environmentVariables_?: string
   private architecture_?: architecture.Kind
   private memory_?: string
+  private cpuCount_?: number
 
   get version(): string {
     if (this.version_ !== undefined) return this.version_
@@ -73,5 +74,21 @@ export class Input {
       return (this.memory_ = host.defaultMemory)
 
     return (this.memory_ = memory)
+  }
+
+  get cpuCount(): number {
+    if (this.cpuCount_ !== undefined) return this.cpuCount_
+
+    const cpuCount = core.getInput('cpu_count')
+    core.debug(`cpuCount input: '${cpuCount}'`)
+    if (cpuCount === undefined || cpuCount === '')
+      return (this.cpuCount_ = host.defaultCpuCount)
+
+    const parsedCpuCount = parseInt(cpuCount)
+
+    if (Number.isNaN(parsedCpuCount))
+      throw Error(`Invalid CPU count: ${cpuCount}`)
+
+    return (this.cpuCount_ = parsedCpuCount)
   }
 }

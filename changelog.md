@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Support for configuring memory ([#16](https://github.com/cross-platform-actions/action/issues/16))
+- Support for configuring CPU core count ([#16](https://github.com/cross-platform-actions/action/issues/17))
 
 ### Changed
 - Increased default memory to 13GB on macOS runner and to 6GB on Linux runners ([#16](https://github.com/cross-platform-actions/action/issues/16))
+- Increased default CPU core count to 3 on macOS runner and to 2 on Linux runners ([#16](https://github.com/cross-platform-actions/action/issues/17))
+- Changed from two CPU sockets to one CPU socket ([#16](https://github.com/cross-platform-actions/action/issues/17))
 
 ### Fixed
 - Action doesn't terminate when command fails ([#21](https://github.com/cross-platform-actions/action/issues/21))

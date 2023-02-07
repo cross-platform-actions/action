@@ -33,6 +33,10 @@ describe('FreeBSD OperatingSystem', () => {
     override get defaultMemory(): string {
       return '6G'
     }
+
+    override get defaultCpuCount(): number {
+      return 6
+    }
   }
 
   let host = new MockHost()
@@ -45,7 +49,7 @@ describe('FreeBSD OperatingSystem', () => {
 
   let config = {
     memory: '4G',
-    cpuCount: 0,
+    cpuCount: 7,
     diskImage: '',
     resourcesDiskImage: '',
     userboot: ''

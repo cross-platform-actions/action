@@ -33,7 +33,7 @@ export abstract class Vm extends vm.Vm {
       this.hypervisorPath.toString(),
       '-machine', `type=${this.configuration.machineType},accel=${accel}`,
       '-cpu', this.configuration.cpu,
-      '-smp', `cpus=${this.configuration.cpuCount},sockets=${this.configuration.cpuCount}`,
+      '-smp', this.configuration.cpuCount.toString(),
       '-m', this.configuration.memory,
 
       '-device', `${this.netDevive},netdev=user.0`,

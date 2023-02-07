@@ -24,6 +24,7 @@ export abstract class Host {
   abstract get hypervisor(): hypervisor.Hypervisor
   abstract get efiHypervisor(): hypervisor.Hypervisor
   abstract get defaultMemory(): string
+  abstract get defaultCpuCount(): number
 
   resolve<T>(implementation: Record<string, T>): T {
     return getImplementation(this, implementation)
@@ -58,6 +59,10 @@ class MacOs extends Host {
   override get defaultMemory(): string {
     return '13G'
   }
+
+  override get defaultCpuCount(): number {
+    return 3
+  }
 }
 
 class Linux extends Host {
@@ -83,6 +88,10 @@ class Linux extends Host {
 
   override get defaultMemory(): string {
     return '6G'
+  }
+
+  override get defaultCpuCount(): number {
+    return 2
   }
 }
 
