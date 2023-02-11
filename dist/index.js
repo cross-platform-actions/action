@@ -899,7 +899,10 @@ class OperatingSystem {
             if (workDirectory === destination)
                 yield vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`);
             else {
-                yield vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}' && ln -sf '${workDirectory}/' '${destination}'`);
+                yield vm.execute(`rm -rf '${destination}' && ` +
+                    `sudo mkdir -p '${workDirectory}' && ` +
+                    `sudo chown '${vmModule.Vm.user}' '${workDirectory}' && ` +
+                    `ln -sf '${workDirectory}/' '${destination}'`);
             }
         });
     }
@@ -1221,6 +1224,7 @@ const core = __importStar(__webpack_require__(2186));
 const architecture = __importStar(__webpack_require__(4019));
 const action = __importStar(__webpack_require__(6072));
 const factory_1 = __webpack_require__(133);
+const hypervisor = __importStar(__webpack_require__(4288));
 const os = __importStar(__webpack_require__(9385));
 const version_1 = __importDefault(__webpack_require__(8217));
 const qemu_1 = __webpack_require__(1526);
@@ -1248,12 +1252,15 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
         if (this.architecture.kind !== architecture.Kind.x86_64) {
             throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
         }
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
         return new qemu_vm.Vm(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+    }
+    get hypervisor() {
+        return new hypervisor.Qemu();
     }
 };
 NetBsd = __decorate([

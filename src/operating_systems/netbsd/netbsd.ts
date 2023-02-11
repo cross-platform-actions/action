@@ -6,6 +6,7 @@ import * as core from '@actions/core'
 import * as architecture from '../../architecture'
 import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
+import * as hypervisor from '../../hypervisor'
 import * as vmModule from '../../vm'
 import * as os from '../../operating_system'
 import versions from '../../version'
@@ -58,7 +59,7 @@ export default class NetBsd extends Qemu {
       ssHostPort: this.ssHostPort,
       firmware: path.join(
         firmwareDirectory.toString(),
-        this.architecture.hypervisor.firmwareFile
+        this.hypervisor.firmwareFile
       ),
 
       // qemu
@@ -76,5 +77,9 @@ export default class NetBsd extends Qemu {
       this.architecture,
       config
     )
+  }
+
+  private get hypervisor(): hypervisor.Hypervisor {
+    return new hypervisor.Qemu()
   }
 }

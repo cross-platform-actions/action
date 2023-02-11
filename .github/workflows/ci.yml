@@ -180,6 +180,13 @@ jobs:
             uname:
               hardware: amd64
 
+          - name: NetBSD
+            version: '9.2'
+            host: macos-latest
+            workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3

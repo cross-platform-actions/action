@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Add support for NetBSD on macOS runners ([#28](https://github.com/cross-platform-actions/action/issues/28))
 - Support for configuring memory ([#16](https://github.com/cross-platform-actions/action/issues/16))
 - Support for configuring CPU core count ([#16](https://github.com/cross-platform-actions/action/issues/17))
 

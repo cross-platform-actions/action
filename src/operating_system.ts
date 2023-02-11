@@ -93,7 +93,10 @@ export abstract class OperatingSystem {
       await vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`)
     else {
       await vm.execute(
-        `rm -rf '${destination}' && mkdir -p '${workDirectory}' && ln -sf '${workDirectory}/' '${destination}'`
+        `rm -rf '${destination}' && ` +
+          `sudo mkdir -p '${workDirectory}' && ` +
+          `sudo chown '${vmModule.Vm.user}' '${workDirectory}' && ` +
+          `ln -sf '${workDirectory}/' '${destination}'`
       )
     }
   }

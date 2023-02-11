@@ -92,7 +92,7 @@ This section lists the available inputs for the action.
 | `memory`                | ❌       | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                 |
 | `cpu_count`             | ❌       | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                 |
 
-All inputs are expected to be of the specified type. It's especially important 
+All inputs are expected to be of the specified type. It's especially important
 that you specify `version` as a string, using single or
 double quotes. Otherwise YAML might interpet the value as a numeric value
 instead of a string, which leads to some unexpected behavior. If the
@@ -139,7 +139,7 @@ they can run.
 | Runner                                        | OpenBSD | FreeBSD | NetBSD |
 | ----------------------------------------------| ------- | ------- | ------ |
 | **Linux**                                     | ✅      | ✅      | ✅     |
-| **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ❌     |
+| **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ✅     |
 
 ## `Under the Hood`
 
