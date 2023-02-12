@@ -1,22 +1,21 @@
 # Cross-Platform GitHub Action
 
-This project provides a GitHub action for running GitHub Action workflows on
-multiple platforms. This includes platforms that GitHub Actions doesn't
-currently natively support.
+This project provides a GitHub action for running GitHub Actions workflows on
+multiple platforms, including platforms that GitHub Actions doesn't currently natively support.
 
-## Features
+## `Features`
 
-Some of the features that are supported include:
+Some of the features that this action supports include:
 
-- Multiple operating system with one single action
+- Multiple operating systems with one single action
 - Multiple versions of each operating system
 - Allows to use default shell or Bash shell
 - Low boot overhead
 - Fast execution
 
-## Usage
+## `Usage`
 
-Here's a sample workflow file which will setup a matrix resulting in four jobs.
+Here's a sample workflow file which will set up a matrix resulting in four jobs.
 One which will run on FreeBSD 13.1, one which runs OpenBSD 7.2, one which runs
 NetBSD 9.2 and one which runs OpenBSD 7.2 on ARM64.
 
@@ -76,7 +75,7 @@ jobs:
             env | sort
 ```
 
-Different platforms need to run on different runners, see the
+Different platforms need to run on different runners, so see the
 [Runners](#runners) section below.
 
 ### Inputs
@@ -85,25 +84,25 @@ This section lists the available inputs for the action.
 
 | Input                   | Required | Default Value     | Type    | Description                                                                                                                                            |
 |-------------------------|----------|-------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `run`                   | ✓        | ✗                 | string  | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                       |
-| `operating_system`      | ✓        | ✗                 | string  | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                       |
-| `version`               | ✓        | ✗                 | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                           |
-| `shell`                 | ✗        | `default`         | string  | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash` |
-| `environment_variables` | ✗        | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                           |
-| `memory`                | ✗        | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                 |
-| `cpu_count`             | ✗        | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                 |
+| `run`                   | ✅       | ❌                | string  | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                       |
+| `operating_system`      | ✅       | ❌                | string  | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                       |
+| `version`               | ✅       | ❌                | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                           |
+| `shell`                 | ❌       | `default`         | string  | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash` |
+| `environment_variables` | ❌       | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                           |
+| `memory`                | ❌       | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                 |
+| `cpu_count`             | ❌       | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                 |
 
-All inputs are expected to be of the specified type. It's important that
-especially the `version` is explicitly specified as a string, using single or
+All inputs are expected to be of the specified type. It's especially important 
+that you specify `version` as a string, using single or
 double quotes. Otherwise YAML might interpet the value as a numeric value
-instead of a string. This might lead to some unexpected behavior. If the
+instead of a string, which leads to some unexpected behavior. If the
 version is specified as `version: 13.0`, YAML will interpet `13.0` as a
 floating point number, drop the fraction part (because `13` and `13.0` are the
 same) and the GitHub action will only see `13` instead of `13.0`. The solution
 is to explicitly state that a string is required by using quotes: `version:
 '13.0'`.
 
-## Supported Platforms
+## `Supported Platforms`
 
 This sections lists the currently supported platforms by operating system. Each
 operating system will list which versions are supported.
@@ -112,39 +111,39 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
-| 7.2     | ✓      | ✓      |
-| 7.1     | ✓      | ✓      |
-| 6.9     | ✓      | ✓      |
-| 6.8     | ✓      | ✗      |
+| 7.2     | ✅     | ✅     |
+| 7.1     | ✅     | ✅     |
+| 6.9     | ✅     | ✅     |
+| 6.8     | ✅     | ❌     |
 
 ### [FreeBSD][freebsd_builder] (`freebsd`)
 
 | Version | x86-64 |
 | ------- | ------ |
-| 13.1    | ✓      |
-| 13.0    | ✓      |
-| 12.4    | ✓      |
-| 12.2    | ✓      |
+| 13.1    | ✅     |
+| 13.0    | ✅     |
+| 12.4    | ✅     |
+| 12.2    | ✅     |
 
 ### [NetBSD][netbsd_builder] (`netbsd`)
 
 | Version | x86-64 |
 | ------- | ------ |
-| 9.2     | ✓      |
+| 9.2     | ✅     |
 
 ### Runners
 
-This section list the different combinations of platforms and on which runners
+This section lists the different combinations of platforms and on which runners
 they can run.
 
 | Runner                                        | OpenBSD | FreeBSD | NetBSD |
 | ----------------------------------------------| ------- | ------- | ------ |
-| **Linux**                                     | ✓       | ✓       | ✓      |
-| **macos-10.15**, **macos-11**, **macos-12**   | ✓       | ✓       | ✗      |
+| **Linux**                                     | ✅      | ✅      | ✅     |
+| **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ❌     |
 
-## Under the Hood
+## `Under the Hood`
 
-GitHub Actions currently only support the following platforms: macOS, Linux and
+GitHub Actions currently only support macOS, Linux, and
 Windows. To be able to run other platforms, this GitHub action runs the
 commands inside a virtual machine (VM). If the host platform is macOS the
 hypervisor can take advantage of nested virtualization.
@@ -168,10 +167,10 @@ The GitHub action uses SSH to communicate and execute commands inside the VM.
 It uses [rsync][rsync] to share files between the guest VM and the host. xhyve
 does not have any native support for sharing files. To authenticate the SSH
 connection a unique key pair is used. This pair is generated each time the
-action is run. The public key is added to the VM image and the private key is
-stored on the host. Since xhyve does not support file sharing, a secondar hard
+action is run. The public key is added to the VM image and the host stores the private key.
+Since xhyve does not support file sharing, a secondary hard
 drive, which is backed by a file, is created. The public key is stored on this
-hard drive, which is then mounted by the VM. At boot time, the secondary hard
+hard drive, which the VM then mounts. At boot time, the secondary hard
 drive will be identified and the public key will be copied to the appropriate
 location.
 
@@ -182,7 +181,7 @@ fast as possible. This is achieved in a couple of ways:
 - By downloading [resources][resources], like the hypervisor and a few other
   tools, instead of installing them through a package manager
 
-- No compression is used for the resources that are downloaded. The size is
+- The resources that are downloaded use no compression. The size is
   small enough anyway and it's faster to download the uncompressed data than
   it is to download compressed data and then uncompress it.
 
@@ -192,7 +191,7 @@ fast as possible. This is achieved in a couple of ways:
 - It performs as much as possible of the setup ahead of time when the VM image
   is provisioned
 
-## Local Development
+## `Local Development`
 
 ### Prerequisites
 
