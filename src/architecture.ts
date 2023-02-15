@@ -37,7 +37,6 @@ export abstract class Architecture {
   abstract get cpu(): string
   abstract get machineType(): string
   abstract get accelerator(): vm.Accelerator
-  abstract get canRunXhyve(): boolean
   abstract get hypervisor(): hypervisor.Hypervisor
   abstract get efiHypervisor(): hypervisor.Hypervisor
 
@@ -79,10 +78,6 @@ export abstract class Architecture {
       return vm.Accelerator.tcg
     }
 
-    override get canRunXhyve(): boolean {
-      return false
-    }
-
     override get hypervisor(): hypervisor.Hypervisor {
       return new hypervisor.Qemu()
     }
@@ -111,10 +106,6 @@ export abstract class Architecture {
 
     override get accelerator(): vm.Accelerator {
       return this.hostQemu.accelerator
-    }
-
-    override get canRunXhyve(): boolean {
-      return true
     }
 
     override get hypervisor(): hypervisor.Hypervisor {

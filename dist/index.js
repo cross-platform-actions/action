@@ -512,9 +512,6 @@ Architecture.Arm64 = class extends Architecture {
     get accelerator() {
         return vm.Accelerator.tcg;
     }
-    get canRunXhyve() {
-        return false;
-    }
     get hypervisor() {
         return new hypervisor.Qemu();
     }
@@ -537,9 +534,6 @@ Architecture.X86_64 = class extends Architecture {
     }
     get accelerator() {
         return this.hostQemu.accelerator;
-    }
-    get canRunXhyve() {
-        return true;
     }
     get hypervisor() {
         return this.host.hypervisor;
