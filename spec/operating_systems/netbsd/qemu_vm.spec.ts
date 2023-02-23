@@ -8,6 +8,7 @@ import '../../../src/operating_systems/netbsd/netbsd'
 describe('NetBSD QemuVm', () => {
   let memory = '5G'
   let cpuCount = 10
+  let ssHostPort = 1234
 
   let osKind = os.Kind.for('netbsd')
   let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind)
@@ -15,7 +16,7 @@ describe('NetBSD QemuVm', () => {
     memory: memory,
     cpuCount: cpuCount,
     diskImage: '',
-    ssHostPort: 0,
+    ssHostPort: ssHostPort,
     cpu: '',
     accelerator: Accelerator.tcg,
     machineType: '',
@@ -29,6 +30,7 @@ describe('NetBSD QemuVm', () => {
   let getFlagValue = (flag: string) => vm.command[vm.command.indexOf(flag) + 1]
   let actualMemory = () => getFlagValue('-m')
   let actualSmp = () => getFlagValue('-smp')
+  let actualNetDevice = () => getFlagValue('-netdev')
 
   describe('command', () => {
     it('constucts a command with the correct memory configuration', () => {
@@ -37,6 +39,12 @@ describe('NetBSD QemuVm', () => {
 
     it('constucts a command with the correct SMP configuration', () => {
       expect(actualSmp()).toEqual(cpuCount.toString())
+    })
+
+    it('constucts a command with the IPv6 disabled for the net device', () => {
+      expect(actualNetDevice()).toEqual(
+        `user,id=user.0,hostfwd=tcp::${ssHostPort}-:22,ipv6=off`
+      )
     })
   })
 })

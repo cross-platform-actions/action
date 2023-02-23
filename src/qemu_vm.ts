@@ -37,7 +37,7 @@ export abstract class Vm extends vm.Vm {
       '-m', this.configuration.memory,
 
       '-device', `${this.netDevive},netdev=user.0`,
-      '-netdev', `user,id=user.0,hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
+      '-netdev', this.netdev,
 
       '-display', 'none',
       '-monitor', 'none',
@@ -67,6 +67,21 @@ export abstract class Vm extends vm.Vm {
 
   protected get netDevive(): string {
     return 'virtio-net'
+  }
+
+  protected get ipv6(): string {
+    return ''
+  }
+
+  private get netdev(): string {
+    return [
+      'user',
+      'id=user.0',
+      `hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
+      this.ipv6
+    ]
+      .filter(e => e !== '')
+      .join(',')
   }
 }
 
