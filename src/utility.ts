@@ -1,4 +1,5 @@
 import * as exec from '@actions/exec'
+import * as core from '@actions/core'
 
 export type Class<T> = new (...args: any[]) => T
 
@@ -51,4 +52,13 @@ export function getImplementation<T>(
 ): T {
   const name = object.constructor.name.toLocaleLowerCase()
   return getOrDefaultOrThrow(implementation, name)
+}
+
+export function group(name: string, block: () => void): void {
+  try {
+    core.startGroup(name)
+    block()
+  } finally {
+    core.endGroup()
+  }
 }

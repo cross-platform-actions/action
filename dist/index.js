@@ -52,6 +52,7 @@ const os_factory = __importStar(__nccwpck_require__(133));
 const resource_disk_1 = __importDefault(__nccwpck_require__(7102));
 const input = __importStar(__nccwpck_require__(1099));
 const shell = __importStar(__nccwpck_require__(9044));
+const utility = __importStar(__nccwpck_require__(2857));
 var ImplementationKind;
 (function (ImplementationKind) {
     ImplementationKind[ImplementationKind["qemu"] = 0] = "qemu";
@@ -75,6 +76,7 @@ class Action {
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
+            core.startGroup('Setting up VM');
             core.debug('Running action');
             const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield Promise.all([
                 this.downloadDiskImage(),
@@ -109,16 +111,23 @@ class Action {
                 yield this.syncFiles(vm.ipAddress, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
                 try {
+                    core.endGroup();
                     yield this.runCommand(vm);
                 }
                 finally {
+                    core.startGroup('Tearing down VM');
                     yield this.syncBack(vm.ipAddress);
                     yield vm.stop();
                 }
             }
             finally {
-                yield vm.terminate();
-                fs.rmdirSync(this.tempPath, { recursive: true });
+                try {
+                    yield vm.terminate();
+                    fs.rmdirSync(this.tempPath, { recursive: true });
+                }
+                finally {
+                    core.endGroup();
+                }
             }
         });
     }
@@ -223,7 +232,7 @@ class Action {
     }
     runCommand(vm) {
         return __awaiter(this, void 0, void 0, function* () {
-            core.info(`Run: ${this.input.run}`);
+            utility.group('Running command', () => core.info(this.input.run));
             const sh = this.input.shell === shell.Shell.default
                 ? '$SHELL'
                 : shell.toString(this.input.shell);
@@ -1896,8 +1905,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getImplementation = exports.getOrThrow = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
+exports.group = exports.getImplementation = exports.getOrThrow = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
+const core = __importStar(__nccwpck_require__(2186));
 function execWithOutput(commandLine, args, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
         let output = '';
@@ -1934,6 +1944,16 @@ function getImplementation(object, implementation) {
     return getOrDefaultOrThrow(implementation, name);
 }
 exports.getImplementation = getImplementation;
+function group(name, block) {
+    try {
+        core.startGroup(name);
+        block();
+    }
+    finally {
+        core.endGroup();
+    }
+}
+exports.group = group;
 //# sourceMappingURL=utility.js.map
 
 /***/ }),

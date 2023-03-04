@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for configuring CPU core count ([#16](https://github.com/cross-platform-actions/action/issues/17))
 
 ### Changed
+- Use output groups to hide all output except the run command
+    (No output is removed, just hidden by default) ([#49](https://github.com/cross-platform-actions/action/issues/49))
 - Remove support for IPv6 for NetBSD ([#46](https://github.com/cross-platform-actions/action/issues/46))
 - Increased default memory to 13GB on macOS runner and to 6GB on Linux runners ([#16](https://github.com/cross-platform-actions/action/issues/16))
 - Increased default CPU core count to 3 on macOS runner and to 2 on Linux runners ([#16](https://github.com/cross-platform-actions/action/issues/17))

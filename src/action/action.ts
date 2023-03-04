@@ -16,6 +16,7 @@ import ResourceDisk from '../resource_disk'
 import * as vmModule from '../vm'
 import * as input from './input'
 import * as shell from './shell'
+import * as utility from '../utility'
 
 export enum ImplementationKind {
   qemu,
@@ -65,6 +66,7 @@ export class Action {
   }
 
   async run(): Promise<void> {
+    core.startGroup('Setting up VM')
     core.debug('Running action')
     const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] =
       await Promise.all([
@@ -117,14 +119,20 @@ export class Action {
       )
       core.info('VM is ready')
       try {
+        core.endGroup()
         await this.runCommand(vm)
       } finally {
+        core.startGroup('Tearing down VM')
         await this.syncBack(vm.ipAddress)
         await vm.stop()
       }
     } finally {
-      await vm.terminate()
-      fs.rmdirSync(this.tempPath, {recursive: true})
+      try {
+        await vm.terminate()
+        fs.rmdirSync(this.tempPath, {recursive: true})
+      } finally {
+        core.endGroup()
+      }
     }
   }
 
@@ -256,7 +264,8 @@ export class Action {
   }
 
   private async runCommand(vm: vmModule.Vm): Promise<void> {
-    core.info(`Run: ${this.input.run}`)
+    utility.group('Running command', () => core.info(this.input.run))
+
     const sh =
       this.input.shell === shell.Shell.default
         ? '$SHELL'
