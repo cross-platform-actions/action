@@ -123,7 +123,7 @@ class Action {
             finally {
                 try {
                     yield vm.terminate();
-                    fs.rmdirSync(this.tempPath, { recursive: true });
+                    fs.rmSync(this.tempPath, { recursive: true });
                 }
                 finally {
                     core.endGroup();

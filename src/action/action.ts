@@ -129,7 +129,7 @@ export class Action {
     } finally {
       try {
         await vm.terminate()
-        fs.rmdirSync(this.tempPath, {recursive: true})
+        fs.rmSync(this.tempPath, {recursive: true})
       } finally {
         core.endGroup()
       }
