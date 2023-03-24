@@ -37,12 +37,12 @@ export abstract class Vm {
   ipAddress!: string
 
   static readonly user = 'runner'
+  readonly hypervisorPath: fs.PathLike
   protected vmProcess!: ChildProcess
   protected readonly architecture: architecture.Architecture
   protected readonly configuration: vm.Configuration
   protected readonly hypervisorDirectory: fs.PathLike
   protected readonly resourcesDirectory: fs.PathLike
-  protected readonly hypervisorPath: fs.PathLike
 
   constructor(
     hypervisorDirectory: fs.PathLike,

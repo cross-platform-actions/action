@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import * as core from '@actions/core'
 
 import * as vm from './vm'
-import {execWithOutput, getOrDefaultOrThrow} from './utility'
+import {execWithOutput} from './utility'
 import {wait} from './wait'
 import * as architecture from './architecture'
 
@@ -101,8 +101,4 @@ async function getIpAddressFromArp(macAddress: string): Promise<string> {
   }
 
   throw Error(`Failed to get IP address for MAC address: ${macAddress}`)
-}
-
-export function resolve<T>(implementation: Record<string, T>): T {
-  return getOrDefaultOrThrow(implementation, 'xhyve')
 }

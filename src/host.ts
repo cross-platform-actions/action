@@ -25,6 +25,7 @@ export abstract class Host {
   abstract get efiHypervisor(): hypervisor.Hypervisor
   abstract get defaultMemory(): string
   abstract get defaultCpuCount(): number
+  abstract validateHypervisor(kind: hypervisor.Kind): void
 
   resolve<T>(implementation: Record<string, T>): T {
     return getImplementation(this, implementation)
@@ -63,6 +64,17 @@ class MacOs extends Host {
   override get defaultCpuCount(): number {
     return 3
   }
+
+  override validateHypervisor(kind: hypervisor.Kind): void {
+    switch (kind) {
+      case hypervisor.Kind.qemu:
+        break
+      case hypervisor.Kind.xhyve:
+        break
+      default:
+        throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`)
+    }
+  }
 }
 
 class Linux extends Host {
@@ -92,6 +104,17 @@ class Linux extends Host {
 
   override get defaultCpuCount(): number {
     return 2
+  }
+
+  override validateHypervisor(kind: hypervisor.Kind): void {
+    switch (kind) {
+      case hypervisor.Kind.qemu:
+        break
+      case hypervisor.Kind.xhyve:
+        throw new Error('Unsupported hypervisor on Linux hosts: xhyve')
+      default:
+        throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`)
+    }
   }
 }
 

@@ -1,9 +1,9 @@
 import * as core from '@actions/core'
 import {Action} from './action/action'
 
-import './operating_systems/freebsd/freebsd'
-import './operating_systems/netbsd/netbsd'
-import './operating_systems/openbsd/openbsd'
+import './operating_systems/freebsd/factory'
+import './operating_systems/netbsd/factory'
+import './operating_systems/openbsd/factory'
 
 async function main(): Promise<void> {
   try {

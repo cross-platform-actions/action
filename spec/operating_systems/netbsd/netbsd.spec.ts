@@ -38,12 +38,14 @@ describe('NetBSD OperatingSystem', () => {
     override get defaultCpuCount(): number {
       return 6
     }
+
+    override validateHypervisor(_kind: hypervisor.Kind): void {}
   }
 
   let host = new Host()
   let osKind = os.Kind.for('netbsd')
   let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind)
-  let netbsd = new NetBsd(architecture, '0.0.0')
+  let netbsd = new NetBsd(architecture, '0.0.0', host.hypervisor)
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
   let firmwareDirectory = 'firmware/directory'
@@ -112,12 +114,15 @@ describe('NetBSD OperatingSystem', () => {
         override get defaultCpuCount(): number {
           return 3
         }
+
+        override validateHypervisor(_kind: hypervisor.Kind): void {}
       }
 
       let host = new Host()
       let osKind = os.Kind.for('netbsd')
       let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind)
-      let netbsd = new NetBsd(architecture, '0.0.0')
+      const vmm = new hypervisor.Qemu()
+      let netbsd = new NetBsd(architecture, '0.0.0', vmm)
 
       it('creates a virtual machine configured with BIOS firmware', () => {
         let qemuVmSpy = spyOn(netbsdQemuVm, 'Vm')

@@ -82,15 +82,17 @@ Different platforms need to run on different runners, so see the
 
 This section lists the available inputs for the action.
 
-| Input                   | Required | Default Value     | Type    | Description                                                                                                                                            |
-|-------------------------|----------|-------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `run`                   | ✅       | ❌                | string  | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                       |
-| `operating_system`      | ✅       | ❌                | string  | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                       |
-| `version`               | ✅       | ❌                | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                           |
-| `shell`                 | ❌       | `default`         | string  | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash` |
-| `environment_variables` | ❌       | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                           |
-| `memory`                | ❌       | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                 |
-| `cpu_count`             | ❌       | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                 |
+| Input                   | Required | Default Value     | Type    | Description                                                                                                                                                                                                              |
+|-------------------------|----------|-------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `run`                   | ✅       | ❌                | string  | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                                                                                         |
+| `operating_system`      | ✅       | ❌                | string  | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                                                                                         |
+| `version`               | ✅       | ❌                | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                                                                                             |
+| `shell`                 | ❌       | `default`         | string  | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash`                                                                   |
+| `environment_variables` | ❌       | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                                                                                             |
+| `memory`                | ❌       | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                                                                                   |
+| `cpu_count`             | ❌       | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                                                                                   |
+| `hypervisor`            | ❌       | `xhyve` or `qemu` | string  | The hypervisor to use for running the virtual machine. For Linux runners the only valid value is `qemu`. For macOS runners the default for OpenBSD and FreeBSD is `xhyve` for all other platforms the default is `qemu`. |
+
 
 All inputs are expected to be of the specified type. It's especially important
 that you specify `version` as a string, using single or
@@ -130,6 +132,16 @@ operating system will list which versions are supported.
 | Version | x86-64 |
 | ------- | ------ |
 | 9.2     | ✅     |
+
+### Hypervisors
+
+This section lists the available hypervisors, which platforms they can run and
+which runners they can run on.
+
+| Hypervisor | Linux Runner | macOS Runner | FreeBSD | OpenBSD | Other Platforms |
+|------------|--------------|--------------|---------|---------|-----------------|
+| `xhyve`    | ❌           | ✅          | ✅      | ✅      | ❌              |
+| `qemu`     | ✅           | ✅          | ✅      | ✅      | ✅              |
 
 ### Runners
 

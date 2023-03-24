@@ -3,6 +3,7 @@ import * as architecture from '../architecture'
 import {Shell, toShell} from './shell'
 import * as os from '../operating_systems/kind'
 import {host} from '../host'
+import * as hypervisor from '../hypervisor'
 
 export class Input {
   private run_?: string
@@ -13,6 +14,7 @@ export class Input {
   private architecture_?: architecture.Kind
   private memory_?: string
   private cpuCount_?: number
+  private hypervisor_?: hypervisor.Kind | null
 
   get version(): string {
     if (this.version_ !== undefined) return this.version_
@@ -90,5 +92,20 @@ export class Input {
       throw Error(`Invalid CPU count: ${cpuCount}`)
 
     return (this.cpuCount_ = parsedCpuCount)
+  }
+
+  get hypervisor(): hypervisor.Kind | null {
+    if (this.hypervisor_ !== undefined) return this.hypervisor_
+
+    const input = core.getInput('hypervisor')
+    core.debug(`hypervisor input: '${input}'`)
+    if (input === undefined || input === '') return (this.hypervisor_ = null)
+
+    const kind = hypervisor.toKind(input)
+    core.debug(`kind: '${kind}'`)
+
+    if (kind === undefined) throw Error(`Invalid hypervisor: ${input}`)
+
+    return (this.hypervisor_ = kind)
   }
 }

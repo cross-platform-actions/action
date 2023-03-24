@@ -7,25 +7,29 @@ import * as architecture from '../../architecture'
 import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
-import {getHost} from '../../host'
 import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from '../../resource_disk'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
+import * as hypervisor from '../../hypervisor'
 
 @operatingSystem
 export default class FreeBsd extends os.OperatingSystem {
-  constructor(arch: architecture.Architecture, version: string) {
-    super(arch, version)
+  constructor(
+    arch: architecture.Architecture,
+    version: string,
+    hypervisor: hypervisor.Hypervisor
+  ) {
+    super(arch, version, hypervisor)
   }
 
   get hypervisorUrl(): string {
-    return this.architecture.hypervisor.getResourceUrl(this.architecture)
+    return this.hypervisor.getResourceUrl(this.architecture)
   }
 
   get ssHostPort(): number {
-    return this.architecture.hypervisor.sshPort
+    return this.hypervisor.sshPort
   }
 
   get actionImplementationKind(): action.ImplementationKind {
@@ -75,7 +79,7 @@ export default class FreeBsd extends os.OperatingSystem {
       ssHostPort: this.ssHostPort,
       firmware: path.join(
         firmwareDirectory.toString(),
-        this.architecture.hypervisor.firmwareFile
+        this.hypervisor.firmwareFile
       ),
 
       // qemu
@@ -87,7 +91,7 @@ export default class FreeBsd extends os.OperatingSystem {
       uuid: this.uuid
     }
 
-    const cls = getHost().vmModule.resolve({qemu: QemuVm, xhyve: XhyveVm})
+    const cls = this.hypervisor.resolve({qemu: QemuVm, xhyve: XhyveVm})
     return new cls(
       hypervisorDirectory,
       resourcesDirectory,

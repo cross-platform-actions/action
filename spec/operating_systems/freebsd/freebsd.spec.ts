@@ -1,3 +1,5 @@
+import {basename} from 'path'
+
 import FreeBsd from '../../../src/operating_systems/freebsd/freebsd'
 import * as hostModule from '../../../src/host'
 import * as arch from '../../../src/architecture'
@@ -37,12 +39,15 @@ describe('FreeBSD OperatingSystem', () => {
     override get defaultCpuCount(): number {
       return 6
     }
+
+    override validateHypervisor(_kind: hypervisor.Kind): void {}
   }
 
   let host = new MockHost()
   let osKind = os.Kind.for('freebsd')
   let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind)
-  let freebsd = new FreeBsd(architecture, '0.0.0')
+  let vmm = host.hypervisor
+  let freebsd = new FreeBsd(architecture, '0.0.0', vmm)
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
   let firmwareDirectory = 'firmware/directory'
@@ -60,10 +65,11 @@ describe('FreeBSD OperatingSystem', () => {
 
     beforeEach(() => {
       spyOn(hostModule, 'getHost').and.returnValue(host)
-      spyOn(host.vmModule, 'resolve').and.returnValue(vmModule)
     })
 
     it('creates a virtual machine with the correct configuration', () => {
+      spyOn(vmm, 'resolve').and.returnValue(vmModule)
+
       freebsd.createVirtualMachine(
         hypervisorDirectory,
         resourcesDirectory,
@@ -85,6 +91,36 @@ describe('FreeBSD OperatingSystem', () => {
           firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`
         }
       )
+    })
+
+    describe('when the given hypervisor is Xhyve', () => {
+      it('creates a virtual machine using the Xhyve hypervisor', () => {
+        let freebsd = new FreeBsd(architecture, '0.0.0', new hypervisor.Xhyve())
+        const vm = freebsd.createVirtualMachine(
+          hypervisorDirectory,
+          resourcesDirectory,
+          firmwareDirectory,
+          config
+        )
+
+        const hypervisorBinary = basename(vm.hypervisorPath.toString())
+        expect(hypervisorBinary).toEqual('xhyve')
+      })
+    })
+
+    describe('when the given hypervisor is Qemu', () => {
+      it('creates a virtual machine using the Qemu hypervisor', () => {
+        let freebsd = new FreeBsd(architecture, '0.0.0', new hypervisor.Qemu())
+        const vm = freebsd.createVirtualMachine(
+          hypervisorDirectory,
+          resourcesDirectory,
+          firmwareDirectory,
+          config
+        )
+
+        const hypervisorBinary = basename(vm.hypervisorPath.toString())
+        expect(hypervisorBinary).toEqual('qemu')
+      })
     })
   })
 })

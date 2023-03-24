@@ -12,19 +12,24 @@ import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
+import * as hypervisor from '../../hypervisor'
 
 @operatingSystem
 export default class OpenBsd extends os.OperatingSystem {
-  constructor(arch: architecture.Architecture, version: string) {
-    super(arch, version)
+  constructor(
+    arch: architecture.Architecture,
+    version: string,
+    hypervisor: hypervisor.Hypervisor
+  ) {
+    super(arch, version, hypervisor)
   }
 
   get hypervisorUrl(): string {
-    return this.architecture.hypervisor.getResourceUrl(this.architecture)
+    return this.hypervisor.getResourceUrl(this.architecture)
   }
 
   get ssHostPort(): number {
-    return this.architecture.hypervisor.sshPort
+    return this.hypervisor.sshPort
   }
 
   get actionImplementationKind(): action.ImplementationKind {
@@ -71,7 +76,7 @@ export default class OpenBsd extends os.OperatingSystem {
       uuid: this.uuid
     }
 
-    const cls = host.vmModule.resolve({qemu: QemuVm, xhyve: XhyveVm})
+    const cls = host.hypervisor.resolve({qemu: QemuVm, xhyve: XhyveVm})
     return new cls(
       hypervisorDirectory,
       resourcesDirectory,

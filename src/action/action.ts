@@ -12,6 +12,7 @@ import * as architecture from '../architecture'
 import * as hostModule from '../host'
 import * as os from '../operating_system'
 import * as os_factory from '../operating_systems/factory'
+import * as hypervisor_factory from '../hypervisor_factory'
 import ResourceDisk from '../resource_disk'
 import * as vmModule from '../vm'
 import * as input from './input'
@@ -47,12 +48,7 @@ export class Action {
       this.input.operatingSystem
     )
 
-    this.operatingSystem = os_factory.create(
-      this.input.operatingSystem,
-      arch,
-      this.input.version
-    )
-
+    this.operatingSystem = this.createOperatingSystem(arch)
     this.resourceDisk = ResourceDisk.for(this)
 
     this.implementation = this.getImplementation(
@@ -298,6 +294,14 @@ export class Action {
       throw Error('Failed to get the home direcory')
 
     return homeDirectory
+  }
+
+  private createOperatingSystem(
+    arch: architecture.Architecture
+  ): os.OperatingSystem {
+    const factory = os_factory.Factory.for(this.input.operatingSystem, arch)
+    const hypervisor = hypervisor_factory.get(this.input.hypervisor, factory)
+    return factory.create(this.input.version, hypervisor)
   }
 }
 

@@ -39,6 +39,7 @@ export abstract class Architecture {
   abstract get accelerator(): vm.Accelerator
   abstract get hypervisor(): hypervisor.Hypervisor
   abstract get efiHypervisor(): hypervisor.Hypervisor
+  abstract get defaultHypervisor(): hypervisor.Hypervisor
 
   get networkDevice(): string {
     return 'virtio-net'
@@ -47,6 +48,10 @@ export abstract class Architecture {
   resolve<T>(implementation: Record<string, T>): T {
     const name = this.constructor.name.toLocaleLowerCase()
     return getOrDefaultOrThrow(implementation, name)
+  }
+
+  validateHypervisor(kind: hypervisor.Kind): void {
+    this.host.validateHypervisor(kind)
   }
 
   protected get hostString(): string {
@@ -85,6 +90,23 @@ export abstract class Architecture {
     override get efiHypervisor(): hypervisor.Hypervisor {
       return new hypervisor.QemuEfi()
     }
+
+    override get defaultHypervisor(): hypervisor.Hypervisor {
+      return new hypervisor.Qemu()
+    }
+
+    override validateHypervisor(kind: hypervisor.Kind): void {
+      switch (kind) {
+        case hypervisor.Kind.qemu:
+          break
+        case hypervisor.Kind.xhyve:
+          throw new Error(
+            'Unsupported hypervisor for architecture ARM64: xhyve'
+          )
+        default:
+          throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`)
+      }
+    }
   }
 
   private static readonly X86_64 = class extends Architecture {
@@ -114,6 +136,10 @@ export abstract class Architecture {
 
     override get efiHypervisor(): hypervisor.Hypervisor {
       return this.host.efiHypervisor
+    }
+
+    override get defaultHypervisor(): hypervisor.Hypervisor {
+      return this.host.hypervisor
     }
   }
 
