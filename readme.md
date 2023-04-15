@@ -37,12 +37,12 @@ jobs:
 
           - name: openbsd
             architecture: x86-64
-            version: '7.2'
+            version: '7.3'
             host: macos-12
 
           - name: openbsd
             architecture: arm64
-            version: '7.2'
+            version: '7.3'
             host: ubuntu-latest
 
           - name: netbsd
@@ -113,6 +113,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
+| 7.3     | ✅     | ✅     |
 | 7.2     | ✅     | ✅     |
 | 7.1     | ✅     | ✅     |
 | 6.9     | ✅     | ✅     |

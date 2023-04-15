@@ -143,7 +143,21 @@ jobs:
               hardware: amd64
 
           - name: OpenBSD
+            version: '7.3'
+            host: macos-12
+            workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+
+          - name: OpenBSD
             version: '7.2'
+            host: ubuntu-latest
+            workDirectory: /home/runner/work/action/action
+            uname:
+              hardware: amd64
+
+          - name: OpenBSD
+            version: '7.3'
             host: ubuntu-latest
             workDirectory: /home/runner/work/action/action
             uname:
@@ -168,6 +182,14 @@ jobs:
           - name: OpenBSD
             architecture: ARM64
             version: '7.2'
+            host: ubuntu-latest
+            workDirectory: /home/runner/work/action/action
+            uname:
+              hardware: arm64
+
+          - name: OpenBSD
+            architecture: ARM64
+            version: '7.3'
             host: ubuntu-latest
             workDirectory: /home/runner/work/action/action
             uname:
