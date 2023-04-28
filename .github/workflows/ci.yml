@@ -93,6 +93,23 @@ jobs:
               hardware: amd64
               release: 13.1-RELEASE
 
+          - name: FreeBSD
+            version: '13.2'
+            host: macos-12
+            workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+              release: 13.2-RELEASE
+
+          - name: FreeBSD
+            version: '13.2'
+            host: ubuntu-latest
+            # /home is symlinked to /usr/home. pwd will return the resolved path.
+            workDirectory: /usr/home/runner/work/action/action
+            uname:
+              hardware: amd64
+              release: 13.2-RELEASE
+
           - name: OpenBSD
             version: '6.8'
             host: macos-12
