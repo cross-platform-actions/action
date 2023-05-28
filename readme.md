@@ -17,7 +17,7 @@ Some of the features that this action supports include:
 
 Here's a sample workflow file which will set up a matrix resulting in four jobs.
 One which will run on FreeBSD 13.2, one which runs OpenBSD 7.3, one which runs
-NetBSD 9.2 and one which runs OpenBSD 7.3 on ARM64.
+NetBSD 9.3 and one which runs OpenBSD 7.3 on ARM64.
 
 ```yaml
 name: CI
@@ -47,7 +47,7 @@ jobs:
 
           - name: netbsd
             architecture: x86-64
-            version: '9.2'
+            version: '9.3'
             host: ubuntu-latest
 
     steps:
@@ -133,6 +133,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 |
 | ------- | ------ |
+| 9.3     | ✅     |
 | 9.2     | ✅     |
 
 ### Hypervisors
