@@ -226,6 +226,20 @@ jobs:
             uname:
               hardware: amd64
 
+          - name: NetBSD
+            version: '9.3'
+            host: ubuntu-latest
+            workDirectory: /home/runner/work/action/action
+            uname:
+              hardware: amd64
+
+          - name: NetBSD
+            version: '9.3'
+            host: macos-latest
+            workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
