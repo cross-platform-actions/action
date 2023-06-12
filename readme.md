@@ -15,6 +15,38 @@ Some of the features that this action supports include:
 
 ## `Usage`
 
+### Minimal Example
+
+Here's a sample workflow file which will run the given commands on FreeBSD 13.2.
+
+```yaml
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Test
+        uses: cross-platform-actions/action@v0.15.0
+        with:
+          operating_system: freebsd
+          version: '13.2'
+          run: |
+            uname -a
+            echo $SHELL
+            pwd
+            ls -lah
+            whoami
+            env | sort
+```
+
+
+### Full Example
+
 Here's a sample workflow file which will set up a matrix resulting in four jobs.
 One which will run on FreeBSD 13.2, one which runs OpenBSD 7.3, one which runs
 NetBSD 9.3 and one which runs OpenBSD 7.3 on ARM64.
@@ -54,7 +86,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.14.0
+        uses: cross-platform-actions/action@v0.15.0
         env:
           MY_ENV1: MY_ENV1
           MY_ENV2: MY_ENV2
