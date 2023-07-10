@@ -1,6 +1,6 @@
 const version = {
   operating_system: {
-    freebsd: 'v0.4.0',
+    freebsd: 'v0.5.0',
     netbsd: 'v0.2.0',
     openbsd: 'v0.6.0'
   },

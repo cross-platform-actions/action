@@ -9,6 +9,7 @@ Some of the features that this action supports include:
 
 - Multiple operating systems with one single action
 - Multiple versions of each operating system
+- Non-x86_64 architectures
 - Allows to use default shell or Bash shell
 - Low boot overhead
 - Fast execution
@@ -154,13 +155,13 @@ operating system will list which versions are supported.
 
 ### [FreeBSD][freebsd_builder] (`freebsd`)
 
-| Version | x86-64 |
-| ------- | ------ |
-| 13.2    | ✅     |
-| 13.1    | ✅     |
-| 13.0    | ✅     |
-| 12.4    | ✅     |
-| 12.2    | ✅     |
+| Version | x86-64 | arm64  |
+| ------- | ------ | ------ |
+| 13.2    | ✅     | ✅     |
+| 13.1    | ✅     | ✅     |
+| 13.0    | ✅     | ✅     |
+| 12.4    | ✅     | ✅     |
+| 12.2    | ✅     | ❌     |
 
 ### [NetBSD][netbsd_builder] (`netbsd`)
 

@@ -14,8 +14,9 @@ export enum Kind {
 
 export abstract class Architecture {
   readonly kind: Kind
+  readonly host: Host
+
   protected readonly resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
-  protected readonly host: Host
 
   constructor(kind: Kind, host: Host) {
     this.kind = kind
@@ -62,7 +63,7 @@ export abstract class Architecture {
     return this.host.qemu
   }
 
-  private static readonly Arm64 = class extends Architecture {
+  static readonly Arm64 = class extends Architecture {
     override get name(): string {
       return 'arm64'
     }

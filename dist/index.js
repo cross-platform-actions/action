@@ -1137,21 +1137,59 @@ const factories = new Map();
 
 /***/ }),
 
+/***/ 1169:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const architecture_1 = __nccwpck_require__(4019);
+class Arm64 extends architecture_1.Architecture.Arm64 {
+    get hypervisor() {
+        return this.host.efiHypervisor;
+    }
+}
+exports["default"] = Arm64;
+//# sourceMappingURL=arm64.js.map
+
+/***/ }),
+
 /***/ 9122:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const architecture = __importStar(__nccwpck_require__(4019));
+const arm64_1 = __importDefault(__nccwpck_require__(1169));
 const factory_1 = __nccwpck_require__(133);
 const freebsd_1 = __importDefault(__nccwpck_require__(791));
 let FreeBsdFactory = 
@@ -1161,10 +1199,16 @@ class FreeBsdFactory extends factory_1.Factory {
         return this.architecture.defaultHypervisor;
     }
     create(version, hypervisor) {
-        return new freebsd_1.default(this.architecture, version, hypervisor);
+        return new freebsd_1.default(this.resolveArchitecture(), version, hypervisor);
     }
     validateHypervisor(kind) {
         this.architecture.validateHypervisor(kind);
+    }
+    resolveArchitecture() {
+        if (this.architecture.kind == architecture.Kind.arm64) {
+            return new arm64_1.default(this.architecture.kind, this.architecture.host);
+        }
+        return this.architecture;
     }
 };
 FreeBsdFactory = __decorate([
@@ -1239,10 +1283,14 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
         return this.hypervisor.sshPort;
     }
     get actionImplementationKind() {
-        return this.architecture.resolve({
-            x86_64: action.ImplementationKind.xhyve,
-            default: action.ImplementationKind.qemu
-        });
+        if (this.architecture.kind === architecture.Kind.x86_64) {
+            return this.architecture.resolve({
+                x86_64: action.ImplementationKind.xhyve,
+                default: action.ImplementationKind.qemu
+            });
+        }
+        else
+            return action.ImplementationKind.qemu;
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1260,10 +1308,7 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
-        if (this.architecture.kind !== architecture.Kind.x86_64) {
-            throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
-        }
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
@@ -2236,7 +2281,7 @@ exports.group = group;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const version = {
     operating_system: {
-        freebsd: 'v0.4.0',
+        freebsd: 'v0.5.0',
         netbsd: 'v0.2.0',
         openbsd: 'v0.6.0'
     },

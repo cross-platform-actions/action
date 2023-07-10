@@ -33,10 +33,12 @@ export default class FreeBsd extends os.OperatingSystem {
   }
 
   get actionImplementationKind(): action.ImplementationKind {
-    return this.architecture.resolve({
-      x86_64: action.ImplementationKind.xhyve,
-      default: action.ImplementationKind.qemu
-    })
+    if (this.architecture.kind === architecture.Kind.x86_64) {
+      return this.architecture.resolve({
+        x86_64: action.ImplementationKind.xhyve,
+        default: action.ImplementationKind.qemu
+      })
+    } else return action.ImplementationKind.qemu
   }
 
   override async prepareDisk(
@@ -67,19 +69,13 @@ export default class FreeBsd extends os.OperatingSystem {
   ): vmModule.Vm {
     core.debug('Creating FreeBSD VM')
 
-    if (this.architecture.kind !== architecture.Kind.x86_64) {
-      throw Error(
-        `Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`
-      )
-    }
-
     const config: vmModule.Configuration = {
       ...configuration,
 
       ssHostPort: this.ssHostPort,
       firmware: path.join(
         firmwareDirectory.toString(),
-        this.hypervisor.firmwareFile
+        this.architecture.hypervisor.firmwareFile
       ),
 
       // qemu
