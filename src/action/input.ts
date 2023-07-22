@@ -2,10 +2,11 @@ import * as core from '@actions/core'
 import * as architecture from '../architecture'
 import {Shell, toShell} from './shell'
 import * as os from '../operating_systems/kind'
-import {host} from '../host'
+import {Host, host as defaultHost} from '../host'
 import * as hypervisor from '../hypervisor'
 
 export class Input {
+  private readonly host: Host
   private run_?: string
   private operatingSystem_?: os.Kind
   private version_?: string
@@ -14,7 +15,11 @@ export class Input {
   private architecture_?: architecture.Kind
   private memory_?: string
   private cpuCount_?: number
-  private hypervisor_?: hypervisor.Kind | null
+  private hypervisor_?: hypervisor.Hypervisor
+
+  constructor(host: Host = defaultHost) {
+    this.host = host
+  }
 
   get version(): string {
     if (this.version_ !== undefined) return this.version_
@@ -73,7 +78,7 @@ export class Input {
     const memory = core.getInput('memory')
     core.debug(`memory input: '${memory}'`)
     if (memory === undefined || memory === '')
-      return (this.memory_ = host.defaultMemory)
+      return (this.memory_ = this.host.defaultMemory)
 
     return (this.memory_ = memory)
   }
@@ -84,7 +89,7 @@ export class Input {
     const cpuCount = core.getInput('cpu_count')
     core.debug(`cpuCount input: '${cpuCount}'`)
     if (cpuCount === undefined || cpuCount === '')
-      return (this.cpuCount_ = host.defaultCpuCount)
+      return (this.cpuCount_ = this.host.defaultCpuCount)
 
     const parsedCpuCount = parseInt(cpuCount)
 
@@ -94,18 +99,20 @@ export class Input {
     return (this.cpuCount_ = parsedCpuCount)
   }
 
-  get hypervisor(): hypervisor.Kind | null {
+  get hypervisor(): hypervisor.Hypervisor {
     if (this.hypervisor_ !== undefined) return this.hypervisor_
 
     const input = core.getInput('hypervisor')
     core.debug(`hypervisor input: '${input}'`)
-    if (input === undefined || input === '') return (this.hypervisor_ = null)
+    if (input === undefined || input === '')
+      return (this.hypervisor_ = this.host.hypervisor)
 
     const kind = hypervisor.toKind(input)
     core.debug(`kind: '${kind}'`)
 
     if (kind === undefined) throw Error(`Invalid hypervisor: ${input}`)
 
-    return (this.hypervisor_ = kind)
+    const hypervisorClass = hypervisor.toHypervisor(kind)
+    return (this.hypervisor_ = new hypervisorClass())
   }
 }

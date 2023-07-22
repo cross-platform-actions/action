@@ -12,16 +12,11 @@ import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
-import * as hypervisor from '../../hypervisor'
 
 @operatingSystem
 export default class OpenBsd extends os.OperatingSystem {
-  constructor(
-    arch: architecture.Architecture,
-    version: string,
-    hypervisor: hypervisor.Hypervisor
-  ) {
-    super(arch, version, hypervisor)
+  constructor(arch: architecture.Architecture, version: string) {
+    super(arch, version)
   }
 
   get hypervisorUrl(): string {

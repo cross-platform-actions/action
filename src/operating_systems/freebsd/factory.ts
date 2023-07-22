@@ -8,21 +8,26 @@ import FreeBsd from './freebsd'
 @factory
 //@ts-ignore
 class FreeBsdFactory extends BaseFactory {
-  override get defaultHypervisor(): Hypervisor {
-    return this.architecture.defaultHypervisor
-  }
-
-  override create(version: string, hypervisor: Hypervisor): OperatingSystem {
-    return new FreeBsd(this.resolveArchitecture(), version, hypervisor)
+  override createImpl(
+    version: string,
+    hypervisor: Hypervisor
+  ): OperatingSystem {
+    return new FreeBsd(this.resolveArchitecture(hypervisor), version)
   }
 
   override validateHypervisor(kind: HypervisorKind): void {
     this.architecture.validateHypervisor(kind)
   }
 
-  private resolveArchitecture(): architecture.Architecture {
+  private resolveArchitecture(
+    hypervisor: Hypervisor
+  ): architecture.Architecture {
     if (this.architecture.kind == architecture.Kind.arm64) {
-      return new Arm64(this.architecture.kind, this.architecture.host)
+      return new Arm64(
+        this.architecture.kind,
+        this.architecture.host,
+        hypervisor
+      )
     }
 
     return this.architecture

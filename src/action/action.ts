@@ -12,7 +12,6 @@ import * as architecture from '../architecture'
 import * as hostModule from '../host'
 import * as os from '../operating_system'
 import * as os_factory from '../operating_systems/factory'
-import * as hypervisor_factory from '../hypervisor_factory'
 import ResourceDisk from '../resource_disk'
 import * as vmModule from '../vm'
 import * as input from './input'
@@ -45,7 +44,8 @@ export class Action {
     const arch = architecture.Architecture.for(
       this.input.architecture,
       this.host,
-      this.input.operatingSystem
+      this.input.operatingSystem,
+      this.input.hypervisor
     )
 
     this.operatingSystem = this.createOperatingSystem(arch)
@@ -299,9 +299,10 @@ export class Action {
   private createOperatingSystem(
     arch: architecture.Architecture
   ): os.OperatingSystem {
-    const factory = os_factory.Factory.for(this.input.operatingSystem, arch)
-    const hypervisor = hypervisor_factory.get(this.input.hypervisor, factory)
-    return factory.create(this.input.version, hypervisor)
+    return os_factory.Factory.for(this.input.operatingSystem, arch).create(
+      this.input.version,
+      this.input.hypervisor
+    )
   }
 }
 

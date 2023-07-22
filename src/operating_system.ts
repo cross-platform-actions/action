@@ -31,26 +31,24 @@ export abstract class OperatingSystem {
 
   private static readonly resourceUrls = ResourceUrls.create()
   protected readonly xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`
-  protected readonly hypervisor: hypervisor.Hypervisor
 
   private readonly version: string
 
-  constructor(
-    arch: architecture.Architecture,
-    version: string,
-    hypervisor: hypervisor.Hypervisor
-  ) {
+  constructor(arch: architecture.Architecture, version: string) {
     const hostString = host.toString()
     this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`
     this.version = version
     this.architecture = arch
-    this.hypervisor = hypervisor
   }
 
   abstract get virtualMachineImageReleaseVersion(): string
   abstract get hypervisorUrl(): string
   abstract get ssHostPort(): number
   abstract get actionImplementationKind(): action.ImplementationKind
+
+  get hypervisor(): hypervisor.Hypervisor {
+    return this.architecture.hypervisor
+  }
 
   get virtualMachineImageUrl(): string {
     return [
@@ -73,10 +71,6 @@ export abstract class OperatingSystem {
 
   get name(): string {
     return this.constructor.name.toLocaleLowerCase()
-  }
-
-  get defaultHypervisor(): hypervisor.Hypervisor {
-    return this.architecture.defaultHypervisor
   }
 
   abstract createVirtualMachine(

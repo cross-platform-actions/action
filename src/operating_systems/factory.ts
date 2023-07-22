@@ -5,7 +5,7 @@ import {getOrThrow, Class} from '../utility'
 import * as hypervisor from '../hypervisor'
 
 export abstract class Factory {
-  protected readonly architecture: architecture.Architecture
+  readonly architecture: architecture.Architecture
 
   constructor(arch: architecture.Architecture) {
     this.architecture = arch
@@ -16,14 +16,17 @@ export abstract class Factory {
     return new cls(arch)
   }
 
-  abstract get defaultHypervisor(): hypervisor.Hypervisor
+  create(version: string, vmm: hypervisor.Hypervisor): OperatingSystem {
+    this.validateHypervisor(vmm.kind)
+    return this.createImpl(version, vmm)
+  }
 
-  abstract create(
+  abstract createImpl(
     version: string,
     hypervisor: hypervisor.Hypervisor
   ): OperatingSystem
 
-  validateHypervisor(kind: hypervisor.Kind): void {
+  protected validateHypervisor(kind: hypervisor.Kind): void {
     switch (kind) {
       case hypervisor.Kind.qemu:
         break

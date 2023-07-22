@@ -19,6 +19,7 @@ const architectureMap: Record<string, Kind> = {
 } as const
 
 export abstract class Hypervisor {
+  abstract get kind(): Kind
   abstract get sshPort(): number
   abstract get firmwareFile(): string
   abstract get vmModule(): typeof QemuVm | typeof XhyveVm
@@ -27,6 +28,10 @@ export abstract class Hypervisor {
 }
 
 export class Xhyve extends Hypervisor {
+  override get kind(): Kind {
+    return Kind.xhyve
+  }
+
   override get sshPort(): number {
     return 22
   }
@@ -51,6 +56,10 @@ export class Xhyve extends Hypervisor {
 
 export class Qemu extends Hypervisor {
   protected readonly firmwareDirectory = 'share/qemu'
+
+  override get kind(): Kind {
+    return Kind.qemu
+  }
 
   get sshPort(): number {
     return 2847

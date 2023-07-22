@@ -12,16 +12,11 @@ import * as os from '../../operating_system'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from '../../resource_disk'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
-import * as hypervisor from '../../hypervisor'
 
 @operatingSystem
 export default class FreeBsd extends os.OperatingSystem {
-  constructor(
-    arch: architecture.Architecture,
-    version: string,
-    hypervisor: hypervisor.Hypervisor
-  ) {
-    super(arch, version, hypervisor)
+  constructor(arch: architecture.Architecture, version: string) {
+    super(arch, version)
   }
 
   get hypervisorUrl(): string {

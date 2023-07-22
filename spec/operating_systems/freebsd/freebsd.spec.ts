@@ -45,9 +45,9 @@ describe('FreeBSD OperatingSystem', () => {
 
   let host = new MockHost()
   let osKind = os.Kind.for('freebsd')
-  let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind)
   let vmm = host.hypervisor
-  let freebsd = new FreeBsd(architecture, '0.0.0', vmm)
+  let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind, vmm)
+  let freebsd = new FreeBsd(architecture, '0.0.0')
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
   let firmwareDirectory = 'firmware/directory'
@@ -95,7 +95,13 @@ describe('FreeBSD OperatingSystem', () => {
 
     describe('when the given hypervisor is Xhyve', () => {
       it('creates a virtual machine using the Xhyve hypervisor', () => {
-        let freebsd = new FreeBsd(architecture, '0.0.0', new hypervisor.Xhyve())
+        let archObject = arch.Architecture.for(
+          arch.Kind.x86_64,
+          host,
+          osKind,
+          new hypervisor.Xhyve()
+        )
+        let freebsd = new FreeBsd(archObject, '0.0.0')
         const vm = freebsd.createVirtualMachine(
           hypervisorDirectory,
           resourcesDirectory,
@@ -110,7 +116,13 @@ describe('FreeBSD OperatingSystem', () => {
 
     describe('when the given hypervisor is Qemu', () => {
       it('creates a virtual machine using the Qemu hypervisor', () => {
-        let freebsd = new FreeBsd(architecture, '0.0.0', new hypervisor.Qemu())
+        let archObject = arch.Architecture.for(
+          arch.Kind.x86_64,
+          host,
+          osKind,
+          new hypervisor.Qemu()
+        )
+        let freebsd = new FreeBsd(archObject, '0.0.0')
         const vm = freebsd.createVirtualMachine(
           hypervisorDirectory,
           resourcesDirectory,
