@@ -17,268 +17,39 @@ jobs:
       - run: npm install
       - run: npm run all
 
-  test: # make sure the action works on a clean machine without building
+  FreeBSD: # make sure the action works on a clean machine without building
+    name: FreeBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
+    runs-on: ${{ matrix.host.name }}
     timeout-minutes: 5
-    name: ${{ matrix.os.name }} ${{ matrix.os.architecture }} ${{ matrix.os.version }} on ${{ matrix.os.host }}
-    runs-on: ${{ matrix.os.host }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - name: FreeBSD
-            version: '12.2'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 12.2-RELEASE
+        version:
+          - '13.2'
+          - '13.1'
+          - '13.0'
+          - '12.4'
+          - '12.2'
 
-          - name: FreeBSD
-            version: '12.2'
-            host: ubuntu-latest
+        architecture:
+          - name: arm64
+          - name: x86-64
+            uname: amd64
+
+        host:
+          - name: ubuntu-latest
             # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 12.2-RELEASE
+            work_directory: /usr/home/runner/work/action/action
 
-          - name: FreeBSD
-            version: '12.4'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 12.4-RELEASE
+          - name: macos-12
+            work_directory: /Users/runner/work/action/action
 
-          - name: FreeBSD
-            version: '12.4'
-            host: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 12.4-RELEASE
+        exclude:
+          - version: '12.2'
+            architecture: { name: arm64 }
 
-          - name: FreeBSD
-            version: '13.0'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 13.0-RELEASE
-
-          - name: FreeBSD
-            version: '13.0'
-            host: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 13.0-RELEASE
-
-          - name: FreeBSD
-            version: '13.1'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 13.1-RELEASE
-
-          - name: FreeBSD
-            version: '13.1'
-            host: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 13.1-RELEASE
-
-          - name: FreeBSD
-            version: '13.2'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 13.2-RELEASE
-
-          - name: FreeBSD
-            version: '13.2'
-            host: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: amd64
-              release: 13.2-RELEASE
-
-          - name: FreeBSD
-            architecture: ARM64
-            version: '12.4'
-            host: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: arm64
-              release: 12.4-RELEASE
-
-          - name: FreeBSD
-            architecture: ARM64
-            version: '13.0'
-            host: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: arm64
-              release: 13.0-RELEASE
-
-          - name: FreeBSD
-            architecture: ARM64
-            version: '13.1'
-            host: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: arm64
-              release: 13.1-RELEASE
-
-          - name: FreeBSD
-            architecture: ARM64
-            version: '13.2'
-            host: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            workDirectory: /usr/home/runner/work/action/action
-            uname:
-              hardware: arm64
-              release: 13.2-RELEASE
-
-          - name: OpenBSD
-            version: '6.8'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '6.8'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '6.9'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '6.9'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '7.1'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '7.1'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '7.2'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '7.3'
-            host: macos-12
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '7.2'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            version: '7.3'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: OpenBSD
-            architecture: ARM64
-            version: '6.9'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: arm64
-
-          - name: OpenBSD
-            architecture: ARM64
-            version: '7.1'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: arm64
-
-          - name: OpenBSD
-            architecture: ARM64
-            version: '7.2'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: arm64
-
-          - name: OpenBSD
-            architecture: ARM64
-            version: '7.3'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: arm64
-
-          - name: NetBSD
-            version: '9.2'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: NetBSD
-            version: '9.2'
-            host: macos-latest
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: NetBSD
-            version: '9.3'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: NetBSD
-            version: '9.3'
-            host: macos-latest
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
+          - architecture: { name: arm64 }
+            host: { name: macos-12 }
 
     steps:
       - name: Checkout
@@ -286,33 +57,101 @@ jobs:
         with:
           persist-credentials: false
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-
-      # - name: Setup SSH session
-      #   uses: lhotari/action-upterm@v1
-
-      - name: ${{ matrix.os.name }}
-        uses: ./
-        env:
-          FOO: A
-          BAR: B
+      - name: test
+        uses: ./.github/workflows/support/test
         with:
-          environment_variables: FOO BAR
-          operating_system: ${{ matrix.os.name }}
-          architecture: ${{ matrix.os.architecture }}
-          version: '${{ matrix.os.version }}'
-          run: |
-            uname -a
-            echo $SHELL
-            pwd
-            ls -lah
-            whoami
-            env | sort
-            [ "`uname -s`" = '${{ matrix.os.name }}' ]
-            [ "`uname -r`" = '${{ matrix.os.uname.release || matrix.os.version }}' ]
-            [ "`uname -m`" = '${{ matrix.os.uname.hardware }}' ]
-            [ "`pwd`" = '${{ matrix.os.workDirectory }}' ]
+          name: FreeBSD
+          architecture: ${{ matrix.architecture.name }}
+          version: ${{ matrix.version }}
+          uname_release: ${{ matrix.version}}-RELEASE
+          uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
+          work_directory: ${{ matrix.host.work_directory }}
+
+  OpenBSD:
+    name: OpenBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
+    runs-on: ${{ matrix.host.name }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '7.3'
+          - '7.2'
+          - '7.1'
+          - '6.9'
+          - '6.8'
+
+        architecture:
+          - name: arm64
+          - name: x86-64
+            uname: amd64
+
+        host:
+          - name: ubuntu-latest
+            work_directory: /home/runner/work/action/action
+
+          - name: macos-12
+            work_directory: /Users/runner/work/action/action
+
+        exclude:
+          - version: '6.8'
+            architecture: { name: arm64 }
+
+          - architecture: { name: arm64 }
+            host: { name: macos-12 }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: test
+        uses: ./.github/workflows/support/test
+        with:
+          name: OpenBSD
+          architecture: ${{ matrix.architecture.name }}
+          version: ${{ matrix.version }}
+          uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
+          work_directory: ${{ matrix.host.work_directory }}
+
+
+  NetBSD:
+    name: NetBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
+    runs-on: ${{ matrix.host.name }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '9.3'
+          - '9.2'
+
+        architecture:
+          - name: x86-64
+            uname: amd64
+
+        host:
+          - name: ubuntu-latest
+            work_directory: /home/runner/work/action/action
+
+          - name: macos-12
+            work_directory: /Users/runner/work/action/action
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: test
+        uses: ./.github/workflows/support/test
+        with:
+          name: NetBSD
+          architecture: ${{ matrix.architecture.name }}
+          version: ${{ matrix.version }}
+          uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
+          work_directory: ${{ matrix.host.work_directory }}
 
   test-no-env:
     timeout-minutes: 5

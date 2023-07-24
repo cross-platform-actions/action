@@ -1,0 +1,44 @@
+inputs:
+  name:
+    description: "The name of the operating system"
+  architecture:
+    description: "The architecture of the operating system"
+  version:
+    description: "The version of the operating system"
+  uname_release:
+    description: "The version as reported by uname"
+  uname_hardware:
+    description: "The hardware as reported by uname"
+  work_directory:
+    description: "The working directory"
+
+runs:
+  using: "composite"
+  steps:
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+      # - name: Setup SSH session
+      #   uses: lhotari/action-upterm@v1
+
+      - name: test
+        uses: ./
+        env:
+          FOO: A
+          BAR: B
+        with:
+          environment_variables: FOO BAR
+          operating_system: ${{ inputs.name }}
+          architecture: ${{ inputs.architecture }}
+          version: '${{ inputs.version }}'
+          run: |
+            uname -a
+            echo $SHELL
+            pwd
+            ls -lah
+            whoami
+            env | sort
+            [ "`uname -s`" = '${{ inputs.name }}' ]
+            [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ]
+            [ "`uname -m`" = '${{ inputs.uname_hardware }}' ]
+            [ "`pwd`" = '${{ inputs.work_directory }}' ]
