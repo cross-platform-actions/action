@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2023-07-25
+### Changed
+- Bump QEMU to 8.0.3 ([resources#3](https://github.com/cross-platform-actions/resources/pull/4))
+
 ## [0.16.0] - 2023-07-21
 ### Added
 - Add support for FreeBSD ARM64 ([#55](https://github.com/cross-platform-actions/action/issues/55))
@@ -114,8 +118,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.17.0...HEAD
 
+[0.16.0]: https://github.com/cross-platform-actions/action/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/cross-platform-actions/action/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/cross-platform-actions/action/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/cross-platform-actions/action/compare/v0.13.0...v0.14.0

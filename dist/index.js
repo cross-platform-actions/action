@@ -2281,7 +2281,7 @@ const version = {
         netbsd: 'v0.2.0',
         openbsd: 'v0.6.0'
     },
-    resources: 'v0.9.0-rc1'
+    resources: 'v0.9.0'
 };
 exports["default"] = version;
 //# sourceMappingURL=version.js.map
