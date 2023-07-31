@@ -138,6 +138,29 @@ same) and the GitHub action will only see `13` instead of `13.0`. The solution
 is to explicitly state that a string is required by using quotes: `version:
 '13.0'`.
 
+#### Custom VM Image (`image_url`)
+
+With the `image_url` input it's possible to specify a custom virtual machine
+image. The main reason for this feature is to do additional custom
+provisioning, like installing additional packages. This allows to pre-install
+everything that is needed for a CI job beforhand, which can save time later
+when the job is run.
+
+Only existing operating systems, architectures and versions are supported.
+
+##### Building a Custom VM Image
+
+1. Fork one of the existing [*builder repositories ](https://github.com/cross-platform-actions/?q=builder)
+1. Add the additional provisioning to the `resources/custom.sh` script. Don't
+    remove any existing provisioning scripts.
+1. Adjust the CI workflow to remove any unwanted architectures or versions
+1. Create and push a new tag
+1. This will launch the CI workflow, build the image(s) and create a draft
+    GitHub release. The VM image(s) are automatically attached to the release
+1. Edit the release to publish it
+1. Copy the URL for the VM image
+1. Use the URL with the `image_url` input
+
 ## `Supported Platforms`
 
 This sections lists the currently supported platforms by operating system. Each
