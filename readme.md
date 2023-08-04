@@ -193,6 +193,18 @@ operating system will list which versions are supported.
 | 9.3     | ✅     |
 | 9.2     | ✅     |
 
+### Architectures
+
+This section lists the supported architectures and any aliases. All the names
+are case insensitive. For a combination of supported architectures and
+operating systems, see the sections for each operating system above.
+
+| Architecture | Aliases         |
+|--------------|-----------------|
+| `arm64`      | `aarch64`       |
+| `x86-64`     | `x86_64`, `x64` |
+|              |                 |
+
 ### Hypervisors
 
 This section lists the available hypervisors, which platforms they can run and
