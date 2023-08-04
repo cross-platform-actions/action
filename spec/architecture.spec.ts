@@ -19,6 +19,12 @@ describe('toKind', () => {
     })
   })
 
+  describe('X64', () => {
+    it('returns the x86_64 architecture', () => {
+      expect(architecture.toKind('x64')).toBe(architecture.Kind.x86_64)
+    })
+  })
+
   describe('X86_64', () => {
     it('returns the x86_64 architecture', () => {
       expect(architecture.toKind('x86-64')).toBe(architecture.Kind.x86_64)

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for custom image URLs ([#13](https://github.com/cross-platform-actions/action/pull/13))
+- Add architecture alias for x86-64: x64 ([#58](https://github.com/cross-platform-actions/action/issues/58))
 
 ## [0.17.0] - 2023-07-25
 ### Changed
