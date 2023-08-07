@@ -233,3 +233,23 @@ jobs:
           version: '7.3'
           image_url: https://github.com/cross-platform-actions/test-custom-image-builder/releases/download/v1.0.0/openbsd-7.3-x86-64.qcow2
           run: test -f /foo
+
+  test-cpu-features:
+    timeout-minutes: 5
+    name: Test CPU features
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          run: dmesg | grep -i avx2

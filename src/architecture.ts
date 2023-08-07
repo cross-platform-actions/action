@@ -132,7 +132,7 @@ export abstract class Architecture {
     }
 
     override get machineType(): string {
-      return 'pc'
+      return 'q35'
     }
 
     override get accelerator(): vm.Accelerator {

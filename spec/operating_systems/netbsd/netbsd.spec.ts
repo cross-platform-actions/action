@@ -81,9 +81,9 @@ describe('NetBSD OperatingSystem', () => {
         {
           ...config,
           ssHostPort: 2847,
-          cpu: 'qemu64',
+          cpu: 'max',
           accelerator: Accelerator.tcg,
-          machineType: 'pc',
+          machineType: 'q35',
           uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
           firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`
         }
@@ -151,9 +151,9 @@ describe('NetBSD OperatingSystem', () => {
           {
             ...config,
             ssHostPort: 2847,
-            cpu: 'host',
+            cpu: 'max',
             accelerator: Accelerator.hvf,
-            machineType: 'pc',
+            machineType: 'q35',
             uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
             firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`
           }

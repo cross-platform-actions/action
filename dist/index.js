@@ -581,7 +581,7 @@ Architecture.X86_64 = class extends Architecture {
         return this.hostQemu.cpu;
     }
     get machineType() {
-        return 'pc';
+        return 'q35';
     }
     get accelerator() {
         return this.hostQemu.accelerator;
@@ -773,7 +773,7 @@ HostQemu.LinuxHostQemu = class extends HostQemu {
         return vm_1.Accelerator.tcg;
     }
     get cpu() {
-        return 'qemu64';
+        return 'max';
     }
 };
 HostQemu.MacosHostQemu = class extends HostQemu {
@@ -781,7 +781,7 @@ HostQemu.MacosHostQemu = class extends HostQemu {
         return vm_1.Accelerator.hvf;
     }
     get cpu() {
-        return 'host';
+        return 'max';
     }
 };
 //# sourceMappingURL=host_qemu.js.map

@@ -11,7 +11,7 @@ export default abstract class HostQemu {
     }
 
     override get cpu(): string {
-      return 'qemu64'
+      return 'max'
     }
   }
 
@@ -21,7 +21,7 @@ export default abstract class HostQemu {
     }
 
     override get cpu(): string {
-      return 'host'
+      return 'max'
     }
   }
 }
