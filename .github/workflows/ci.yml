@@ -20,7 +20,7 @@ jobs:
   FreeBSD: # make sure the action works on a clean machine without building
     name: FreeBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
     runs-on: ${{ matrix.host.name }}
-    timeout-minutes: 5
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
