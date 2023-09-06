@@ -15,8 +15,8 @@ inputs:
 runs:
   using: "composite"
   steps:
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       # - name: Setup SSH session
       #   uses: lhotari/action-upterm@v1
