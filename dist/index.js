@@ -1911,9 +1911,11 @@ class Vm extends vm.Vm {
             '-m', this.configuration.memory,
             '-device', `${this.netDevive},netdev=user.0`,
             '-netdev', this.netdev,
-            '-display', 'none',
+            //'-display', 'none',
             '-monitor', 'none',
-            // '-nographic',
+            '-nographic',
+            '-chardev', 'stdio,id=char0,logfile=/tmp/serial.log,signal=off',
+            '-serial', 'chardev:char0',
             '-boot', 'strict=off',
             /* eslint-disable @typescript-eslint/no-non-null-assertion */
             '-bios', this.configuration.firmware.toString()
