@@ -220,10 +220,10 @@ which runners they can run on.
 This section lists the different combinations of platforms and on which runners
 they can run.
 
-| Runner                                        | OpenBSD | FreeBSD | NetBSD |
-| ----------------------------------------------| ------- | ------- | ------ |
-| **Linux**                                     | ✅      | ✅      | ✅     |
-| **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ✅     |
+| Runner                                        | OpenBSD | FreeBSD | NetBSD | ARM64 |
+| ----------------------------------------------| ------- | ------- | ------ | ----- |
+| **Linux**                                     | ✅      | ✅      | ✅     | ✅   |
+| **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ✅     | ❌   |
 
 ## `Under the Hood`
 
