@@ -11,10 +11,6 @@ import * as netbsdQemuVm from '../../../src/operating_systems/netbsd/qemu_vm'
 
 describe('NetBSD OperatingSystem', () => {
   class Host extends hostModule.Host {
-    get workDirectory(): string {
-      return '/home/runner/work'
-    }
-
     get vmModule(): typeof xhyve | typeof qemu {
       return qemu
     }
@@ -92,10 +88,6 @@ describe('NetBSD OperatingSystem', () => {
 
     describe('when on a macOS host', () => {
       class Host extends hostModule.Host {
-        get workDirectory(): string {
-          return '/Users/runner/work'
-        }
-
         get vmModule(): typeof xhyve | typeof qemu {
           return xhyve
         }

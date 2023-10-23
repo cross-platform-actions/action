@@ -118,6 +118,20 @@ export abstract class Vm {
     )
   }
 
+  async setupWorkDirectory(
+    homeDirectory: string,
+    workDirectory: string
+  ): Promise<void> {
+    const homeDirectoryLinuxHost = `/home/${Vm.user}/work`
+
+    await this.execute(
+      `rm -rf '${homeDirectoryLinuxHost}' && ` +
+        `sudo mkdir -p '${workDirectory}' && ` +
+        `sudo chown -R '${Vm.user}' '${homeDirectory}' && ` +
+        `ln -sf '${homeDirectory}/' '${homeDirectoryLinuxHost}'`
+    )
+  }
+
   protected async shutdown(): Promise<void> {
     throw Error('Not implemented')
   }

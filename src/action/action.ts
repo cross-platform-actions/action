@@ -32,7 +32,6 @@ export class Action {
   private readonly input = new input.Input()
   private readonly resourceDisk: ResourceDisk
   private readonly implementation: Implementation
-  private readonly workDirectory
   private readonly sshDirectory: string
   private readonly privateSshKey: fs.PathLike
   private readonly publicSshKey: fs.PathLike
@@ -56,7 +55,6 @@ export class Action {
       this.operatingSystem.actionImplementationKind
     )
 
-    this.workDirectory = this.host.workDirectory
     this.sshDirectory = path.join(this.getHomeDirectory(), '.ssh')
     this.privateSshKey = path.join(this.tempPath, this.privateSshKeyName)
     this.publicSshKey = `${this.privateSshKey}.pub`
@@ -98,7 +96,7 @@ export class Action {
       hypervisorDirectory,
       firmwareDirectory,
       diskImagePath
-    ].map(p => p.slice(this.workDirectory.length + 1))
+    ].map(p => p.slice(this.homeDirectory.length + 1))
 
     const vm = await vmPromise
 
@@ -107,7 +105,7 @@ export class Action {
       await vm.run()
       this.configSSH(vm.ipAddress)
       await vm.wait(120)
-      await this.operatingSystem.setupWorkDirectory(vm, this.workDirectory)
+      await vm.setupWorkDirectory(this.homeDirectory, this.workDirectory)
       await this.syncFiles(
         vm,
         this.targetDiskName,
@@ -235,16 +233,21 @@ export class Action {
     return core.isDebug() ? 'v' : ''
   }
 
+  private get homeDirectory(): string {
+    const components = this.workDirectory.split(path.sep).slice(0, -2)
+    return path.join('/', ...components)
+  }
+
+  private get workDirectory(): string {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return process.env['GITHUB_WORKSPACE']!
+  }
+
   private async syncFiles(
     vm: vmModule.Vm,
     ...excludePaths: string[]
   ): Promise<void> {
     if (!this.shouldSyncFiles) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      await vm.execute(`mkdir -p '${process.env['GITHUB_WORKSPACE']!}'`, {
-        log: false
-      })
-
       return
     }
 
@@ -254,7 +257,7 @@ export class Action {
       `-auzrtopg${this.syncVerboseFlag}`,
       '--exclude', '_actions/cross-platform-actions/action',
       ...flatMap(excludePaths, p => ['--exclude', p]),
-      `${this.workDirectory}/`,
+      `${this.homeDirectory}/`,
       `runner@${vm.ipAddress}:work`
     ])
   }
@@ -267,7 +270,7 @@ export class Action {
     await exec.exec('rsync', [
       `-uzrtopg${this.syncVerboseFlag}`,
       `runner@${ipAddress}:work/`,
-      this.workDirectory
+      this.homeDirectory
     ])
   }
 
@@ -279,11 +282,7 @@ export class Action {
         ? '$SHELL'
         : shell.toString(this.input.shell)
     await vm.execute2(
-      [
-        'sh',
-        '-c',
-        `'cd "${process.env['GITHUB_WORKSPACE']}" && exec "${sh}" -e'`
-      ],
+      ['sh', '-c', `'cd "${this.workDirectory}" && exec "${sh}" -e'`],
       Buffer.from(this.input.run)
     )
   }

@@ -86,26 +86,6 @@ export abstract class OperatingSystem {
     resourcesDirectory: fs.PathLike
   ): Promise<void>
 
-  async setupWorkDirectory(
-    vm: vmModule.Vm,
-    workDirectory: string
-  ): Promise<void> {
-    const destination = `/home/${vmModule.Vm.user}/work`
-
-    await vm.execute('mkdir -p /home/runner/work')
-
-    if (workDirectory === destination)
-      await vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`)
-    else {
-      await vm.execute(
-        `rm -rf '${destination}' && ` +
-          `sudo mkdir -p '${workDirectory}' && ` +
-          `sudo chown '${vmModule.Vm.user}' '${workDirectory}' && ` +
-          `ln -sf '${workDirectory}/' '${destination}'`
-      )
-    }
-  }
-
   protected get uuid(): string {
     return '864ED7F0-7876-4AA7-8511-816FABCFA87F'
   }

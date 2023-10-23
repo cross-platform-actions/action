@@ -70,7 +70,6 @@ class Action {
         this.operatingSystem = this.createOperatingSystem(arch);
         this.resourceDisk = resource_disk_1.default.for(this);
         this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
-        this.workDirectory = this.host.workDirectory;
         this.sshDirectory = path.join(this.getHomeDirectory(), '.ssh');
         this.privateSshKey = path.join(this.tempPath, this.privateSshKeyName);
         this.publicSshKey = `${this.privateSshKey}.pub`;
@@ -101,14 +100,14 @@ class Action {
                 hypervisorDirectory,
                 firmwareDirectory,
                 diskImagePath
-            ].map(p => p.slice(this.workDirectory.length + 1));
+            ].map(p => p.slice(this.homeDirectory.length + 1));
             const vm = yield vmPromise;
             yield vm.init();
             try {
                 yield vm.run();
                 this.configSSH(vm.ipAddress);
                 yield vm.wait(120);
-                yield this.operatingSystem.setupWorkDirectory(vm, this.workDirectory);
+                yield vm.setupWorkDirectory(this.homeDirectory, this.workDirectory);
                 yield this.syncFiles(vm, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
                 try {
@@ -210,13 +209,17 @@ class Action {
     get syncVerboseFlag() {
         return core.isDebug() ? 'v' : '';
     }
+    get homeDirectory() {
+        const components = this.workDirectory.split(path.sep).slice(0, -2);
+        return path.join('/', ...components);
+    }
+    get workDirectory() {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return process.env['GITHUB_WORKSPACE'];
+    }
     syncFiles(vm, ...excludePaths) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.shouldSyncFiles) {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                yield vm.execute(`mkdir -p '${process.env['GITHUB_WORKSPACE']}'`, {
-                    log: false
-                });
                 return;
             }
             core.debug(`Syncing files to VM, excluding: ${excludePaths}`);
@@ -225,7 +228,7 @@ class Action {
                 `-auzrtopg${this.syncVerboseFlag}`,
                 '--exclude', '_actions/cross-platform-actions/action',
                 ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
-                `${this.workDirectory}/`,
+                `${this.homeDirectory}/`,
                 `runner@${vm.ipAddress}:work`
             ]);
         });
@@ -239,7 +242,7 @@ class Action {
             yield exec.exec('rsync', [
                 `-uzrtopg${this.syncVerboseFlag}`,
                 `runner@${ipAddress}:work/`,
-                this.workDirectory
+                this.homeDirectory
             ]);
         });
     }
@@ -249,11 +252,7 @@ class Action {
             const sh = this.input.shell === shell.Shell.default
                 ? '$SHELL'
                 : shell.toString(this.input.shell);
-            yield vm.execute2([
-                'sh',
-                '-c',
-                `'cd "${process.env['GITHUB_WORKSPACE']}" && exec "${sh}" -e'`
-            ], Buffer.from(this.input.run));
+            yield vm.execute2(['sh', '-c', `'cd "${this.workDirectory}" && exec "${sh}" -e'`], Buffer.from(this.input.run));
         });
     }
     getImplementation(kind) {
@@ -746,9 +745,6 @@ class Host {
 }
 exports.Host = Host;
 class MacOs extends Host {
-    get workDirectory() {
-        return '/Users/runner/work';
-    }
     get vmModule() {
         return xhyve;
     }
@@ -779,9 +775,6 @@ class MacOs extends Host {
     }
 }
 class Linux extends Host {
-    get workDirectory() {
-        return '/home/runner/work';
-    }
     get vmModule() {
         return qemu;
     }
@@ -1038,7 +1031,6 @@ exports.convertToRawDisk = exports.OperatingSystem = void 0;
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
-const vmModule = __importStar(__nccwpck_require__(2772));
 const host_1 = __nccwpck_require__(8215);
 const resource_urls_1 = __nccwpck_require__(3990);
 const resource_disk_1 = __nccwpck_require__(7102);
@@ -1071,20 +1063,6 @@ class OperatingSystem {
     }
     get name() {
         return this.constructor.name.toLocaleLowerCase();
-    }
-    setupWorkDirectory(vm, workDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const destination = `/home/${vmModule.Vm.user}/work`;
-            yield vm.execute('mkdir -p /home/runner/work');
-            if (workDirectory === destination)
-                yield vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`);
-            else {
-                yield vm.execute(`rm -rf '${destination}' && ` +
-                    `sudo mkdir -p '${workDirectory}' && ` +
-                    `sudo chown '${vmModule.Vm.user}' '${workDirectory}' && ` +
-                    `ln -sf '${workDirectory}/' '${destination}'`);
-            }
-        });
     }
     get uuid() {
         return '864ED7F0-7876-4AA7-8511-816FABCFA87F';
@@ -1978,9 +1956,8 @@ class Vm extends vm.Vm {
             '-monitor', 'none',
             // '-nographic',
             '-boot', 'strict=off',
-            /* eslint-disable @typescript-eslint/no-non-null-assertion */
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             '-bios', this.configuration.firmware.toString()
-            /* eslint-enable @typescript-eslint/no-non-null-assertion */
         ].concat(this.hardDriverFlags);
     }
     get defaultHardDriveFlags() {
@@ -2474,6 +2451,15 @@ class Vm {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Terminating VM');
             return yield exec.exec('sudo', ['kill', '-s', 'TERM', this.vmProcess.pid.toString()], { ignoreReturnCode: true });
+        });
+    }
+    setupWorkDirectory(homeDirectory, workDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const homeDirectoryLinuxHost = `/home/${Vm.user}/work`;
+            yield this.execute(`rm -rf '${homeDirectoryLinuxHost}' && ` +
+                `sudo mkdir -p '${workDirectory}' && ` +
+                `sudo chown -R '${Vm.user}' '${homeDirectory}' && ` +
+                `ln -sf '${homeDirectory}/' '${homeDirectoryLinuxHost}'`);
         });
     }
     shutdown() {

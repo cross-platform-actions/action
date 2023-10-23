@@ -18,7 +18,6 @@ export abstract class Host {
     }
   }
 
-  abstract get workDirectory(): string
   abstract get vmModule(): typeof xhyve | typeof qemu
   abstract get qemu(): HostQemu
   abstract get hypervisor(): hypervisor.Hypervisor
@@ -37,10 +36,6 @@ export abstract class Host {
 }
 
 class MacOs extends Host {
-  get workDirectory(): string {
-    return '/Users/runner/work'
-  }
-
   get vmModule(): typeof xhyve | typeof qemu {
     return xhyve
   }
@@ -78,10 +73,6 @@ class MacOs extends Host {
 }
 
 class Linux extends Host {
-  get workDirectory(): string {
-    return '/home/runner/work'
-  }
-
   get vmModule(): typeof xhyve | typeof qemu {
     return qemu
   }

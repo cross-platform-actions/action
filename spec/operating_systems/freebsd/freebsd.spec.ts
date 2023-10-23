@@ -12,10 +12,6 @@ import * as xhyve from '../../../src/xhyve_vm'
 
 describe('FreeBSD OperatingSystem', () => {
   class MockHost extends hostModule.Host {
-    get workDirectory(): string {
-      return '/home/runner/work'
-    }
-
     get vmModule(): typeof xhyve | typeof qemu {
       return qemu
     }

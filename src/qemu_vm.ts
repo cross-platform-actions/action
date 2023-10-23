@@ -44,9 +44,8 @@ export abstract class Vm extends vm.Vm {
       // '-nographic',
 
       '-boot', 'strict=off',
-      /* eslint-disable @typescript-eslint/no-non-null-assertion */
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       '-bios', this.configuration.firmware!.toString()
-      /* eslint-enable @typescript-eslint/no-non-null-assertion */
     ].concat(this.hardDriverFlags)
   }
 
