@@ -4,6 +4,11 @@ import {Shell, toShell} from './shell'
 import * as os from '../operating_systems/kind'
 import {Host, host as defaultHost} from '../host'
 import * as hypervisor from '../hypervisor'
+import {
+  SyncDirection,
+  toSyncDirection,
+  validSyncDirections
+} from './sync_direction'
 
 export class Input {
   private readonly host: Host
@@ -17,6 +22,7 @@ export class Input {
   private memory_?: string
   private cpuCount_?: number
   private hypervisor_?: hypervisor.Hypervisor
+  private syncDirection_?: SyncDirection
 
   constructor(host: Host = defaultHost) {
     this.host = host
@@ -120,5 +126,27 @@ export class Input {
 
     const hypervisorClass = hypervisor.toHypervisor(kind)
     return (this.hypervisor_ = new hypervisorClass())
+  }
+
+  get syncFiles(): SyncDirection {
+    if (this.syncDirection_ !== undefined) return this.syncDirection_
+
+    const input = core.getInput('sync_files')
+    core.debug(`sync_files input: '${input}'`)
+    if (input === undefined || input === '')
+      return (this.syncDirection_ = SyncDirection.both)
+
+    const syncDirection = toSyncDirection(input)
+    core.debug(`syncDirection: '${syncDirection}'`)
+
+    if (syncDirection === undefined) {
+      const values = validSyncDirections.join(', ')
+
+      throw Error(
+        `Invalid sync-files: ${input}\nValid sync-files values are: ${values}`
+      )
+    }
+
+    return (this.syncDirection_ = syncDirection)
   }
 }

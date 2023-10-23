@@ -253,3 +253,47 @@ jobs:
           version: '13.2'
           hypervisor: qemu
           run: dmesg | grep -i avx2
+
+  test-sync-files:
+    timeout-minutes: 5
+    name: 'Test sync files: ${{ matrix.data.direction }}'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        data:
+          - direction: runner-to-vm
+            run: test -f foo.txt && touch bar.txt
+            run_after: '! test -f bar.txt' # The new files from the VM should not sync back
+
+          - direction: vm-to-runner
+            run: '[ ! -f foo.txt ] && touch bar.txt'
+            run_after: 'test -f bar.txt' # The new files from the VM should sync back
+
+          - direction: false
+            run: '[ ! -f foo.txt ] && touch bar.txt'
+            run_after: '! test -f bar.txt' # The new files from the VM should not sync back
+
+          - direction: true
+            run: test -f foo.txt && touch bar.txt
+            run_after: test -f bar.txt
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - run: touch foo.txt
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          sync_files: ${{ matrix.data.direction }}
+          run: ${{ matrix.data.run }}
+
+      - name: Run after
+        run: ${{ matrix.data.run_after }}

@@ -17,6 +17,7 @@ import * as vmModule from '../vm'
 import * as input from './input'
 import * as shell from './shell'
 import * as utility from '../utility'
+import {SyncDirection} from './sync_direction'
 
 export enum ImplementationKind {
   qemu,
@@ -108,7 +109,7 @@ export class Action {
       await vm.wait(120)
       await this.operatingSystem.setupWorkDirectory(vm, this.workDirectory)
       await this.syncFiles(
-        vm.ipAddress,
+        vm,
         this.targetDiskName,
         this.resourceDisk.diskPath,
         ...excludes
@@ -235,9 +236,18 @@ export class Action {
   }
 
   private async syncFiles(
-    ipAddress: string,
+    vm: vmModule.Vm,
     ...excludePaths: string[]
   ): Promise<void> {
+    if (!this.shouldSyncFiles) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await vm.execute(`mkdir -p '${process.env['GITHUB_WORKSPACE']!}'`, {
+        log: false
+      })
+
+      return
+    }
+
     core.debug(`Syncing files to VM, excluding: ${excludePaths}`)
     // prettier-ignore
     await exec.exec('rsync', [
@@ -245,11 +255,13 @@ export class Action {
       '--exclude', '_actions/cross-platform-actions/action',
       ...flatMap(excludePaths, p => ['--exclude', p]),
       `${this.workDirectory}/`,
-      `runner@${ipAddress}:work`
+      `runner@${vm.ipAddress}:work`
     ])
   }
 
   private async syncBack(ipAddress: string): Promise<void> {
+    if (!this.shouldSyncBack) return
+
     core.info('Syncing back files')
     // prettier-ignore
     await exec.exec('rsync', [
@@ -302,6 +314,20 @@ export class Action {
     return os_factory.Factory.for(this.input.operatingSystem, arch).create(
       this.input.version,
       this.input.hypervisor
+    )
+  }
+
+  private get shouldSyncFiles(): boolean {
+    return (
+      this.input.syncFiles === SyncDirection.runner_to_vm ||
+      this.input.syncFiles === SyncDirection.both
+    )
+  }
+
+  private get shouldSyncBack(): boolean {
+    return (
+      this.input.syncFiles === SyncDirection.vm_to_runner ||
+      this.input.syncFiles === SyncDirection.both
     )
   }
 }

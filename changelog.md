@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2023-10-24
+### Added
+- Add support for disabling file syncing ([#65](https://github.com/cross-platform-actions/action/issues/65)).
+    This adds a new input parameter, `sync_files`. It allows to specify
+    which directions files should be synced. From the runner to the VM,
+    from the VM to the runner, both or none.
+
 ## [0.19.1] - 2023-10-07
 ### Fixed
 - NetBSD - VM doesn't start ([#62](https://github.com/cross-platform-actions/action/issues/62))
@@ -133,8 +140,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.19.1...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.20.0...HEAD
 
+[0.19.1]: https://github.com/cross-platform-actions/action/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/cross-platform-actions/action/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/cross-platform-actions/action/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/cross-platform-actions/action/compare/v0.17.0...v0.18.0

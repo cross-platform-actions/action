@@ -42,6 +42,13 @@ inputs:
     required: false
     description: URL for running the action with a custom image.
     default: ''
+  sync_files:
+    required: false
+    description: |
+      Specifies if the local files should be synchronized to virtual
+      machine and in which direction. Valid values are `true`, `false`,
+      `runner-to-vm` and `vm-to-runner`.
+    default: 'true'
 
 runs:
   using: node16

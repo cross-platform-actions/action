@@ -53,6 +53,7 @@ const resource_disk_1 = __importDefault(__nccwpck_require__(7102));
 const input = __importStar(__nccwpck_require__(1099));
 const shell = __importStar(__nccwpck_require__(9044));
 const utility = __importStar(__nccwpck_require__(2857));
+const sync_direction_1 = __nccwpck_require__(3377);
 var ImplementationKind;
 (function (ImplementationKind) {
     ImplementationKind[ImplementationKind["qemu"] = 0] = "qemu";
@@ -108,7 +109,7 @@ class Action {
                 this.configSSH(vm.ipAddress);
                 yield vm.wait(120);
                 yield this.operatingSystem.setupWorkDirectory(vm, this.workDirectory);
-                yield this.syncFiles(vm.ipAddress, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
+                yield this.syncFiles(vm, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
                 try {
                     core.endGroup();
@@ -209,8 +210,15 @@ class Action {
     get syncVerboseFlag() {
         return core.isDebug() ? 'v' : '';
     }
-    syncFiles(ipAddress, ...excludePaths) {
+    syncFiles(vm, ...excludePaths) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!this.shouldSyncFiles) {
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                yield vm.execute(`mkdir -p '${process.env['GITHUB_WORKSPACE']}'`, {
+                    log: false
+                });
+                return;
+            }
             core.debug(`Syncing files to VM, excluding: ${excludePaths}`);
             // prettier-ignore
             yield exec.exec('rsync', [
@@ -218,12 +226,14 @@ class Action {
                 '--exclude', '_actions/cross-platform-actions/action',
                 ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
                 `${this.workDirectory}/`,
-                `runner@${ipAddress}:work`
+                `runner@${vm.ipAddress}:work`
             ]);
         });
     }
     syncBack(ipAddress) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!this.shouldSyncBack)
+                return;
             core.info('Syncing back files');
             // prettier-ignore
             yield exec.exec('rsync', [
@@ -264,6 +274,14 @@ class Action {
     }
     createOperatingSystem(arch) {
         return os_factory.Factory.for(this.input.operatingSystem, arch).create(this.input.version, this.input.hypervisor);
+    }
+    get shouldSyncFiles() {
+        return (this.input.syncFiles === sync_direction_1.SyncDirection.runner_to_vm ||
+            this.input.syncFiles === sync_direction_1.SyncDirection.both);
+    }
+    get shouldSyncBack() {
+        return (this.input.syncFiles === sync_direction_1.SyncDirection.vm_to_runner ||
+            this.input.syncFiles === sync_direction_1.SyncDirection.both);
     }
 }
 exports.Action = Action;
@@ -330,6 +348,7 @@ const shell_1 = __nccwpck_require__(9044);
 const os = __importStar(__nccwpck_require__(6713));
 const host_1 = __nccwpck_require__(8215);
 const hypervisor = __importStar(__nccwpck_require__(4288));
+const sync_direction_1 = __nccwpck_require__(3377);
 class Input {
     constructor(host = host_1.host) {
         this.host = host;
@@ -420,6 +439,21 @@ class Input {
         const hypervisorClass = hypervisor.toHypervisor(kind);
         return (this.hypervisor_ = new hypervisorClass());
     }
+    get syncFiles() {
+        if (this.syncDirection_ !== undefined)
+            return this.syncDirection_;
+        const input = core.getInput('sync_files');
+        core.debug(`sync_files input: '${input}'`);
+        if (input === undefined || input === '')
+            return (this.syncDirection_ = sync_direction_1.SyncDirection.both);
+        const syncDirection = (0, sync_direction_1.toSyncDirection)(input);
+        core.debug(`syncDirection: '${syncDirection}'`);
+        if (syncDirection === undefined) {
+            const values = sync_direction_1.validSyncDirections.join(', ');
+            throw Error(`Invalid sync-files: ${input}\nValid sync-files values are: ${values}`);
+        }
+        return (this.syncDirection_ = syncDirection);
+    }
 }
 exports.Input = Input;
 //# sourceMappingURL=input.js.map
@@ -459,6 +493,35 @@ function toString(shell) {
 }
 exports.toString = toString;
 //# sourceMappingURL=shell.js.map
+
+/***/ }),
+
+/***/ 3377:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.validSyncDirections = exports.toSyncDirection = exports.SyncDirection = void 0;
+var SyncDirection;
+(function (SyncDirection) {
+    SyncDirection[SyncDirection["runner_to_vm"] = 0] = "runner_to_vm";
+    SyncDirection[SyncDirection["vm_to_runner"] = 1] = "vm_to_runner";
+    SyncDirection[SyncDirection["both"] = 2] = "both";
+    SyncDirection[SyncDirection["none"] = 3] = "none";
+})(SyncDirection = exports.SyncDirection || (exports.SyncDirection = {}));
+function toSyncDirection(input) {
+    return syncDirectionMap[input.toLowerCase()];
+}
+exports.toSyncDirection = toSyncDirection;
+const syncDirectionMap = {
+    'runner-to-vm': SyncDirection.runner_to_vm,
+    'vm-to-runner': SyncDirection.vm_to_runner,
+    true: SyncDirection.both,
+    false: SyncDirection.none
+};
+exports.validSyncDirections = Object.keys(syncDirectionMap);
+//# sourceMappingURL=sync_direction.js.map
 
 /***/ }),
 
