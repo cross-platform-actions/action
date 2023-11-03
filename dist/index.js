@@ -2064,6 +2064,7 @@ const os = __importStar(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const utility_1 = __nccwpck_require__(2857);
+const wait_1 = __nccwpck_require__(5817);
 class ResourceDisk {
     constructor(action) {
         this.mountName = 'RES';
@@ -2145,7 +2146,20 @@ class MacOs extends ResourceDisk {
     }
     detachDevice(devicePath) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield exec.exec('hdiutil', ['detach', devicePath]);
+            const maxRetries = 150;
+            const waitTimeSeconds = 1;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    yield exec.exec('hdiutil', ['detach', devicePath]);
+                    return;
+                }
+                catch (error) {
+                    const err = error;
+                    core.debug(`Failed to detach device: ${err.message}`);
+                    yield (0, wait_1.wait)(waitTimeSeconds * 1000);
+                }
+            }
+            core.error(`Failed to detach device after ${maxRetries} retries`);
         });
     }
 }

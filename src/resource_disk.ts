@@ -8,6 +8,7 @@ import * as exec from '@actions/exec'
 import {Action} from './action/action'
 import {execWithOutput} from './utility'
 import type {OperatingSystem} from './operating_system'
+import {wait} from './wait'
 
 export default abstract class ResourceDisk {
   protected readonly operatingSystem: OperatingSystem
@@ -124,7 +125,21 @@ class MacOs extends ResourceDisk {
   }
 
   override async detachDevice(devicePath: string): Promise<void> {
-    await exec.exec('hdiutil', ['detach', devicePath])
+    const maxRetries = 150
+    const waitTimeSeconds = 1
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        await exec.exec('hdiutil', ['detach', devicePath])
+        return
+      } catch (error: unknown) {
+        const err = error as Error
+        core.debug(`Failed to detach device: ${err.message}`)
+        await wait(waitTimeSeconds * 1000)
+      }
+    }
+
+    core.error(`Failed to detach device after ${maxRetries} retries`)
   }
 }
 

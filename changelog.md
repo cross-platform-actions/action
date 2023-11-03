@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1] - 2023-11-03
+### Fixed
+- FreeBSD jobs occasionally fail when ejecting the disk ([#64](https://github.com/cross-platform-actions/action/issues/64))
+
 ## [0.21.0] - 2023-10-26
 ### Added
 - Add support for OpenBSD 7.4 ([openbsd-builder#15](https://github.com/cross-platform-actions/openbsd-builder/issues/15))
@@ -144,8 +148,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.21.1...HEAD
 
+[0.21.1]: https://github.com/cross-platform-actions/action/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/cross-platform-actions/action/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/cross-platform-actions/action/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/cross-platform-actions/action/compare/v0.19.0...v0.19.1
