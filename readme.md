@@ -217,6 +217,10 @@ which runners they can run on.
 | `xhyve`    | ❌           | ✅          | ✅      | ✅      | ❌              |
 | `qemu`     | ✅           | ✅          | ✅      | ✅      | ✅              |
 
+`xhyve` is in general slightly faster than `qemu`. `xhyve` might have slightly
+larger boot overhead due to the need to discover the IP-address. `qemu` is
+slightly more stable than `xhyve`.
+
 ### Runners
 
 This section lists the different combinations of platforms and on which runners
@@ -226,6 +230,11 @@ they can run.
 | ----------------------------------------------| ------- | ------- | ------ | ----- |
 | **Linux**                                     | ✅      | ✅      | ✅     | ✅   |
 | **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ✅     | ❌   |
+
+macOS runners are, in general, preferred. They support hardware accelerated
+nested virtualization, making them significantly faster than the Linux runners.
+This only applies when the runner architecture and the guest architecture are
+the same, in this case `x86-64`.
 
 ## `Under the Hood`
 
