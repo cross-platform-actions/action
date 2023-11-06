@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Run any SSH commands to the VM in verbose mode when debug mode is enabled
 
 ## [0.21.1] - 2023-11-03
 ### Fixed
