@@ -2436,7 +2436,7 @@ class Vm {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Booting VM');
             core.debug(this.command.join(' '));
-            this.vmProcess = (0, child_process_1.spawn)('sudo', this.command, {
+            this.vmProcess = (0, child_process_1.spawn)('sudo', ['dtruss', ...this.command], {
                 detached: false,
                 stdio: ['ignore', 'inherit', 'inherit']
             });
