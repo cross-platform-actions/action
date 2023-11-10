@@ -725,7 +725,7 @@ const host_qemu_1 = __importDefault(__nccwpck_require__(9097));
 const hypervisor = __importStar(__nccwpck_require__(4288));
 const qemu = __importStar(__nccwpck_require__(1106));
 const utility_1 = __nccwpck_require__(2857);
-const xhyve = __importStar(__nccwpck_require__(3321));
+const xhyve = __importStar(__nccwpck_require__(2722));
 class Host {
     static create(platform = process.platform) {
         switch (platform) {
@@ -860,7 +860,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.toHypervisor = exports.QemuEfi = exports.Qemu = exports.Xhyve = exports.Hypervisor = exports.toKind = exports.Kind = void 0;
 const resource_urls_1 = __nccwpck_require__(3990);
 const qemu_vm_1 = __nccwpck_require__(1106);
-const xhyve_vm_1 = __nccwpck_require__(3321);
+const xhyve_vm_1 = __nccwpck_require__(2722);
 const utility_1 = __nccwpck_require__(2857);
 var Kind;
 (function (Kind) {
@@ -940,63 +940,6 @@ const hypervisorMap = {
     [Kind.qemu]: Qemu
 };
 //# sourceMappingURL=hypervisor.js.map
-
-/***/ }),
-
-/***/ 3109:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(2186));
-const action_1 = __nccwpck_require__(6072);
-__nccwpck_require__(9122);
-__nccwpck_require__(2146);
-__nccwpck_require__(6653);
-function main() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield new action_1.Action().run();
-        }
-        catch (error) {
-            const err = error;
-            core.setFailed(err.message);
-            if (core.isDebug() && err.stack)
-                core.debug(err.stack);
-        }
-    });
-}
-main();
-//# sourceMappingURL=main.js.map
 
 /***/ }),
 
@@ -1433,7 +1376,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XhyveVm = void 0;
-const xhyve_vm_1 = __nccwpck_require__(3321);
+const xhyve_vm_1 = __nccwpck_require__(2722);
 class XhyveVm extends xhyve_vm_1.Vm {
     get command() {
         // prettier-ignore
@@ -1824,7 +1767,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XhyveVm = void 0;
-const xhyve_vm_1 = __nccwpck_require__(3321);
+const xhyve_vm_1 = __nccwpck_require__(2722);
 class XhyveVm extends xhyve_vm_1.Vm {
     get command() {
         // prettier-ignore
@@ -2549,7 +2492,7 @@ exports.wait = wait;
 
 /***/ }),
 
-/***/ 3321:
+/***/ 2722:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -2669,7 +2612,7 @@ function getIpAddressFromArp(macAddress) {
 
 /***/ }),
 
-/***/ 7351:
+/***/ 5241:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -2803,7 +2746,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getIDToken = exports.getState = exports.saveState = exports.group = exports.endGroup = exports.startGroup = exports.info = exports.notice = exports.warning = exports.error = exports.debug = exports.isDebug = exports.setFailed = exports.setCommandEcho = exports.setOutput = exports.getBooleanInput = exports.getMultilineInput = exports.getInput = exports.addPath = exports.setSecret = exports.exportVariable = exports.ExitCode = void 0;
-const command_1 = __nccwpck_require__(7351);
+const command_1 = __nccwpck_require__(5241);
 const file_command_1 = __nccwpck_require__(717);
 const utils_1 = __nccwpck_require__(5278);
 const os = __importStar(__nccwpck_require__(2037));
@@ -5153,7 +5096,7 @@ const os = __importStar(__nccwpck_require__(2037));
 const events = __importStar(__nccwpck_require__(2361));
 const child = __importStar(__nccwpck_require__(2081));
 const path = __importStar(__nccwpck_require__(1017));
-const io = __importStar(__nccwpck_require__(7436));
+const io = __importStar(__nccwpck_require__(7351));
 const ioUtil = __importStar(__nccwpck_require__(1962));
 /* eslint-disable @typescript-eslint/unbound-method */
 const IS_WINDOWS = process.platform === 'win32';
@@ -6546,7 +6489,7 @@ function isUnixExecutable(stats) {
 
 /***/ }),
 
-/***/ 7436:
+/***/ 7351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -7059,7 +7002,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const io = __importStar(__nccwpck_require__(7436));
+const io = __importStar(__nccwpck_require__(7351));
 const fs = __importStar(__nccwpck_require__(7147));
 const mm = __importStar(__nccwpck_require__(2473));
 const os = __importStar(__nccwpck_require__(2037));
@@ -12334,7 +12277,7 @@ module.exports = function ToBoolean(value) { return !!value; };
 
 /***/ }),
 
-/***/ 2722:
+/***/ 2074:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -12365,7 +12308,7 @@ module.exports = function ToInteger(value) {
 
 var MAX_SAFE_INTEGER = __nccwpck_require__(7176);
 
-var ToInteger = __nccwpck_require__(2722);
+var ToInteger = __nccwpck_require__(2074);
 
 module.exports = function ToLength(argument) {
 	var len = ToInteger(argument);
@@ -13189,13 +13132,32 @@ module.exports = function sign(number) {
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(3109);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+var exports = __webpack_exports__;
+
+// import * as core from '@actions/core'
+// import {Action} from './action/action'
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__nccwpck_require__(9122);
+__nccwpck_require__(2146);
+__nccwpck_require__(6653);
+// async function main(): Promise<void> {
+//   try {
+//     await new Action().run()
+//   } catch (error: unknown) {
+//     const err = error as Error
+//     core.setFailed(err.message)
+//     if (core.isDebug() && err.stack) core.debug(err.stack)
+//   }
+// }
+// main()
+//# sourceMappingURL=main.js.map
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;
 //# sourceMappingURL=index.js.map
