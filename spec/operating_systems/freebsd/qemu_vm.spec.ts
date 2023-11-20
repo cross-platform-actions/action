@@ -4,6 +4,7 @@ import {host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
 import {Accelerator} from '../../../src/vm'
 import '../../../src/operating_systems/freebsd/freebsd'
+import {Input} from '../../../src/action/input'
 
 describe('FreeBSD QemuVm', () => {
   let memory = '5G'
@@ -17,6 +18,7 @@ describe('FreeBSD QemuVm', () => {
     osKind,
     host.hypervisor
   )
+  let input = new Input()
   let config = {
     memory: memory,
     cpuCount: cpuCount,
@@ -30,7 +32,7 @@ describe('FreeBSD QemuVm', () => {
     userboot: '',
     firmware: ''
   }
-  let vm = new QemuVm('', '', architecture, config)
+  let vm = new QemuVm('', '', architecture, input, config)
 
   let getFlagValue = (flag: string) => vm.command[vm.command.indexOf(flag) + 1]
   let actualMemory = () => getFlagValue('-m')

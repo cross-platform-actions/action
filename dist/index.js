@@ -117,13 +117,16 @@ class Action {
                 finally {
                     core.startGroup('Tearing down VM');
                     yield this.syncBack(vm.ipAddress);
-                    yield vm.stop();
+                    if (this.input.shutdownVm) {
+                        yield vm.stop();
+                    }
                 }
             }
             finally {
                 try {
-                    yield vm.terminate();
-                    fs.rmSync(this.tempPath, { recursive: true });
+                    if (this.input.shutdownVm) {
+                        yield vm.terminate();
+                    }
                 }
                 finally {
                     core.endGroup();
@@ -153,7 +156,7 @@ class Action {
     creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath, config) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.operatingSystem.prepareDisk(diskImagePath, this.targetDiskName, resourcesDirectory);
-            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, Object.assign(Object.assign({}, config), { diskImage: path.join(resourcesDirectory, this.targetDiskName), 
+            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, this.input, Object.assign(Object.assign({}, config), { diskImage: path.join(resourcesDirectory, this.targetDiskName), 
                 // xhyve
                 resourcesDiskImage: this.resourceDisk.diskPath, userboot: path.join(firmwareDirectory, 'userboot.so') }));
         });
@@ -452,6 +455,13 @@ class Input {
             throw Error(`Invalid sync-files: ${input}\nValid sync-files values are: ${values}`);
         }
         return (this.syncDirection_ = syncDirection);
+    }
+    get shutdownVm() {
+        if (this.shutdownVm_ !== undefined)
+            return this.shutdownVm_;
+        const input = core.getBooleanInput('shutdown_vm');
+        core.debug(`shutdown_vm input: '${input}'`);
+        return (this.shutdownVm_ = input);
     }
 }
 exports.Input = Input;
@@ -1338,7 +1348,7 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
     get linuxDiskDeviceCreator() {
         return new resource_disk_1.LinuxDiskDeviceCreator.FdiskDiskDeviceCreator();
     }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating FreeBSD VM');
         const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
             // qemu
@@ -1346,7 +1356,7 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
             // xhyve
             uuid: this.uuid });
         const cls = this.hypervisor.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
-        return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+        return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 };
 FreeBsd = __decorate([
@@ -1564,7 +1574,7 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
             yield os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
         });
     }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating NetBSD VM');
         if (this.architecture.kind !== architecture.Kind.x86_64) {
             throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
@@ -1574,7 +1584,7 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        return new qemu_vm.Vm(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+        return new qemu_vm.Vm(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 };
 NetBsd = __decorate([
@@ -1732,7 +1742,7 @@ let OpenBsd = class OpenBsd extends os.OperatingSystem {
     get virtualMachineImageReleaseVersion() {
         return version_1.default.operating_system.openbsd;
     }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating OpenBSD VM');
         const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.efiHypervisor.firmwareFile), 
             // qemu
@@ -1740,7 +1750,7 @@ let OpenBsd = class OpenBsd extends os.OperatingSystem {
             // xhyve
             uuid: this.uuid });
         const cls = host_1.host.hypervisor.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
-        return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+        return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 };
 OpenBsd = __decorate([
@@ -1933,8 +1943,8 @@ exports.resolve = exports.Vm = void 0;
 const utility_1 = __nccwpck_require__(2857);
 const vm = __importStar(__nccwpck_require__(2772));
 class Vm extends vm.Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, architecture, configuration) {
-        super(hypervisorDirectory, resourcesDirectory, 'qemu', architecture, configuration);
+    constructor(hypervisorDirectory, resourcesDirectory, architecture, input, configuration) {
+        super(hypervisorDirectory, resourcesDirectory, 'qemu', architecture, input, configuration);
     }
     getIpAddress() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -2397,10 +2407,11 @@ var Accelerator;
     Accelerator[Accelerator["tcg"] = 1] = "tcg";
 })(Accelerator = exports.Accelerator || (exports.Accelerator = {}));
 class Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, architecture, configuration) {
+    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, architecture, input, configuration) {
         this.hypervisorDirectory = hypervisorDirectory;
         this.resourcesDirectory = resourcesDirectory;
         this.architecture = architecture;
+        this.input = input;
         this.configuration = configuration;
         this.hypervisorPath = path.join(hypervisorDirectory.toString(), hypervisorBinary.toString());
     }
@@ -2419,6 +2430,9 @@ class Vm {
             });
             if (this.vmProcess.exitCode) {
                 throw Error(`Failed to start VM process, exit code: ${this.vmProcess.exitCode}`);
+            }
+            if (!this.input.shutdownVm) {
+                this.vmProcess.unref();
             }
             this.ipAddress = yield this.getIpAddress();
         });
@@ -2575,8 +2589,8 @@ const vm = __importStar(__nccwpck_require__(2772));
 const utility_1 = __nccwpck_require__(2857);
 const wait_1 = __nccwpck_require__(5817);
 class Vm extends vm.Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, architecture, configuration) {
-        super(hypervisorDirectory, resourcesDirectory, 'xhyve', architecture, configuration);
+    constructor(hypervisorDirectory, resourcesDirectory, architecture, input, configuration) {
+        super(hypervisorDirectory, resourcesDirectory, 'xhyve', architecture, input, configuration);
     }
     init() {
         const _super = Object.create(null, {

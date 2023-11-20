@@ -23,6 +23,7 @@ export class Input {
   private cpuCount_?: number
   private hypervisor_?: hypervisor.Hypervisor
   private syncDirection_?: SyncDirection
+  private shutdownVm_?: boolean
 
   constructor(host: Host = defaultHost) {
     this.host = host
@@ -148,5 +149,14 @@ export class Input {
     }
 
     return (this.syncDirection_ = syncDirection)
+  }
+
+  get shutdownVm(): boolean {
+    if (this.shutdownVm_ !== undefined) return this.shutdownVm_
+
+    const input = core.getBooleanInput('shutdown_vm')
+    core.debug(`shutdown_vm input: '${input}'`)
+
+    return (this.shutdownVm_ = input)
   }
 }

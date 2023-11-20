@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as architecture from './architecture'
 import {getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
+import {Input} from './action/input'
 
 export abstract class Vm extends vm.Vm {
   static readonly sshPort = 2847
@@ -10,6 +11,7 @@ export abstract class Vm extends vm.Vm {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     architecture: architecture.Architecture,
+    input: Input,
     configuration: vm.Configuration
   ) {
     super(
@@ -17,6 +19,7 @@ export abstract class Vm extends vm.Vm {
       resourcesDirectory,
       'qemu',
       architecture,
+      input,
       configuration
     )
   }

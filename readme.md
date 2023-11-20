@@ -128,6 +128,7 @@ This section lists the available inputs for the action.
 | `hypervisor`            | ❌       | `xhyve` or `qemu` | string  | The hypervisor to use for running the virtual machine. For Linux runners the only valid value is `qemu`. For macOS runners the default for OpenBSD and FreeBSD is `xhyve` for all other platforms the default is `qemu`.                                     |
 | `image_url`             | ❌       | ❌                | string  | URL a custom VM image that should be used in place of the default ones.                                                                                                                                                                                      |
 | `sync_files`            | ❌       | `true`            | string  | Specifies if the local files should be synchronized to the virtual machine and in which direction. Valid values are `true`, `false`, `runner-to-vm` and `vm-to-runner`. `true` synchronizes files in both directions. `false` disables file synchronization. |
+| `shutdown_vm`           | ❌       | `true`            | boolean | Specifies if the VM should be shutdown after the action has been run.                                                                                                                                                                                        |
 
 All inputs are expected to be of the specified type. It's especially important
 that you specify `version` as a string, using single or

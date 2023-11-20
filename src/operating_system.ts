@@ -7,6 +7,7 @@ import * as exec from '@actions/exec'
 import * as architecture from './architecture'
 import * as vmModule from './vm'
 import * as action from './action/action'
+import {Input} from './action/input'
 import {host} from './host'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from './resource_disk'
@@ -77,6 +78,7 @@ export abstract class OperatingSystem {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
+    intput: Input,
     configuration: VmConfiguration
   ): vmModule.Vm
 

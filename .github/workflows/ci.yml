@@ -255,6 +255,54 @@ jobs:
           hypervisor: qemu
           run: dmesg | grep -i avx2
 
+  test-no-vm-shutdown:
+    timeout-minutes: 5
+    name: Test not shutting down the VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          shutdown_vm: false
+          run: true
+
+      - name: Verify VM is still running
+        run: ps aux | grep -q qemu
+
+  test-vm-shutdown:
+    timeout-minutes: 5
+    name: Test shutting down the VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          shutdown_vm: true
+          run: true
+
+      - name: Verify VM is not running
+        run: ps aux | grep -q -v qemu
+
   test-sync-files:
     timeout-minutes: 5
     name: 'Test sync files: ${{ matrix.data.direction }}'

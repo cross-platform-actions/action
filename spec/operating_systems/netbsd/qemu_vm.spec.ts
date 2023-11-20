@@ -4,6 +4,7 @@ import {host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
 import {Accelerator} from '../../../src/vm'
 import '../../../src/operating_systems/netbsd/netbsd'
+import {Input} from '../../../src/action/input'
 
 describe('NetBSD QemuVm', () => {
   let memory = '5G'
@@ -17,6 +18,7 @@ describe('NetBSD QemuVm', () => {
     osKind,
     host.hypervisor
   )
+  let input = new Input()
   let config = {
     memory: memory,
     cpuCount: cpuCount,
@@ -30,7 +32,7 @@ describe('NetBSD QemuVm', () => {
     userboot: '',
     firmware: ''
   }
-  let vm = new Vm('', '', architecture, config)
+  let vm = new Vm('', '', architecture, input, config)
 
   let getFlagValue = (flag: string) => vm.command[vm.command.indexOf(flag) + 1]
   let actualMemory = () => getFlagValue('-m')

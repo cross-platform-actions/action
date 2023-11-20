@@ -8,6 +8,7 @@ import * as hypervisor from '../../../src/hypervisor'
 import * as qemu from '../../../src/qemu_vm'
 import * as xhyve from '../../../src/xhyve_vm'
 import * as netbsdQemuVm from '../../../src/operating_systems/netbsd/qemu_vm'
+import {Input} from '../../../src/action/input'
 
 describe('NetBSD OperatingSystem', () => {
   class Host extends hostModule.Host {
@@ -50,6 +51,7 @@ describe('NetBSD OperatingSystem', () => {
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
   let firmwareDirectory = 'firmware/directory'
+  let input = new Input()
 
   let config = {
     memory: '4G',
@@ -67,6 +69,7 @@ describe('NetBSD OperatingSystem', () => {
         hypervisorDirectory,
         resourcesDirectory,
         firmwareDirectory,
+        input,
         config
       )
 
@@ -74,6 +77,7 @@ describe('NetBSD OperatingSystem', () => {
         hypervisorDirectory,
         resourcesDirectory,
         architecture,
+        input,
         {
           ...config,
           ssHostPort: 2847,
@@ -133,6 +137,7 @@ describe('NetBSD OperatingSystem', () => {
           hypervisorDirectory,
           resourcesDirectory,
           firmwareDirectory,
+          input,
           config
         )
 
@@ -140,6 +145,7 @@ describe('NetBSD OperatingSystem', () => {
           hypervisorDirectory,
           resourcesDirectory,
           architecture,
+          input,
           {
             ...config,
             ssHostPort: 2847,

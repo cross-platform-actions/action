@@ -49,6 +49,11 @@ inputs:
       machine and in which direction. Valid values are `true`, `false`,
       `runner-to-vm` and `vm-to-runner`.
     default: 'true'
+  shutdown_vm:
+    required: false
+    description: |
+      Specifies if the VM should be shutdown after the action has been run.
+    default: true
 
 runs:
   using: node20

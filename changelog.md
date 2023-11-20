@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added support for specifying that the VM should not shutdown after the action
+    has run. This adds a new input parameter: `shutdown_vm`. When set to `false`,
+    this will hopefully mitigate very frequent freezing of VM during teardown ([#61](https://github.com/cross-platform-actions/action/issues/61), [#72](https://github.com/cross-platform-actions/action/issues/72)).
+
 ### Changed
 - Run any SSH commands to the VM in verbose mode when debug mode is enabled
 

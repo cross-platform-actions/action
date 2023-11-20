@@ -9,6 +9,7 @@ import * as vm from './vm'
 import {ExecuteOptions} from './utility'
 import {wait} from './wait'
 import * as architecture from './architecture'
+import {Input} from './action/input'
 
 export enum Accelerator {
   hvf,
@@ -44,16 +45,20 @@ export abstract class Vm {
   protected readonly hypervisorDirectory: fs.PathLike
   protected readonly resourcesDirectory: fs.PathLike
 
+  private readonly input: Input
+
   constructor(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     hypervisorBinary: fs.PathLike,
     architecture: architecture.Architecture,
+    input: Input,
     configuration: vm.Configuration
   ) {
     this.hypervisorDirectory = hypervisorDirectory
     this.resourcesDirectory = resourcesDirectory
     this.architecture = architecture
+    this.input = input
     this.configuration = configuration
     this.hypervisorPath = path.join(
       hypervisorDirectory.toString(),
@@ -77,6 +82,10 @@ export abstract class Vm {
       throw Error(
         `Failed to start VM process, exit code: ${this.vmProcess.exitCode}`
       )
+    }
+
+    if (!this.input.shutdownVm) {
+      this.vmProcess.unref()
     }
 
     this.ipAddress = await this.getIpAddress()

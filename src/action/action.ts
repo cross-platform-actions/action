@@ -119,12 +119,16 @@ export class Action {
       } finally {
         core.startGroup('Tearing down VM')
         await this.syncBack(vm.ipAddress)
-        await vm.stop()
+
+        if (this.input.shutdownVm) {
+          await vm.stop()
+        }
       }
     } finally {
       try {
-        await vm.terminate()
-        fs.rmSync(this.tempPath, {recursive: true})
+        if (this.input.shutdownVm) {
+          await vm.terminate()
+        }
       } finally {
         core.endGroup()
       }
@@ -168,6 +172,7 @@ export class Action {
       hypervisorDirectory,
       resourcesDirectory,
       firmwareDirectory,
+      this.input,
       {
         ...config,
         diskImage: path.join(resourcesDirectory, this.targetDiskName),

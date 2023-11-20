@@ -6,6 +6,7 @@ import * as vm from './vm'
 import {execWithOutput} from './utility'
 import {wait} from './wait'
 import * as architecture from './architecture'
+import {Input} from './action/input'
 
 export abstract class Vm extends vm.Vm {
   static readonly sshPort = 22
@@ -15,6 +16,7 @@ export abstract class Vm extends vm.Vm {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     architecture: architecture.Architecture,
+    input: Input,
     configuration: vm.Configuration
   ) {
     super(
@@ -22,6 +24,7 @@ export abstract class Vm extends vm.Vm {
       resourcesDirectory,
       'xhyve',
       architecture,
+      input,
       configuration
     )
   }
