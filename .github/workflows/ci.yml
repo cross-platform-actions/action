@@ -51,6 +51,29 @@ jobs:
           - architecture: { name: arm64 }
             host: { name: macos-latest }
 
+        include:
+          - version: '14.0'
+            architecture: { name: arm64 }
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '14.0'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '14.0'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: macos-latest
+              work_directory: /Users/runner/work/action/action
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
