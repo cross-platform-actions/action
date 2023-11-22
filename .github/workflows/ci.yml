@@ -257,16 +257,24 @@ jobs:
               -clientopts -setvncpw -vncpw foobar \
               -privs -all
 
-      - name: Start SSH via ngrok
-        uses: rdp-studio/ssh2actions@main
-        with:
-          mode: ngrok
-        env:
-          # After sign up on the https://ngrok.com
-          # You can find this token here: https://dashboard.ngrok.com/auth/your-authtoken
-          NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
-          NGROK_REGION: eu
-          SSH_PASSWORD: foobar
+      - name: Setup ngrok
+        run: |
+          brew cask install ngrok
+          ngrok tcp 5900 \
+            --authtoken "${{ secrets.NGROK_TOKEN }}" \
+            --region eu &
+
+
+      # - name: Start SSH via ngrok
+      #   uses: rdp-studio/ssh2actions@main
+      #   with:
+      #     mode: ngrok
+      #   env:
+      #     # After sign up on the https://ngrok.com
+      #     # You can find this token here: https://dashboard.ngrok.com/auth/your-authtoken
+      #     NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+      #     NGROK_REGION: eu
+      #     SSH_PASSWORD: foobar
 
       - name: Test
         uses: ./
