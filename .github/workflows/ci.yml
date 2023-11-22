@@ -248,7 +248,7 @@ jobs:
 
       - name: Setup RDP
         run: |
-          /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
             -activate \
             -restart -agent \
             -configure \
