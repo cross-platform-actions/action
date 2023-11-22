@@ -262,7 +262,9 @@ jobs:
           brew install --cask ngrok
           ngrok tcp 5900 \
             --authtoken "${{ secrets.NGROK_TOKEN }}" \
+            --log /tmp/ngrok.log \
             --region eu &
+          grep -oE "tcp://(.+)" /tmp/ngrok.log | sed "s/tcp:\/\//ssh root@/" | sed "s/:/ -p /"
 
 
       # - name: Start SSH via ngrok
