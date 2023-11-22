@@ -264,6 +264,7 @@ jobs:
             --authtoken "${{ secrets.NGROK_TOKEN }}" \
             --log /tmp/ngrok.log \
             --region eu &
+          sleep 10
           grep -oE "tcp://(.+)" /tmp/ngrok.log | sed "s/tcp:\/\//ssh root@/" | sed "s/:/ -p /"
 
 
