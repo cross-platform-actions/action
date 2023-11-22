@@ -248,17 +248,18 @@ jobs:
 
       - name: Setup RDP
         run: |
-          sudo dscl . -create /Users/vncuser
-          sudo dscl . -create /Users/vncuser UserShell /bin/bash
-          sudo dscl . -create /Users/vncuser RealName "VNC User"
-          sudo dscl . -create /Users/vncuser UniqueID 1001
-          sudo dscl . -create /Users/vncuser PrimaryGroupID 80
-          sudo dscl . -create /Users/vncuser NFSHomeDirectory /Users/vncuser
-          sudo dscl . -passwd /Users/vncuser foobar
-          sudo dscl . -passwd /Users/vncuser foobar
-          sudo createhomedir -c -u vncuser > /dev/null
+          # sudo dscl . -create /Users/vncuser
+          # sudo dscl . -create /Users/vncuser UserShell /bin/bash
+          # sudo dscl . -create /Users/vncuser RealName "VNC User"
+          # sudo dscl . -create /Users/vncuser UniqueID 1001
+          # sudo dscl . -create /Users/vncuser PrimaryGroupID 80
+          # sudo dscl . -create /Users/vncuser NFSHomeDirectory /Users/vncuser
+          # sudo dscl . -passwd /Users/vncuser foobar
+          # sudo dscl . -passwd /Users/vncuser foobar
+          # sudo createhomedir -c -u vncuser > /dev/null
 
-          sudo dscl -u . -passwd /Users/runner foobar
+          sudo dscl . -passwd /Users/runner foobar
+          sudo dscl . -passwd /Users/runner foobar
           sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
             -activate \
             -restart -agent \
