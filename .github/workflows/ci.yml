@@ -266,6 +266,7 @@ jobs:
           # You can find this token here: https://dashboard.ngrok.com/auth/your-authtoken
           NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
           NGROK_REGION: eu
+          SSH_PASSWORD: foobar
 
       - name: Test
         uses: ./
