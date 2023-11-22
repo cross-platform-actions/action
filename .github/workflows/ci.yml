@@ -246,11 +246,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: NyaMisty/reverse-rdp-windows-github-actions-ng@master
+      - name: Setup RDP
+        run: |
+          /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+            -activate \
+            -restart -agent \
+            -configure \
+              -access -on \
+              -clientopts -setvnclegacy -vnclegacy yes \
+              -clientopts -setvncpw -vncpw foobar \
+              -privs -all
+
+      - name: Start SSH via ngrok
+        uses: rdp-studio/ssh2actions@main
         with:
-          ngrok-token: ${{ secrets.NGROK_TOKEN }}
-          password: "foobar" # You can also put the password in secrets as you wish.
-          foreground: false
+          mode: ngrok
+        env:
+          # After sign up on the https://ngrok.com
+          # You can find this token here: https://dashboard.ngrok.com/auth/your-authtoken
+          NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+          NGROK_REGION: eu
 
       - name: Test
         uses: ./
