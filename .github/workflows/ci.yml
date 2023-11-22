@@ -259,7 +259,7 @@ jobs:
 
       - name: Setup ngrok
         run: |
-          brew cask install ngrok
+          brew install --cask ngrok
           ngrok tcp 5900 \
             --authtoken "${{ secrets.NGROK_TOKEN }}" \
             --region eu &
