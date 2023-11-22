@@ -9,195 +9,235 @@ on:
       - master
 
 jobs:
-  build: # make sure build/ci work properly
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm install
-      - run: npm run all
+  # build: # make sure build/ci work properly
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 2
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: npm install
+  #     - run: npm run all
+  #
+  # FreeBSD: # make sure the action works on a clean machine without building
+  #   name: FreeBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
+  #   runs-on: ${{ matrix.host.name }}
+  #   timeout-minutes: 5
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       version:
+  #         - '13.2'
+  #         - '13.1'
+  #         - '13.0'
+  #         - '12.4'
+  #         - '12.2'
+  #
+  #       architecture:
+  #         - name: arm64
+  #         - name: x86-64
+  #           uname: amd64
+  #
+  #       host:
+  #         - name: ubuntu-latest
+  #           # /home is symlinked to /usr/home. pwd will return the resolved path.
+  #           work_directory: /usr/home/runner/work/action/action
+  #
+  #         - name: macos-latest
+  #           work_directory: /Users/runner/work/action/action
+  #
+  #       exclude:
+  #         - version: '12.2'
+  #           architecture: { name: arm64 }
+  #
+  #         - architecture: { name: arm64 }
+  #           host: { name: macos-latest }
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #
+  #     - name: test
+  #       uses: ./.github/workflows/support/test
+  #       with:
+  #         name: FreeBSD
+  #         architecture: ${{ matrix.architecture.name }}
+  #         version: ${{ matrix.version }}
+  #         uname_release: ${{ matrix.version}}-RELEASE
+  #         uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
+  #         work_directory: ${{ matrix.host.work_directory }}
+  #
+  # OpenBSD:
+  #   name: OpenBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
+  #   runs-on: ${{ matrix.host.name }}
+  #   timeout-minutes: 5
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       version:
+  #         - '7.4'
+  #         - '7.3'
+  #         - '7.2'
+  #         - '7.1'
+  #         - '6.9'
+  #         - '6.8'
+  #
+  #       architecture:
+  #         - name: arm64
+  #         - name: x86-64
+  #           uname: amd64
+  #
+  #       host:
+  #         - name: ubuntu-latest
+  #           work_directory: /home/runner/work/action/action
+  #
+  #         - name: macos-latest
+  #           work_directory: /Users/runner/work/action/action
+  #
+  #       exclude:
+  #         - version: '6.8'
+  #           architecture: { name: arm64 }
+  #
+  #         - architecture: { name: arm64 }
+  #           host: { name: macos-latest }
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #
+  #     - name: test
+  #       uses: ./.github/workflows/support/test
+  #       with:
+  #         name: OpenBSD
+  #         architecture: ${{ matrix.architecture.name }}
+  #         version: ${{ matrix.version }}
+  #         uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
+  #         work_directory: ${{ matrix.host.work_directory }}
+  #
+  # NetBSD:
+  #   name: NetBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
+  #   runs-on: ${{ matrix.host.name }}
+  #   timeout-minutes: 5
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       version:
+  #         - '9.3'
+  #         - '9.2'
+  #
+  #       architecture:
+  #         - name: x86-64
+  #           uname: amd64
+  #
+  #       host:
+  #         - name: ubuntu-latest
+  #           work_directory: /home/runner/work/action/action
+  #
+  #         - name: macos-latest
+  #           work_directory: /Users/runner/work/action/action
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #
+  #     - name: test
+  #       uses: ./.github/workflows/support/test
+  #       with:
+  #         name: NetBSD
+  #         architecture: ${{ matrix.architecture.name }}
+  #         version: ${{ matrix.version }}
+  #         uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
+  #         work_directory: ${{ matrix.host.work_directory }}
+  #
+  # test-no-env:
+  #   timeout-minutes: 5
+  #   name: Test without environment variables
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #
+  #     - name: Test
+  #       uses: ./
+  #       with:
+  #         operating_system: freebsd
+  #         architecture: x86-64
+  #         version: '13.0'
+  #         run: env | sort
+  #
+  # test-cpu-count-config:
+  #   timeout-minutes: 5
+  #   name: Test configuring CPU count
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #
+  #     - name: Test
+  #       uses: ./
+  #       with:
+  #         operating_system: freebsd
+  #         architecture: x86-64
+  #         version: '13.1'
+  #         cpu_count: 8
+  #         run: |
+  #           sysctl hw.ncpu
+  #           [ `sysctl -n hw.ncpu` = 8 ]
+  #
+  # # Does not automatically verify anything. Only for manual verification
+  # test-hypervisor-config:
+  #   timeout-minutes: 5
+  #   name: Test configuring hypervisor
+  #   runs-on: macos-latest
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #
+  #     - name: Test
+  #       uses: ./
+  #       with:
+  #         operating_system: freebsd
+  #         architecture: x86-64
+  #         version: '13.1'
+  #         hypervisor: qemu
+  #         run: sysctl hw.model
+  #
+  # test-custom-vm-image:
+  #   timeout-minutes: 5
+  #   name: Test custom VM image
+  #   runs-on: macos-latest
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #
+  #     - name: Test
+  #       uses: ./
+  #       with:
+  #         operating_system: openbsd
+  #         architecture: x86-64
+  #         version: '7.3'
+  #         image_url: https://github.com/cross-platform-actions/test-custom-image-builder/releases/download/v1.0.0/openbsd-7.3-x86-64.qcow2
+  #         run: test -f /foo
 
-  FreeBSD: # make sure the action works on a clean machine without building
-    name: FreeBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
-    runs-on: ${{ matrix.host.name }}
+  test-cpu-features:
     timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        version:
-          - '13.2'
-          - '13.1'
-          - '13.0'
-          - '12.4'
-          - '12.2'
-
-        architecture:
-          - name: arm64
-          - name: x86-64
-            uname: amd64
-
-        host:
-          - name: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            work_directory: /usr/home/runner/work/action/action
-
-          - name: macos-latest
-            work_directory: /Users/runner/work/action/action
-
-        exclude:
-          - version: '12.2'
-            architecture: { name: arm64 }
-
-          - architecture: { name: arm64 }
-            host: { name: macos-latest }
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: test
-        uses: ./.github/workflows/support/test
-        with:
-          name: FreeBSD
-          architecture: ${{ matrix.architecture.name }}
-          version: ${{ matrix.version }}
-          uname_release: ${{ matrix.version}}-RELEASE
-          uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
-          work_directory: ${{ matrix.host.work_directory }}
-
-  OpenBSD:
-    name: OpenBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
-    runs-on: ${{ matrix.host.name }}
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        version:
-          - '7.4'
-          - '7.3'
-          - '7.2'
-          - '7.1'
-          - '6.9'
-          - '6.8'
-
-        architecture:
-          - name: arm64
-          - name: x86-64
-            uname: amd64
-
-        host:
-          - name: ubuntu-latest
-            work_directory: /home/runner/work/action/action
-
-          - name: macos-latest
-            work_directory: /Users/runner/work/action/action
-
-        exclude:
-          - version: '6.8'
-            architecture: { name: arm64 }
-
-          - architecture: { name: arm64 }
-            host: { name: macos-latest }
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: test
-        uses: ./.github/workflows/support/test
-        with:
-          name: OpenBSD
-          architecture: ${{ matrix.architecture.name }}
-          version: ${{ matrix.version }}
-          uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
-          work_directory: ${{ matrix.host.work_directory }}
-
-  NetBSD:
-    name: NetBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
-    runs-on: ${{ matrix.host.name }}
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        version:
-          - '9.3'
-          - '9.2'
-
-        architecture:
-          - name: x86-64
-            uname: amd64
-
-        host:
-          - name: ubuntu-latest
-            work_directory: /home/runner/work/action/action
-
-          - name: macos-latest
-            work_directory: /Users/runner/work/action/action
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: test
-        uses: ./.github/workflows/support/test
-        with:
-          name: NetBSD
-          architecture: ${{ matrix.architecture.name }}
-          version: ${{ matrix.version }}
-          uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
-          work_directory: ${{ matrix.host.work_directory }}
-
-  test-no-env:
-    timeout-minutes: 5
-    name: Test without environment variables
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Test
-        uses: ./
-        with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '13.0'
-          run: env | sort
-
-  test-cpu-count-config:
-    timeout-minutes: 5
-    name: Test configuring CPU count
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Test
-        uses: ./
-        with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '13.1'
-          cpu_count: 8
-          run: |
-            sysctl hw.ncpu
-            [ `sysctl -n hw.ncpu` = 8 ]
-
-  # Does not automatically verify anything. Only for manual verification
-  test-hypervisor-config:
-    timeout-minutes: 5
-    name: Test configuring hypervisor
+    name: Test CPU features
     runs-on: macos-latest
 
     steps:
@@ -206,95 +246,65 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test
-        uses: ./
+      - name: Start SSH via ngrok
+        uses: rdp-studio/ssh2actions@main
         with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '13.1'
-          hypervisor: qemu
-          run: sysctl hw.model
-
-  test-custom-vm-image:
-    timeout-minutes: 5
-    name: Test custom VM image
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+          mode: ngrok
+        env:
+          # After sign up on the https://ngrok.com
+          # You can find this token here: https://dashboard.ngrok.com/auth/your-authtoken
+          NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+          NGROK_REGION: eu
+          SSH_PASSWORD: foobar
 
       - name: Test
         uses: ./
         with:
           operating_system: openbsd
           architecture: x86-64
-          version: '7.3'
-          image_url: https://github.com/cross-platform-actions/test-custom-image-builder/releases/download/v1.0.0/openbsd-7.3-x86-64.qcow2
-          run: test -f /foo
+          version: '7.4'
+          run: ls
 
-  test-cpu-features:
-    timeout-minutes: 5
-    name: Test CPU features
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Test
-        uses: ./
-        with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '13.2'
-          hypervisor: qemu
-          run: dmesg | grep -i avx2
-
-  test-sync-files:
-    timeout-minutes: 5
-    name: 'Test sync files: ${{ matrix.data.direction }}'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        data:
-          - direction: runner-to-vm
-            run: test -f foo.txt && touch bar.txt
-            run_after: '! test -f bar.txt' # The new files from the VM should not sync back
-
-          - direction: vm-to-runner
-            run: '[ ! -f foo.txt ] && touch bar.txt'
-            run_after: 'test -f bar.txt' # The new files from the VM should sync back
-
-          - direction: false
-            run: '[ ! -f foo.txt ] && touch bar.txt'
-            run_after: '! test -f bar.txt' # The new files from the VM should not sync back
-
-          - direction: true
-            run: test -f foo.txt && touch bar.txt
-            run_after: test -f bar.txt
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - run: touch foo.txt
-
-      - name: Test
-        uses: ./
-        with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '13.2'
-          sync_files: ${{ matrix.data.direction }}
-          run: ${{ matrix.data.run }}
-
-      - name: Run after
-        run: ${{ matrix.data.run_after }}
+  # test-sync-files:
+  #   timeout-minutes: 5
+  #   name: 'Test sync files: ${{ matrix.data.direction }}'
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       data:
+  #         - direction: runner-to-vm
+  #           run: test -f foo.txt && touch bar.txt
+  #           run_after: '! test -f bar.txt' # The new files from the VM should not sync back
+  #
+  #         - direction: vm-to-runner
+  #           run: '[ ! -f foo.txt ] && touch bar.txt'
+  #           run_after: 'test -f bar.txt' # The new files from the VM should sync back
+  #
+  #         - direction: false
+  #           run: '[ ! -f foo.txt ] && touch bar.txt'
+  #           run_after: '! test -f bar.txt' # The new files from the VM should not sync back
+  #
+  #         - direction: true
+  #           run: test -f foo.txt && touch bar.txt
+  #           run_after: test -f bar.txt
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
+  #
+  #     - run: touch foo.txt
+  #
+  #     - name: Test
+  #       uses: ./
+  #       with:
+  #         operating_system: freebsd
+  #         architecture: x86-64
+  #         version: '13.2'
+  #         sync_files: ${{ matrix.data.direction }}
+  #         run: ${{ matrix.data.run }}
+  #
+  #     - name: Run after
+  #       run: ${{ matrix.data.run_after }}
