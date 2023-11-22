@@ -248,7 +248,7 @@ jobs:
 
       - name: Setup RDP
         run: |
-          sudo dscl . -passwd /Users/runner foobar
+          sudo dscl -u . -passwd /Users/runner foobar
           sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
             -activate \
             -restart -agent \
