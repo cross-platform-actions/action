@@ -194,7 +194,6 @@ jobs:
             sysctl hw.ncpu
             [ `sysctl -n hw.ncpu` = 8 ]
 
-  # Does not automatically verify anything. Only for manual verification
   test-hypervisor-config:
     timeout-minutes: 5
     name: Test configuring hypervisor
@@ -213,7 +212,11 @@ jobs:
           architecture: x86-64
           version: '13.1'
           hypervisor: qemu
+          shutdown_vm: false
           run: sysctl hw.model
+
+      - name: Hypervisor should still be running, verify it's QEMU
+        run: ps aux | grep -q qemu
 
   test-custom-vm-image:
     timeout-minutes: 5
