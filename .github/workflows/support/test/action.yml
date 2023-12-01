@@ -31,6 +31,7 @@ runs:
           operating_system: ${{ inputs.name }}
           architecture: ${{ inputs.architecture }}
           version: '${{ inputs.version }}'
+          shutdown_vm: false
           run: |
             uname -a
             echo $SHELL

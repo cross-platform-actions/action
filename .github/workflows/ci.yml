@@ -170,6 +170,7 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.0'
+          shutdown_vm: false
           run: env | sort
 
   test-cpu-count-config:
@@ -190,6 +191,7 @@ jobs:
           architecture: x86-64
           version: '13.1'
           cpu_count: 8
+          shutdown_vm: false
           run: |
             sysctl hw.ncpu
             [ `sysctl -n hw.ncpu` = 8 ]
@@ -236,6 +238,7 @@ jobs:
           architecture: x86-64
           version: '7.3'
           image_url: https://github.com/cross-platform-actions/test-custom-image-builder/releases/download/v1.0.0/openbsd-7.3-x86-64.qcow2
+          shutdown_vm: false
           run: test -f /foo
 
   test-cpu-features:
@@ -256,6 +259,7 @@ jobs:
           architecture: x86-64
           version: '13.2'
           hypervisor: qemu
+          shutdown_vm: false
           run: dmesg | grep -i avx2
 
   test-no-vm-shutdown:
@@ -345,6 +349,7 @@ jobs:
           architecture: x86-64
           version: '13.2'
           sync_files: ${{ matrix.data.direction }}
+          shutdown_vm: false
           run: ${{ matrix.data.run }}
 
       - name: Run after
