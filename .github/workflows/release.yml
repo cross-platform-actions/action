@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Extract changelog
+        uses: sean0x42/markdown-extract@v2
+        id: extract_changelog
+        with:
+         file: changelog.md
+         pattern: '\[${{ steps.version.outputs.version }}\].+'
+         no-print-matched-heading: true
+
+      - name: Validate version
+        id: version
+        run: |
+          set -x
+          tag='${{ github.event.workflow_run.head_branch }}'
+
+          if echo "$tag" | grep -Pq '^v\d+\.\d+\.\d+(-.+)?'; then
+            echo valid=true >> "$GITHUB_OUTPUT"
+            echo version="$(echo "$tag" | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release
+        if: steps.version.outputs.valid
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Cross Platform Action ${{ steps.version.outputs.version }}
+          draft: true
+          body: ${{ steps.extract_changelog.outputs.markdown }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
