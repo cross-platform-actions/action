@@ -60,6 +60,7 @@ export abstract class Vm extends vm.Vm {
         '-U', config.uuid,
         '-A',
         '-H',
+        '-F', vm.Vm.pidfile,
         '-m', config.memory,
         '-c', config.cpuCount.toString(),
         '-s', '0:0,hostbridge',

@@ -354,3 +354,45 @@ jobs:
 
       - name: Run after
         run: ${{ matrix.data.run_after }}
+
+  multiple-steps:
+    timeout-minutes: 5
+    name: Test running the action multiple times
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        hypervisor: [qemu, xhyve]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run action first time
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: ${{ matrix.hypervisor }}
+          shutdown_vm: false
+          run: touch foo.txt
+
+      - name: Verify VM is still running
+        run: ps aux | grep -v grep | grep -q -v qemu
+
+      - name: Verify file is synced back
+        run: test -f foo.txt
+
+      - name: Run action second time
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          shutdown_vm: false
+          run: test -f foo.txt

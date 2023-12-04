@@ -38,7 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Implementation = exports.Action = exports.ImplementationKind = void 0;
+exports.Action = void 0;
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const process = __importStar(__nccwpck_require__(7282));
@@ -50,26 +50,24 @@ const architecture = __importStar(__nccwpck_require__(4019));
 const hostModule = __importStar(__nccwpck_require__(8215));
 const os_factory = __importStar(__nccwpck_require__(133));
 const resource_disk_1 = __importDefault(__nccwpck_require__(7102));
+const vmModule = __importStar(__nccwpck_require__(2772));
 const input = __importStar(__nccwpck_require__(1099));
 const shell = __importStar(__nccwpck_require__(9044));
 const utility = __importStar(__nccwpck_require__(2857));
 const sync_direction_1 = __nccwpck_require__(3377);
-var ImplementationKind;
-(function (ImplementationKind) {
-    ImplementationKind[ImplementationKind["qemu"] = 0] = "qemu";
-    ImplementationKind[ImplementationKind["xhyve"] = 1] = "xhyve";
-})(ImplementationKind = exports.ImplementationKind || (exports.ImplementationKind = {}));
+const child_process_1 = __nccwpck_require__(2081);
 class Action {
     constructor() {
+        this.inputHashPath = '/tmp/cross-platform-actions-input-hash';
         this.input = new input.Input();
         this.privateSshKeyName = 'id_ed25519';
         this.targetDiskName = 'disk.raw';
+        this.cpaHost = vmModule.Vm.cpaHost;
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
         const arch = architecture.Architecture.for(this.input.architecture, this.host, this.input.operatingSystem, this.input.hypervisor);
         this.operatingSystem = this.createOperatingSystem(arch);
         this.resourceDisk = resource_disk_1.default.for(this);
-        this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
         this.sshDirectory = path.join(this.getHomeDirectory(), '.ssh');
         this.privateSshKey = path.join(this.tempPath, this.privateSshKeyName);
         this.publicSshKey = `${this.privateSshKey}.pub`;
@@ -78,21 +76,12 @@ class Action {
         return __awaiter(this, void 0, void 0, function* () {
             core.startGroup('Setting up VM');
             core.debug('Running action');
-            const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield Promise.all([
-                this.downloadDiskImage(),
-                this.download('hypervisor', this.operatingSystem.hypervisorUrl),
-                this.download('resources', this.operatingSystem.resourcesUrl),
-                this.setupSSHKey()
-            ]);
-            const [firmwareDirectory, resourcesDirectory] = yield Promise.all([
-                this.unarchiveHypervisor(hypervisorArchivePath),
-                this.unarchive('resources', resourcesArchivePath)
-            ]);
+            const runPreparer = this.createRunPreparer();
+            runPreparer.createInputHash();
+            runPreparer.validateInputHash();
+            const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()]);
+            const [firmwareDirectory, resourcesDirectory] = yield Promise.all(runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath));
             const hypervisorDirectory = path.join(firmwareDirectory, 'bin');
-            const vmPromise = this.creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath, {
-                memory: this.input.memory,
-                cpuCount: this.input.cpuCount
-            });
             const excludes = [
                 resourcesArchivePath,
                 resourcesDirectory,
@@ -101,14 +90,19 @@ class Action {
                 firmwareDirectory,
                 diskImagePath
             ].map(p => p.slice(this.homeDirectory.length + 1));
-            const vm = yield vmPromise;
-            yield vm.init();
+            const vm = this.creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, {
+                memory: this.input.memory,
+                cpuCount: this.input.cpuCount
+            });
+            const implementation = this.getImplementation(vm);
+            yield implementation.prepareDisk(diskImagePath, resourcesDirectory);
+            yield implementation.init();
             try {
-                yield vm.run();
-                this.configSSH(vm.ipAddress);
-                yield vm.wait(120);
-                yield vm.setupWorkDirectory(this.homeDirectory, this.workDirectory);
-                yield this.syncFiles(vm, this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
+                yield implementation.run();
+                implementation.configSSH(vm.ipAddress);
+                yield implementation.wait(120);
+                yield implementation.setupWorkDirectory(this.homeDirectory, this.workDirectory);
+                yield this.syncFiles(this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
                 try {
                     core.endGroup();
@@ -116,7 +110,7 @@ class Action {
                 }
                 finally {
                     core.startGroup('Tearing down VM');
-                    yield this.syncBack(vm.ipAddress);
+                    yield this.syncBack();
                     if (this.input.shutdownVm) {
                         yield vm.stop();
                     }
@@ -153,13 +147,10 @@ class Action {
             return result;
         });
     }
-    creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, diskImagePath, config) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.operatingSystem.prepareDisk(diskImagePath, this.targetDiskName, resourcesDirectory);
-            return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, this.input, Object.assign(Object.assign({}, config), { diskImage: path.join(resourcesDirectory, this.targetDiskName), 
-                // xhyve
-                resourcesDiskImage: this.resourceDisk.diskPath, userboot: path.join(firmwareDirectory, 'userboot.so') }));
-        });
+    creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, config) {
+        return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, this.input, Object.assign(Object.assign({}, config), { diskImage: path.join(resourcesDirectory, this.targetDiskName), 
+            // xhyve
+            resourcesDiskImage: this.resourceDisk.diskPath, userboot: path.join(firmwareDirectory, 'userboot.so') }));
     }
     unarchive(type, archivePath) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -172,22 +163,6 @@ class Action {
             const hypervisorDirectory = yield this.unarchive('hypervisor', archivePath);
             return path.join(hypervisorDirectory);
         });
-    }
-    configSSH(ipAddress) {
-        core.debug('Configuring SSH');
-        if (!fs.existsSync(this.sshDirectory))
-            fs.mkdirSync(this.sshDirectory, { recursive: true, mode: 0o700 });
-        const lines = [
-            'StrictHostKeyChecking=accept-new',
-            `Host ${ipAddress}`,
-            `Port ${this.operatingSystem.ssHostPort}`,
-            `IdentityFile ${this.privateSshKey}`,
-            'SendEnv CI GITHUB_*',
-            this.customSendEnv,
-            'PasswordAuthentication no'
-        ].join('\n');
-        fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`);
-        this.implementation.configSSH();
     }
     get customSendEnv() {
         const env = this.input.environmentVariables;
@@ -220,7 +195,15 @@ class Action {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return process.env['GITHUB_WORKSPACE'];
     }
-    syncFiles(vm, ...excludePaths) {
+    get shouldSyncFiles() {
+        return (this.input.syncFiles === sync_direction_1.SyncDirection.runner_to_vm ||
+            this.input.syncFiles === sync_direction_1.SyncDirection.both);
+    }
+    get shouldSyncBack() {
+        return (this.input.syncFiles === sync_direction_1.SyncDirection.vm_to_runner ||
+            this.input.syncFiles === sync_direction_1.SyncDirection.both);
+    }
+    syncFiles(...excludePaths) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.shouldSyncFiles) {
                 return;
@@ -232,11 +215,11 @@ class Action {
                 '--exclude', '_actions/cross-platform-actions/action',
                 ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
                 `${this.homeDirectory}/`,
-                `runner@${vm.ipAddress}:work`
+                `runner@${this.cpaHost}:work`
             ]);
         });
     }
-    syncBack(ipAddress) {
+    syncBack() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.shouldSyncBack)
                 return;
@@ -244,7 +227,7 @@ class Action {
             // prettier-ignore
             yield exec.exec('rsync', [
                 `-uzrtopg${this.syncVerboseFlag}`,
-                `runner@${ipAddress}:work/`,
+                `runner@${this.cpaHost}:work/`,
                 this.homeDirectory
             ]);
         });
@@ -258,16 +241,6 @@ class Action {
             yield vm.execute2(['sh', '-c', `'cd "${this.workDirectory}" && exec "${sh}" -e'`], Buffer.from(this.input.run));
         });
     }
-    getImplementation(kind) {
-        switch (kind) {
-            case ImplementationKind.qemu:
-                return new QemuImplementation(this);
-            case ImplementationKind.xhyve:
-                return new XhyveImplementation(this);
-            default:
-                throw Error(`Unhandled implementation kind: $`);
-        }
-    }
     getHomeDirectory() {
         const homeDirectory = process.env['HOME'];
         if (homeDirectory === undefined)
@@ -277,22 +250,177 @@ class Action {
     createOperatingSystem(arch) {
         return os_factory.Factory.for(this.input.operatingSystem, arch).create(this.input.version, this.input.hypervisor);
     }
-    get shouldSyncFiles() {
-        return (this.input.syncFiles === sync_direction_1.SyncDirection.runner_to_vm ||
-            this.input.syncFiles === sync_direction_1.SyncDirection.both);
+    getImplementation(vm) {
+        const cls = implementationFor({ isRunning: vmModule.Vm.isRunning });
+        core.debug(`Using action implementation: ${cls.name}`);
+        return new cls(this, vm);
     }
-    get shouldSyncBack() {
-        return (this.input.syncFiles === sync_direction_1.SyncDirection.vm_to_runner ||
-            this.input.syncFiles === sync_direction_1.SyncDirection.both);
+    createRunPreparer() {
+        const cls = runPreparerFor({ isRunning: vmModule.Vm.isRunning });
+        core.debug(`Using run preparer: ${cls.name}`);
+        return new cls(this, this.operatingSystem);
     }
 }
 exports.Action = Action;
-class Implementation {
+function implementationFor({ isRunning }) {
+    return isRunning ? LiveImplementation : InitialImplementation;
+}
+function runPreparerFor({ isRunning }) {
+    return isRunning ? LiveRunPreparer : InitialRunPreparer;
+}
+// Used when the VM is not running
+class InitialRunPreparer {
+    constructor(action, operatingSystem) {
+        this.action = action;
+        this.operatingSystem = operatingSystem;
+    }
+    createInputHash() {
+        const hash = this.action['input'].toHash();
+        core.debug(`Input hash: ${hash}`);
+        fs.writeFileSync(this.action.inputHashPath, hash);
+    }
+    validateInputHash() {
+        // noop
+    }
+    download() {
+        return [
+            this.action.downloadDiskImage(),
+            this.action.download('hypervisor', this.operatingSystem.hypervisorUrl),
+            this.action.download('resources', this.operatingSystem.resourcesUrl)
+        ];
+    }
+    setupSSHKey() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.action['setupSSHKey']();
+        });
+    }
+    unarchive(hypervisorArchivePath, resourcesArchivePath) {
+        return [
+            this.action.unarchiveHypervisor(hypervisorArchivePath),
+            this.action.unarchive('resources', resourcesArchivePath)
+        ];
+    }
+}
+// Used when the VM is already running
+class LiveRunPreparer {
     constructor(action) {
         this.action = action;
     }
-    get resourceDisk() {
-        return this.action['resourceDisk'];
+    createInputHash() {
+        // noop
+    }
+    validateInputHash() {
+        const hash = this.action.input.toHash();
+        core.debug(`Input hash: ${hash}`);
+        const initialHash = fs.readFileSync(this.action.inputHashPath, 'utf8');
+        if (hash !== initialHash)
+            throw Error("The inputs don't match the initial invocation of the action");
+    }
+    download() {
+        return [Promise.resolve(''), Promise.resolve(''), Promise.resolve('')];
+    }
+    setupSSHKey() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // noop
+        });
+    }
+    unarchive() {
+        return [Promise.resolve(''), Promise.resolve('')];
+    }
+}
+class LiveImplementation {
+    prepareDisk(_diskImagePath, // eslint-disable-line @typescript-eslint/no-unused-vars
+    _resourcesDirectory // eslint-disable-line @typescript-eslint/no-unused-vars
+    ) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // noop
+        });
+    }
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // noop
+        });
+    }
+    run() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // noop
+        });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    wait(_timeout) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // noop
+        });
+    }
+    setupWorkDirectory(_homeDirectory, // eslint-disable-line @typescript-eslint/no-unused-vars
+    _workDirectory // eslint-disable-line @typescript-eslint/no-unused-vars
+    ) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // noop
+        });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    configSSH(_ipAddress) {
+        // noop
+    }
+}
+class InitialImplementation {
+    constructor(action, vm) {
+        this.action = action;
+        this.vm = vm;
+    }
+    prepareDisk(diskImagePath, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.action.operatingSystem.prepareDisk(diskImagePath, this.targetDiskName, resourcesDirectory);
+        });
+    }
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.vm.init();
+        });
+    }
+    run() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.vm.run();
+        });
+    }
+    wait(timeout) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.vm.wait(timeout);
+        });
+    }
+    setupWorkDirectory(homeDirectory, workDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.vm.setupWorkDirectory(homeDirectory, workDirectory);
+        });
+    }
+    get targetDiskName() {
+        return this.action['targetDiskName'];
+    }
+    configSSH(ipAddress) {
+        core.debug('Configuring SSH');
+        this.createSSHConfig();
+        this.setupAuthorizedKeys();
+        this.setupHostname(ipAddress);
+    }
+    createSSHConfig() {
+        if (!fs.existsSync(this.sshDirectory))
+            fs.mkdirSync(this.sshDirectory, { recursive: true, mode: 0o700 });
+        const lines = [
+            'StrictHostKeyChecking=accept-new',
+            `Host ${this.cpaHost}`,
+            `Port ${this.operatingSystem.ssHostPort}`,
+            `IdentityFile ${this.privateSshKey}`,
+            'SendEnv CI GITHUB_*',
+            this.customSendEnv,
+            'PasswordAuthentication no'
+        ].join('\n');
+        fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`);
+    }
+    setupAuthorizedKeys() {
+        const authorizedKeysPath = path.join(this.sshDirectory, 'authorized_keys');
+        const publicKeyContent = fs.readFileSync(this.publicSshKey);
+        fs.appendFileSync(authorizedKeysPath, publicKeyContent);
     }
     get publicSshKey() {
         return this.action['publicSshKey'];
@@ -300,18 +428,22 @@ class Implementation {
     get sshDirectory() {
         return this.action['sshDirectory'];
     }
-}
-exports.Implementation = Implementation;
-class XhyveImplementation extends Implementation {
-    configSSH() {
-        // noop
+    get cpaHost() {
+        return this.action['cpaHost'];
     }
-}
-class QemuImplementation extends Implementation {
-    configSSH() {
-        const authorizedKeysPath = path.join(this.sshDirectory, 'authorized_keys');
-        const publicKeyContent = fs.readFileSync(this.publicSshKey);
-        fs.appendFileSync(authorizedKeysPath, publicKeyContent);
+    get operatingSystem() {
+        return this.action['operatingSystem'];
+    }
+    get privateSshKey() {
+        return this.action['privateSshKey'];
+    }
+    get customSendEnv() {
+        return this.action['customSendEnv'];
+    }
+    setupHostname(ipAddress) {
+        if (ipAddress === 'localhost')
+            ipAddress = '127.0.0.1';
+        (0, child_process_1.execSync)(`sudo bash -c 'printf "${ipAddress} ${this.cpaHost}\n" >> /etc/hosts'`);
     }
 }
 //# sourceMappingURL=action.js.map
@@ -351,6 +483,7 @@ const os = __importStar(__nccwpck_require__(6713));
 const host_1 = __nccwpck_require__(8215);
 const hypervisor = __importStar(__nccwpck_require__(4288));
 const sync_direction_1 = __nccwpck_require__(3377);
+const crypto_1 = __nccwpck_require__(6113);
 class Input {
     constructor(host = host_1.host) {
         this.host = host;
@@ -401,9 +534,9 @@ class Input {
         if (input === undefined || input === '')
             return (this.architecture_ = architecture.Kind.x86_64);
         const kind = architecture.toKind(input);
-        core.debug(`kind: '${kind}'`);
         if (kind === undefined)
             throw Error(`Invalid architecture: ${input}`);
+        core.debug(`architecture kind: '${architecture.Kind[kind]}'`);
         return (this.architecture_ = kind);
     }
     get memory() {
@@ -435,9 +568,9 @@ class Input {
         if (input === undefined || input === '')
             return (this.hypervisor_ = this.host.hypervisor);
         const kind = hypervisor.toKind(input);
-        core.debug(`kind: '${kind}'`);
         if (kind === undefined)
             throw Error(`Invalid hypervisor: ${input}`);
+        core.debug(`hypervisor kind: '${hypervisor.Kind[kind]}'`);
         const hypervisorClass = hypervisor.toHypervisor(kind);
         return (this.hypervisor_ = new hypervisorClass());
     }
@@ -462,6 +595,23 @@ class Input {
         const input = core.getBooleanInput('shutdown_vm');
         core.debug(`shutdown_vm input: '${input}'`);
         return (this.shutdownVm_ = input);
+    }
+    toHash() {
+        const components = [
+            this.operatingSystem,
+            this.version,
+            this.imageURL,
+            this.shell,
+            this.environmentVariables,
+            this.architecture,
+            this.memory,
+            this.cpuCount,
+            this.hypervisor
+        ];
+        const hash = (0, crypto_1.createHash)('sha256');
+        for (const component of components)
+            hash.update(component.toString());
+        return hash.digest('hex');
     }
 }
 exports.Input = Input;
@@ -593,8 +743,11 @@ class Architecture {
     get networkDevice() {
         return 'virtio-net';
     }
+    get resolveName() {
+        return this.constructor.name;
+    }
     resolve(implementation) {
-        const name = this.constructor.name.toLocaleLowerCase();
+        const name = this.resolveName.toLocaleLowerCase();
         return (0, utility_1.getOrDefaultOrThrow)(implementation, name);
     }
     validateHypervisor(kind) {
@@ -611,6 +764,9 @@ exports.Architecture = Architecture;
 _a = Architecture;
 Architecture.Arm64 = class extends Architecture {
     get name() {
+        return 'arm64';
+    }
+    get resolveName() {
         return 'arm64';
     }
     get resourceUrl() {
@@ -645,6 +801,9 @@ Architecture.Arm64 = class extends Architecture {
 Architecture.X86_64 = class extends Architecture {
     get name() {
         return 'x86-64';
+    }
+    get resolveName() {
+        return 'x86_64';
     }
     get resourceUrl() {
         return `${this.resourceBaseUrl}/qemu-system-x86_64-${this.hostString}.tar`;
@@ -1306,8 +1465,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
-const architecture = __importStar(__nccwpck_require__(4019));
-const action = __importStar(__nccwpck_require__(6072));
 const factory_1 = __nccwpck_require__(133);
 const qemu_vm_1 = __nccwpck_require__(9250);
 const os = __importStar(__nccwpck_require__(9385));
@@ -1323,16 +1480,6 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
     }
     get ssHostPort() {
         return this.hypervisor.sshPort;
-    }
-    get actionImplementationKind() {
-        if (this.architecture.kind === architecture.Kind.x86_64) {
-            return this.architecture.resolve({
-                x86_64: action.ImplementationKind.xhyve,
-                default: action.ImplementationKind.qemu
-            });
-        }
-        else
-            return action.ImplementationKind.qemu;
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1550,7 +1697,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const architecture = __importStar(__nccwpck_require__(4019));
-const action = __importStar(__nccwpck_require__(6072));
 const factory_1 = __nccwpck_require__(133);
 const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
@@ -1565,9 +1711,6 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
     }
     get virtualMachineImageReleaseVersion() {
         return version_1.default.operating_system.netbsd;
-    }
-    get actionImplementationKind() {
-        return action.ImplementationKind.qemu;
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1710,8 +1853,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
-const architecture = __importStar(__nccwpck_require__(4019));
-const action = __importStar(__nccwpck_require__(6072));
 const factory_1 = __nccwpck_require__(133);
 const host_1 = __nccwpck_require__(8215);
 const qemu_vm_1 = __nccwpck_require__(8841);
@@ -1727,12 +1868,6 @@ let OpenBsd = class OpenBsd extends os.OperatingSystem {
     }
     get ssHostPort() {
         return this.hypervisor.sshPort;
-    }
-    get actionImplementationKind() {
-        if (this.architecture.kind === architecture.Kind.x86_64)
-            return action.ImplementationKind.xhyve;
-        else
-            return action.ImplementationKind.qemu;
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1956,6 +2091,8 @@ class Vm extends vm.Vm {
         // prettier-ignore
         return [
             this.hypervisorPath.toString(),
+            '-daemonize',
+            '-pidfile', vm.Vm.pidfile,
             '-machine', `type=${this.configuration.machineType},accel=${accel}`,
             '-cpu', this.configuration.cpu,
             '-smp', this.configuration.cpuCount.toString(),
@@ -2396,6 +2533,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Vm = exports.Accelerator = void 0;
+const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const child_process_1 = __nccwpck_require__(2081);
 const core = __importStar(__nccwpck_require__(2186));
@@ -2414,6 +2552,11 @@ class Vm {
         this.input = input;
         this.configuration = configuration;
         this.hypervisorPath = path.join(hypervisorDirectory.toString(), hypervisorBinary.toString());
+    }
+    static get isRunning() {
+        if (this._isRunning !== undefined)
+            return this._isRunning;
+        return (this._isRunning = fs.existsSync(Vm.pidfile));
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -2508,12 +2651,14 @@ class Vm {
         });
     }
     get executeBaseArgs() {
-        const baseArgs = ['-t', `${Vm.user}@${this.ipAddress}`];
+        const baseArgs = ['-t', `${Vm.user}@${Vm.cpaHost}`];
         return core.isDebug() ? baseArgs.concat(['-vvv']) : baseArgs;
     }
 }
 exports.Vm = Vm;
 Vm.user = 'runner';
+Vm.cpaHost = 'cross_platform_actions_host';
+Vm.pidfile = '/tmp/cross-platform-actions.pid';
 //# sourceMappingURL=vm.js.map
 
 /***/ }),
@@ -2626,6 +2771,7 @@ class Vm extends vm.Vm {
             '-U', config.uuid,
             '-A',
             '-H',
+            '-F', vm.Vm.pidfile,
             '-m', config.memory,
             '-c', config.cpuCount.toString(),
             '-s', '0:0,hostbridge',

@@ -38,6 +38,10 @@ export abstract class Vm {
   ipAddress!: string
 
   static readonly user = 'runner'
+  static readonly cpaHost = 'cross_platform_actions_host'
+  protected static readonly pidfile = '/tmp/cross-platform-actions.pid'
+  private static _isRunning?: boolean
+
   readonly hypervisorPath: fs.PathLike
   protected vmProcess!: ChildProcess
   protected readonly architecture: architecture.Architecture
@@ -64,6 +68,12 @@ export abstract class Vm {
       hypervisorDirectory.toString(),
       hypervisorBinary.toString()
     )
+  }
+
+  static get isRunning(): boolean {
+    if (this._isRunning !== undefined) return this._isRunning
+
+    return (this._isRunning = fs.existsSync(Vm.pidfile))
   }
 
   async init(): Promise<void> {
@@ -174,7 +184,7 @@ export abstract class Vm {
   protected abstract get command(): string[]
 
   private get executeBaseArgs(): string[] {
-    const baseArgs = ['-t', `${Vm.user}@${this.ipAddress}`]
+    const baseArgs = ['-t', `${Vm.user}@${Vm.cpaHost}`]
     return core.isDebug() ? baseArgs.concat(['-vvv']) : baseArgs
   }
 }

@@ -4,7 +4,6 @@ import * as path from 'path'
 import * as core from '@actions/core'
 
 import * as architecture from '../../architecture'
-import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
 import {QemuVm} from './qemu_vm'
@@ -26,15 +25,6 @@ export default class FreeBsd extends os.OperatingSystem {
 
   get ssHostPort(): number {
     return this.hypervisor.sshPort
-  }
-
-  get actionImplementationKind(): action.ImplementationKind {
-    if (this.architecture.kind === architecture.Kind.x86_64) {
-      return this.architecture.resolve({
-        x86_64: action.ImplementationKind.xhyve,
-        default: action.ImplementationKind.qemu
-      })
-    } else return action.ImplementationKind.qemu
   }
 
   override async prepareDisk(

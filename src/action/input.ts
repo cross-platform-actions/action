@@ -9,6 +9,7 @@ import {
   toSyncDirection,
   validSyncDirections
 } from './sync_direction'
+import {createHash} from 'crypto'
 
 export class Input {
   private readonly host: Host
@@ -78,9 +79,8 @@ export class Input {
       return (this.architecture_ = architecture.Kind.x86_64)
 
     const kind = architecture.toKind(input)
-    core.debug(`kind: '${kind}'`)
-
     if (kind === undefined) throw Error(`Invalid architecture: ${input}`)
+    core.debug(`architecture kind: '${architecture.Kind[kind]}'`)
 
     return (this.architecture_ = kind)
   }
@@ -121,9 +121,8 @@ export class Input {
       return (this.hypervisor_ = this.host.hypervisor)
 
     const kind = hypervisor.toKind(input)
-    core.debug(`kind: '${kind}'`)
-
     if (kind === undefined) throw Error(`Invalid hypervisor: ${input}`)
+    core.debug(`hypervisor kind: '${hypervisor.Kind[kind]}'`)
 
     const hypervisorClass = hypervisor.toHypervisor(kind)
     return (this.hypervisor_ = new hypervisorClass())
@@ -158,5 +157,24 @@ export class Input {
     core.debug(`shutdown_vm input: '${input}'`)
 
     return (this.shutdownVm_ = input)
+  }
+
+  toHash(): string {
+    const components = [
+      this.operatingSystem,
+      this.version,
+      this.imageURL,
+      this.shell,
+      this.environmentVariables,
+      this.architecture,
+      this.memory,
+      this.cpuCount,
+      this.hypervisor
+    ]
+
+    const hash = createHash('sha256')
+    for (const component of components) hash.update(component.toString())
+
+    return hash.digest('hex')
   }
 }

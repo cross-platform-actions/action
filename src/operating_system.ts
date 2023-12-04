@@ -6,7 +6,6 @@ import * as exec from '@actions/exec'
 
 import * as architecture from './architecture'
 import * as vmModule from './vm'
-import * as action from './action/action'
 import {Input} from './action/input'
 import {host} from './host'
 import {ResourceUrls} from './operating_systems/resource_urls'
@@ -45,7 +44,6 @@ export abstract class OperatingSystem {
   abstract get virtualMachineImageReleaseVersion(): string
   abstract get hypervisorUrl(): string
   abstract get ssHostPort(): number
-  abstract get actionImplementationKind(): action.ImplementationKind
 
   get hypervisor(): hypervisor.Hypervisor {
     return this.architecture.hypervisor

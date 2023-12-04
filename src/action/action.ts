@@ -18,20 +18,17 @@ import * as input from './input'
 import * as shell from './shell'
 import * as utility from '../utility'
 import {SyncDirection} from './sync_direction'
-
-export enum ImplementationKind {
-  qemu,
-  xhyve
-}
+import {execSync} from 'child_process'
 
 export class Action {
   readonly tempPath: string
   readonly host: hostModule.Host
   readonly operatingSystem: os.OperatingSystem
+  readonly inputHashPath = '/tmp/cross-platform-actions-input-hash'
+  readonly input = new input.Input()
 
-  private readonly input = new input.Input()
+  private readonly cpaHost: string
   private readonly resourceDisk: ResourceDisk
-  private readonly implementation: Implementation
   private readonly sshDirectory: string
   private readonly privateSshKey: fs.PathLike
   private readonly publicSshKey: fs.PathLike
@@ -39,6 +36,7 @@ export class Action {
   private readonly targetDiskName = 'disk.raw'
 
   constructor() {
+    this.cpaHost = vmModule.Vm.cpaHost
     this.host = hostModule.Host.create()
     this.tempPath = fs.mkdtempSync('/tmp/resources')
     const arch = architecture.Architecture.for(
@@ -51,10 +49,6 @@ export class Action {
     this.operatingSystem = this.createOperatingSystem(arch)
     this.resourceDisk = ResourceDisk.for(this)
 
-    this.implementation = this.getImplementation(
-      this.operatingSystem.actionImplementationKind
-    )
-
     this.sshDirectory = path.join(this.getHomeDirectory(), '.ssh')
     this.privateSshKey = path.join(this.tempPath, this.privateSshKeyName)
     this.publicSshKey = `${this.privateSshKey}.pub`
@@ -63,32 +57,18 @@ export class Action {
   async run(): Promise<void> {
     core.startGroup('Setting up VM')
     core.debug('Running action')
+    const runPreparer = this.createRunPreparer()
+    runPreparer.createInputHash()
+    runPreparer.validateInputHash()
+
     const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] =
-      await Promise.all([
-        this.downloadDiskImage(),
-        this.download('hypervisor', this.operatingSystem.hypervisorUrl),
-        this.download('resources', this.operatingSystem.resourcesUrl),
-        this.setupSSHKey()
-      ])
+      await Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()])
 
-    const [firmwareDirectory, resourcesDirectory] = await Promise.all([
-      this.unarchiveHypervisor(hypervisorArchivePath),
-      this.unarchive('resources', resourcesArchivePath)
-    ])
-
-    const hypervisorDirectory = path.join(firmwareDirectory, 'bin')
-
-    const vmPromise = this.creareVm(
-      hypervisorDirectory,
-      firmwareDirectory,
-      resourcesDirectory,
-      diskImagePath,
-      {
-        memory: this.input.memory,
-        cpuCount: this.input.cpuCount
-      }
+    const [firmwareDirectory, resourcesDirectory] = await Promise.all(
+      runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath)
     )
 
+    const hypervisorDirectory = path.join(firmwareDirectory, 'bin')
     const excludes = [
       resourcesArchivePath,
       resourcesDirectory,
@@ -98,16 +78,29 @@ export class Action {
       diskImagePath
     ].map(p => p.slice(this.homeDirectory.length + 1))
 
-    const vm = await vmPromise
+    const vm = this.creareVm(
+      hypervisorDirectory,
+      firmwareDirectory,
+      resourcesDirectory,
+      {
+        memory: this.input.memory,
+        cpuCount: this.input.cpuCount
+      }
+    )
 
-    await vm.init()
+    const implementation = this.getImplementation(vm)
+    await implementation.prepareDisk(diskImagePath, resourcesDirectory)
+
+    await implementation.init()
     try {
-      await vm.run()
-      this.configSSH(vm.ipAddress)
-      await vm.wait(120)
-      await vm.setupWorkDirectory(this.homeDirectory, this.workDirectory)
+      await implementation.run()
+      implementation.configSSH(vm.ipAddress)
+      await implementation.wait(120)
+      await implementation.setupWorkDirectory(
+        this.homeDirectory,
+        this.workDirectory
+      )
       await this.syncFiles(
-        vm,
         this.targetDiskName,
         this.resourceDisk.diskPath,
         ...excludes
@@ -118,7 +111,7 @@ export class Action {
         await this.runCommand(vm)
       } finally {
         core.startGroup('Tearing down VM')
-        await this.syncBack(vm.ipAddress)
+        await this.syncBack()
 
         if (this.input.shutdownVm) {
           await vm.stop()
@@ -155,19 +148,12 @@ export class Action {
     return result
   }
 
-  async creareVm(
+  creareVm(
     hypervisorDirectory: string,
     firmwareDirectory: string,
     resourcesDirectory: string,
-    diskImagePath: string,
     config: os.ExternalVmConfiguration
-  ): Promise<vmModule.Vm> {
-    await this.operatingSystem.prepareDisk(
-      diskImagePath,
-      this.targetDiskName,
-      resourcesDirectory
-    )
-
+  ): vmModule.Vm {
     return this.operatingSystem.createVirtualMachine(
       hypervisorDirectory,
       resourcesDirectory,
@@ -192,26 +178,6 @@ export class Action {
   async unarchiveHypervisor(archivePath: string): Promise<string> {
     const hypervisorDirectory = await this.unarchive('hypervisor', archivePath)
     return path.join(hypervisorDirectory)
-  }
-
-  configSSH(ipAddress: string): void {
-    core.debug('Configuring SSH')
-
-    if (!fs.existsSync(this.sshDirectory))
-      fs.mkdirSync(this.sshDirectory, {recursive: true, mode: 0o700})
-
-    const lines = [
-      'StrictHostKeyChecking=accept-new',
-      `Host ${ipAddress}`,
-      `Port ${this.operatingSystem.ssHostPort}`,
-      `IdentityFile ${this.privateSshKey}`,
-      'SendEnv CI GITHUB_*',
-      this.customSendEnv,
-      'PasswordAuthentication no'
-    ].join('\n')
-
-    fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`)
-    this.implementation.configSSH()
   }
 
   private get customSendEnv(): string {
@@ -248,10 +214,21 @@ export class Action {
     return process.env['GITHUB_WORKSPACE']!
   }
 
-  private async syncFiles(
-    vm: vmModule.Vm,
-    ...excludePaths: string[]
-  ): Promise<void> {
+  private get shouldSyncFiles(): boolean {
+    return (
+      this.input.syncFiles === SyncDirection.runner_to_vm ||
+      this.input.syncFiles === SyncDirection.both
+    )
+  }
+
+  private get shouldSyncBack(): boolean {
+    return (
+      this.input.syncFiles === SyncDirection.vm_to_runner ||
+      this.input.syncFiles === SyncDirection.both
+    )
+  }
+
+  private async syncFiles(...excludePaths: string[]): Promise<void> {
     if (!this.shouldSyncFiles) {
       return
     }
@@ -263,18 +240,18 @@ export class Action {
       '--exclude', '_actions/cross-platform-actions/action',
       ...flatMap(excludePaths, p => ['--exclude', p]),
       `${this.homeDirectory}/`,
-      `runner@${vm.ipAddress}:work`
+      `runner@${this.cpaHost}:work`
     ])
   }
 
-  private async syncBack(ipAddress: string): Promise<void> {
+  private async syncBack(): Promise<void> {
     if (!this.shouldSyncBack) return
 
     core.info('Syncing back files')
     // prettier-ignore
     await exec.exec('rsync', [
       `-uzrtopg${this.syncVerboseFlag}`,
-      `runner@${ipAddress}:work/`,
+      `runner@${this.cpaHost}:work/`,
       this.homeDirectory
     ])
   }
@@ -290,17 +267,6 @@ export class Action {
       ['sh', '-c', `'cd "${this.workDirectory}" && exec "${sh}" -e'`],
       Buffer.from(this.input.run)
     )
-  }
-
-  private getImplementation(kind: ImplementationKind): Implementation {
-    switch (kind) {
-      case ImplementationKind.qemu:
-        return new QemuImplementation(this)
-      case ImplementationKind.xhyve:
-        return new XhyveImplementation(this)
-      default:
-        throw Error(`Unhandled implementation kind: $`)
-    }
   }
 
   private getHomeDirectory(): string {
@@ -321,53 +287,274 @@ export class Action {
     )
   }
 
-  private get shouldSyncFiles(): boolean {
-    return (
-      this.input.syncFiles === SyncDirection.runner_to_vm ||
-      this.input.syncFiles === SyncDirection.both
-    )
+  private getImplementation(vm: vmModule.Vm): Implementation {
+    const cls = implementationFor({isRunning: vmModule.Vm.isRunning})
+    core.debug(`Using action implementation: ${cls.name}`)
+    return new cls(this, vm)
   }
 
-  private get shouldSyncBack(): boolean {
-    return (
-      this.input.syncFiles === SyncDirection.vm_to_runner ||
-      this.input.syncFiles === SyncDirection.both
-    )
+  private createRunPreparer(): RunPreparer {
+    const cls = runPreparerFor({isRunning: vmModule.Vm.isRunning})
+    core.debug(`Using run preparer: ${cls.name}`)
+    return new cls(this, this.operatingSystem)
   }
 }
 
-export abstract class Implementation {
-  protected readonly action: Action
+function implementationFor({
+  isRunning
+}: {
+  isRunning: boolean
+}): utility.Class<Implementation> {
+  return isRunning ? LiveImplementation : InitialImplementation
+}
+
+function runPreparerFor({
+  isRunning
+}: {
+  isRunning: boolean
+}): utility.Class<RunPreparer> {
+  return isRunning ? LiveRunPreparer : InitialRunPreparer
+}
+
+interface RunPreparer {
+  createInputHash(): void
+  validateInputHash(): void
+  download(): [Promise<string>, Promise<string>, Promise<string>]
+  setupSSHKey(): Promise<void>
+  unarchive(
+    hypervisorArchivePath: string,
+    resourcesArchivePath: string
+  ): [Promise<string>, Promise<string>]
+}
+
+// Used when the VM is not running
+class InitialRunPreparer implements RunPreparer {
+  private readonly action: Action
+  private readonly operatingSystem: os.OperatingSystem
+
+  constructor(action: Action, operatingSystem: os.OperatingSystem) {
+    this.action = action
+    this.operatingSystem = operatingSystem
+  }
+
+  createInputHash(): void {
+    const hash = this.action['input'].toHash()
+    core.debug(`Input hash: ${hash}`)
+    fs.writeFileSync(this.action.inputHashPath, hash)
+  }
+
+  validateInputHash(): void {
+    // noop
+  }
+
+  download(): [Promise<string>, Promise<string>, Promise<string>] {
+    return [
+      this.action.downloadDiskImage(),
+      this.action.download('hypervisor', this.operatingSystem.hypervisorUrl),
+      this.action.download('resources', this.operatingSystem.resourcesUrl)
+    ]
+  }
+
+  async setupSSHKey(): Promise<void> {
+    await this.action['setupSSHKey']()
+  }
+
+  unarchive(
+    hypervisorArchivePath: string,
+    resourcesArchivePath: string
+  ): [Promise<string>, Promise<string>] {
+    return [
+      this.action.unarchiveHypervisor(hypervisorArchivePath),
+      this.action.unarchive('resources', resourcesArchivePath)
+    ]
+  }
+}
+
+// Used when the VM is already running
+class LiveRunPreparer implements RunPreparer {
+  private readonly action: Action
 
   constructor(action: Action) {
     this.action = action
   }
 
-  abstract configSSH(): void
-
-  protected get resourceDisk(): ResourceDisk {
-    return this.action['resourceDisk']
+  createInputHash(): void {
+    // noop
   }
 
-  protected get publicSshKey(): fs.PathLike {
-    return this.action['publicSshKey']
+  validateInputHash(): void {
+    const hash = this.action.input.toHash()
+    core.debug(`Input hash: ${hash}`)
+    const initialHash = fs.readFileSync(this.action.inputHashPath, 'utf8')
+
+    if (hash !== initialHash)
+      throw Error("The inputs don't match the initial invocation of the action")
   }
 
-  protected get sshDirectory(): string {
-    return this.action['sshDirectory']
+  download(): [Promise<string>, Promise<string>, Promise<string>] {
+    return [Promise.resolve(''), Promise.resolve(''), Promise.resolve('')]
+  }
+
+  async setupSSHKey(): Promise<void> {
+    // noop
+  }
+
+  unarchive(): [Promise<string>, Promise<string>] {
+    return [Promise.resolve(''), Promise.resolve('')]
   }
 }
 
-class XhyveImplementation extends Implementation {
-  configSSH(): void {
+interface Implementation {
+  prepareDisk(diskImagePath: string, resourcesDirectory: string): Promise<void>
+  init(): Promise<void>
+  run(): Promise<void>
+  wait(timeout: number): Promise<void>
+
+  setupWorkDirectory(
+    homeDirectory: string,
+    workDirectory: string
+  ): Promise<void>
+
+  configSSH(ipAddress: string): void
+}
+
+class LiveImplementation implements Implementation {
+  async prepareDisk(
+    _diskImagePath: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+    _resourcesDirectory: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  ): Promise<void> {
+    // noop
+  }
+
+  async init(): Promise<void> {
+    // noop
+  }
+
+  async run(): Promise<void> {
+    // noop
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async wait(_timeout: number): Promise<void> {
+    // noop
+  }
+
+  async setupWorkDirectory(
+    _homeDirectory: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+    _workDirectory: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  ): Promise<void> {
+    // noop
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  configSSH(_ipAddress: string): void {
     // noop
   }
 }
 
-class QemuImplementation extends Implementation {
-  configSSH(): void {
+class InitialImplementation implements Implementation {
+  private readonly action: Action
+  private readonly vm: vmModule.Vm
+
+  constructor(action: Action, vm: vmModule.Vm) {
+    this.action = action
+    this.vm = vm
+  }
+
+  async prepareDisk(
+    diskImagePath: string,
+    resourcesDirectory: string
+  ): Promise<void> {
+    await this.action.operatingSystem.prepareDisk(
+      diskImagePath,
+      this.targetDiskName,
+      resourcesDirectory
+    )
+  }
+
+  async init(): Promise<void> {
+    await this.vm.init()
+  }
+
+  async run(): Promise<void> {
+    await this.vm.run()
+  }
+
+  async wait(timeout: number): Promise<void> {
+    await this.vm.wait(timeout)
+  }
+
+  async setupWorkDirectory(
+    homeDirectory: string,
+    workDirectory: string
+  ): Promise<void> {
+    await this.vm.setupWorkDirectory(homeDirectory, workDirectory)
+  }
+
+  private get targetDiskName(): string {
+    return this.action['targetDiskName']
+  }
+
+  configSSH(ipAddress: string): void {
+    core.debug('Configuring SSH')
+
+    this.createSSHConfig()
+    this.setupAuthorizedKeys()
+    this.setupHostname(ipAddress)
+  }
+
+  private createSSHConfig(): void {
+    if (!fs.existsSync(this.sshDirectory))
+      fs.mkdirSync(this.sshDirectory, {recursive: true, mode: 0o700})
+
+    const lines = [
+      'StrictHostKeyChecking=accept-new',
+      `Host ${this.cpaHost}`,
+      `Port ${this.operatingSystem.ssHostPort}`,
+      `IdentityFile ${this.privateSshKey}`,
+      'SendEnv CI GITHUB_*',
+      this.customSendEnv,
+      'PasswordAuthentication no'
+    ].join('\n')
+
+    fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`)
+  }
+
+  private setupAuthorizedKeys(): void {
     const authorizedKeysPath = path.join(this.sshDirectory, 'authorized_keys')
     const publicKeyContent = fs.readFileSync(this.publicSshKey)
     fs.appendFileSync(authorizedKeysPath, publicKeyContent)
+  }
+
+  private get publicSshKey(): fs.PathLike {
+    return this.action['publicSshKey']
+  }
+
+  private get sshDirectory(): string {
+    return this.action['sshDirectory']
+  }
+
+  private get cpaHost(): string {
+    return this.action['cpaHost']
+  }
+
+  private get operatingSystem(): os.OperatingSystem {
+    return this.action['operatingSystem']
+  }
+
+  private get privateSshKey(): fs.PathLike {
+    return this.action['privateSshKey']
+  }
+
+  private get customSendEnv(): string {
+    return this.action['customSendEnv']
+  }
+
+  private setupHostname(ipAddress: string): void {
+    if (ipAddress === 'localhost') ipAddress = '127.0.0.1'
+
+    execSync(
+      `sudo bash -c 'printf "${ipAddress} ${this.cpaHost}\n" >> /etc/hosts'`
+    )
   }
 }

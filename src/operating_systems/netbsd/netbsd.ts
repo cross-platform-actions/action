@@ -4,7 +4,6 @@ import * as path from 'path'
 import * as core from '@actions/core'
 
 import * as architecture from '../../architecture'
-import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
 import * as os from '../../operating_system'
@@ -25,10 +24,6 @@ export default class NetBsd extends Qemu {
 
   get virtualMachineImageReleaseVersion(): string {
     return versions.operating_system.netbsd
-  }
-
-  get actionImplementationKind(): action.ImplementationKind {
-    return action.ImplementationKind.qemu
   }
 
   override async prepareDisk(

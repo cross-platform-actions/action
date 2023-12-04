@@ -34,6 +34,8 @@ export abstract class Vm extends vm.Vm {
     // prettier-ignore
     return [
       this.hypervisorPath.toString(),
+      '-daemonize',
+      '-pidfile', vm.Vm.pidfile,
       '-machine', `type=${this.configuration.machineType},accel=${accel}`,
       '-cpu', this.configuration.cpu,
       '-smp', this.configuration.cpuCount.toString(),
