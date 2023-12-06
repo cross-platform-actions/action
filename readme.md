@@ -237,6 +237,41 @@ nested virtualization, making them significantly faster than the Linux runners.
 This only applies when the runner architecture and the guest architecture are
 the same, in this case `x86-64`.
 
+## `Linux on Non-x86 Architectures`
+
+There are currently no plans to add support for Linux. Instead it's very easy
+to support Linux on non-x86 architectures using the QEMU support in Docker with the
+[docker/setup-qemu-action](https://github.com/docker/setup-qemu-action) action:
+
+```yaml
+- name: Set up QEMU
+  uses: docker/setup-qemu-action@v3
+  with:
+    platforms: linux/riscv64
+
+- name: Run Command in Docker
+  run: |
+    docker run \
+      --rm \
+      -v $(pwd):/${{ github.workspace }} \
+      -w ${{ github.workspace }} \
+      --platform linux/riscv64 \
+      debian:unstable-slim \
+      <command to run>
+```
+
+For those not familiar with Docker, here's an explanation of the above command:
+
+* `run` - Runs a Docker container
+* `--rm` - Removes the container after it exits
+* `-v` - Mounts a local directory into the container. In this case the current
+    directory is mounted to the same path in the container
+* `-w` - Specifies the working directory inside the container
+* `--platform` - Specifies the platform/architecture
+* `debian:unstable-slim` - Specifies with image to create the container from.
+    Basically the Linux distribution to use
+* `<command to run>` - The command you want to run inside the container
+
 ## `Under the Hood`
 
 GitHub Actions currently only support macOS, Linux, and
