@@ -218,7 +218,7 @@ jobs:
           run: sysctl hw.model
 
       - name: Hypervisor should still be running, verify it's QEMU
-        run: ps aux | grep -q qemu
+        run: ps aux | grep -v grep | grep -q qemu
 
   test-custom-vm-image:
     timeout-minutes: 5
@@ -284,7 +284,7 @@ jobs:
           run: true
 
       - name: Verify VM is still running
-        run: ps aux | grep -q qemu
+        run: ps aux | grep -v grep | grep -q qemu
 
   test-vm-shutdown:
     timeout-minutes: 5
@@ -308,7 +308,7 @@ jobs:
           run: true
 
       - name: Verify VM is not running
-        run: ps aux | grep -q -v qemu
+        run: ps aux | grep -v grep | grep -q -v qemu
 
   test-sync-files:
     timeout-minutes: 5
