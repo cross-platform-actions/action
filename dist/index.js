@@ -860,7 +860,7 @@ const architectureMap = {
 /***/ }),
 
 /***/ 8215:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -886,98 +886,101 @@ var __importStar = (this && this.__importStar) || function (mod) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getHost = exports.host = exports.Host = void 0;
 const process = __importStar(__nccwpck_require__(7282));
 const host_qemu_1 = __importDefault(__nccwpck_require__(9097));
 const hypervisor = __importStar(__nccwpck_require__(4288));
 const qemu = __importStar(__nccwpck_require__(1106));
 const utility_1 = __nccwpck_require__(2857);
 const xhyve = __importStar(__nccwpck_require__(3321));
-class Host {
-    static create(platform = process.platform) {
-        switch (platform) {
-            case 'darwin':
-                return new MacOs();
-            case 'linux':
-                return new Linux();
-            default:
-                throw Error(`Unhandled host platform: ${platform}`);
+class Module {
+    static get host() {
+        return this.host_ ? this.host_ : (this.host_ = Module.Host.create());
+    }
+}
+// The reason for this namesapce is to allow a global getter (`host`, see above).
+// See https://stackoverflow.com/questions/28834873/getter-setter-on-a-module-in-typescript
+(function (Module) {
+    class Host {
+        static create(platform = process.platform) {
+            switch (platform) {
+                case 'darwin':
+                    return new MacOs();
+                case 'linux':
+                    return new Linux();
+                default:
+                    throw Error(`Unhandled host platform: ${platform}`);
+            }
+        }
+        resolve(implementation) {
+            return (0, utility_1.getImplementation)(this, implementation);
+        }
+        toString() {
+            return this.constructor.name.toLocaleLowerCase();
         }
     }
-    resolve(implementation) {
-        return (0, utility_1.getImplementation)(this, implementation);
-    }
-    toString() {
-        return this.constructor.name.toLocaleLowerCase();
-    }
-}
-exports.Host = Host;
-class MacOs extends Host {
-    get vmModule() {
-        return xhyve;
-    }
-    get qemu() {
-        return new host_qemu_1.default.MacosHostQemu();
-    }
-    get hypervisor() {
-        return new hypervisor.Xhyve();
-    }
-    get efiHypervisor() {
-        return this.hypervisor;
-    }
-    get defaultMemory() {
-        return '13G';
-    }
-    get defaultCpuCount() {
-        return 3;
-    }
-    validateHypervisor(kind) {
-        switch (kind) {
-            case hypervisor.Kind.qemu:
-                break;
-            case hypervisor.Kind.xhyve:
-                break;
-            default:
-                throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
+    Module.Host = Host;
+    class MacOs extends Host {
+        get vmModule() {
+            return xhyve;
+        }
+        get qemu() {
+            return new host_qemu_1.default.MacosHostQemu();
+        }
+        get hypervisor() {
+            return new hypervisor.Xhyve();
+        }
+        get efiHypervisor() {
+            return this.hypervisor;
+        }
+        get defaultMemory() {
+            return '13G';
+        }
+        get defaultCpuCount() {
+            return 3;
+        }
+        validateHypervisor(kind) {
+            switch (kind) {
+                case hypervisor.Kind.qemu:
+                    break;
+                case hypervisor.Kind.xhyve:
+                    break;
+                default:
+                    throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
+            }
         }
     }
-}
-class Linux extends Host {
-    get vmModule() {
-        return qemu;
-    }
-    get qemu() {
-        return new host_qemu_1.default.LinuxHostQemu();
-    }
-    get hypervisor() {
-        return new hypervisor.Qemu();
-    }
-    get efiHypervisor() {
-        return new hypervisor.QemuEfi();
-    }
-    get defaultMemory() {
-        return '6G';
-    }
-    get defaultCpuCount() {
-        return 2;
-    }
-    validateHypervisor(kind) {
-        switch (kind) {
-            case hypervisor.Kind.qemu:
-                break;
-            case hypervisor.Kind.xhyve:
-                throw new Error('Unsupported hypervisor on Linux hosts: xhyve');
-            default:
-                throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
+    class Linux extends Host {
+        get vmModule() {
+            return qemu;
+        }
+        get qemu() {
+            return new host_qemu_1.default.LinuxHostQemu();
+        }
+        get hypervisor() {
+            return new hypervisor.Qemu();
+        }
+        get efiHypervisor() {
+            return new hypervisor.QemuEfi();
+        }
+        get defaultMemory() {
+            return '6G';
+        }
+        get defaultCpuCount() {
+            return 2;
+        }
+        validateHypervisor(kind) {
+            switch (kind) {
+                case hypervisor.Kind.qemu:
+                    break;
+                case hypervisor.Kind.xhyve:
+                    throw new Error('Unsupported hypervisor on Linux hosts: xhyve');
+                default:
+                    throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
+            }
         }
     }
-}
-exports.host = Host.create();
-function getHost() {
-    return exports.host;
-}
-exports.getHost = getHost;
+})(Module || (Module = {}));
+module.exports = Module;
 //# sourceMappingURL=host.js.map
 
 /***/ }),

@@ -1,46 +1,16 @@
 import {basename} from 'path'
 
 import FreeBsd from '../../../src/operating_systems/freebsd/freebsd'
-import * as hostModule from '../../../src/host'
+import hostModule from '../../../src/host'
 import * as arch from '../../../src/architecture'
 import * as os from '../../../src/operating_systems/kind'
 import {Accelerator} from '../../../src/vm'
-import HostQemu from '../../../src/host_qemu'
 import * as hypervisor from '../../../src/hypervisor'
-import * as qemu from '../../../src/qemu_vm'
-import * as xhyve from '../../../src/xhyve_vm'
 import {Input} from '../../../src/action/input'
+import {Host} from '../../../src/host'
 
 describe('FreeBSD OperatingSystem', () => {
-  class MockHost extends hostModule.Host {
-    get vmModule(): typeof xhyve | typeof qemu {
-      return qemu
-    }
-
-    override get qemu(): HostQemu {
-      return new HostQemu.LinuxHostQemu()
-    }
-
-    override get hypervisor(): hypervisor.Hypervisor {
-      return new hypervisor.Qemu()
-    }
-
-    override get efiHypervisor(): hypervisor.Hypervisor {
-      return new hypervisor.QemuEfi()
-    }
-
-    override get defaultMemory(): string {
-      return '6G'
-    }
-
-    override get defaultCpuCount(): number {
-      return 6
-    }
-
-    override validateHypervisor(_kind: hypervisor.Kind): void {}
-  }
-
-  let host = new MockHost()
+  let host = Host.create('linux')
   let osKind = os.Kind.for('freebsd')
   let vmm = host.hypervisor
   let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind, vmm)
@@ -62,7 +32,7 @@ describe('FreeBSD OperatingSystem', () => {
     let vmModule = jasmine.createSpy('vmModule')
 
     beforeEach(() => {
-      spyOn(hostModule, 'getHost').and.returnValue(host)
+      spyOnProperty(hostModule, 'host').and.returnValue(host)
     })
 
     it('creates a virtual machine with the correct configuration', () => {
