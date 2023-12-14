@@ -2634,7 +2634,7 @@ class Vm {
             if (options.log)
                 core.info(`Executing command inside VM: ${command}`);
             const buffer = Buffer.from(command);
-            return yield exec.exec('ssh', this.executeBaseArgs, {
+            return yield exec.exec('ssh', ['-t', `${Vm.user}@${Vm.cpaHost}`], {
                 input: buffer,
                 silent: options.silent,
                 ignoreReturnCode: options.ignoreReturnCode
@@ -2643,19 +2643,13 @@ class Vm {
     }
     execute2(args, intput) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield exec.exec('ssh', this.executeBaseArgs.concat(args), {
-                input: intput
-            });
+            return yield exec.exec('ssh', ['-t', `${Vm.user}@${Vm.cpaHost}`].concat(args), { input: intput });
         });
     }
     getIpAddress() {
         return __awaiter(this, void 0, void 0, function* () {
             throw Error('Not implemented');
         });
-    }
-    get executeBaseArgs() {
-        const baseArgs = ['-t', `${Vm.user}@${Vm.cpaHost}`];
-        return core.isDebug() ? baseArgs.concat(['-vvv']) : baseArgs;
     }
 }
 exports.Vm = Vm;
