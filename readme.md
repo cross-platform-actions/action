@@ -13,7 +13,7 @@ Some of the features that this action supports include:
 - Allows to use default shell or Bash shell
 - Low boot overhead
 - Fast execution
-- Uing the action in multiple steps in the same job
+- Using the action in multiple steps in the same job
 
 ## `Usage`
 
