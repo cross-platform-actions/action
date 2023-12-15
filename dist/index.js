@@ -2098,7 +2098,6 @@ class Vm extends vm.Vm {
         return [
             this.hypervisorPath.toString(),
             '-daemonize',
-            '-pidfile', vm.Vm.pidfile,
             '-machine', `type=${this.configuration.machineType},accel=${accel}`,
             '-cpu', this.configuration.cpu,
             '-smp', this.configuration.cpuCount.toString(),
@@ -2550,8 +2549,22 @@ var Accelerator;
     Accelerator[Accelerator["hvf"] = 0] = "hvf";
     Accelerator[Accelerator["tcg"] = 1] = "tcg";
 })(Accelerator = exports.Accelerator || (exports.Accelerator = {}));
+class LiveProcess {
+    constructor() {
+        this.exitCode = null;
+    }
+    get pid() {
+        if (this._pid !== undefined)
+            return this._pid;
+        return (this._pid = +fs.readFileSync(Vm.pidfile, 'utf8'));
+    }
+    unref() {
+        // noop
+    }
+}
 class Vm {
     constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, architecture, input, configuration) {
+        this.vmProcess = new LiveProcess();
         this.hypervisorDirectory = hypervisorDirectory;
         this.resourcesDirectory = resourcesDirectory;
         this.architecture = architecture;
@@ -2580,6 +2593,7 @@ class Vm {
             if (this.vmProcess.exitCode) {
                 throw Error(`Failed to start VM process, exit code: ${this.vmProcess.exitCode}`);
             }
+            fs.writeFileSync(Vm.pidfile, this.vmProcess.pid.toString());
             if (!this.input.shutdownVm) {
                 this.vmProcess.unref();
             }
@@ -2771,7 +2785,6 @@ class Vm extends vm.Vm {
             '-U', config.uuid,
             '-A',
             '-H',
-            '-F', vm.Vm.pidfile,
             '-m', config.memory,
             '-c', config.cpuCount.toString(),
             '-s', '0:0,hostbridge',

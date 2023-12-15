@@ -394,5 +394,5 @@ jobs:
           architecture: x86-64
           version: '13.2'
           hypervisor: qemu
-          shutdown_vm: false
+          shutdown_vm: true
           run: test -f foo.txt

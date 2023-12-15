@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import {ChildProcess, spawn} from 'child_process'
+import {spawn} from 'child_process'
 
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
@@ -34,16 +34,38 @@ export interface Configuration {
   firmware?: fs.PathLike
 }
 
+interface Process {
+  readonly pid: number
+  readonly exitCode: number | null
+
+  unref(): void
+}
+
+class LiveProcess implements Process {
+  readonly exitCode: number | null = null
+  private _pid?: number
+
+  get pid(): number {
+    if (this._pid !== undefined) return this._pid
+
+    return (this._pid = +fs.readFileSync(Vm.pidfile, 'utf8'))
+  }
+
+  unref(): void {
+    // noop
+  }
+}
+
 export abstract class Vm {
   ipAddress!: string
 
   static readonly user = 'runner'
   static readonly cpaHost = 'cross_platform_actions_host'
-  protected static readonly pidfile = '/tmp/cross-platform-actions.pid'
+  static readonly pidfile = '/tmp/cross-platform-actions.pid'
   private static _isRunning?: boolean
 
   readonly hypervisorPath: fs.PathLike
-  protected vmProcess!: ChildProcess
+  protected vmProcess: Process = new LiveProcess()
   protected readonly architecture: architecture.Architecture
   protected readonly configuration: vm.Configuration
   protected readonly hypervisorDirectory: fs.PathLike
@@ -93,6 +115,8 @@ export abstract class Vm {
         `Failed to start VM process, exit code: ${this.vmProcess.exitCode}`
       )
     }
+
+    fs.writeFileSync(Vm.pidfile, this.vmProcess.pid.toString())
 
     if (!this.input.shutdownVm) {
       this.vmProcess.unref()
