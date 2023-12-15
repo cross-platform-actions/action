@@ -1149,14 +1149,17 @@ __nccwpck_require__(2146);
 __nccwpck_require__(6653);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
+        if (core.isDebug()) {
             yield new action_1.Action().run();
         }
-        catch (error) {
-            const err = error;
-            core.setFailed(err.message);
-            if (core.isDebug() && err.stack)
-                core.debug(err.stack);
+        else {
+            try {
+                yield new action_1.Action().run();
+            }
+            catch (error) {
+                const err = error;
+                core.setFailed(err.message);
+            }
         }
     });
 }
