@@ -9,10 +9,6 @@ export class XhyveVm extends Vm {
     )
   }
 
-  protected override async shutdown(): Promise<void> {
-    await this.execute('sudo shutdown -h -p now')
-  }
-
   protected get networkDevice(): string {
     return 'e1000'
   }

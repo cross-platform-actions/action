@@ -11,8 +11,4 @@ export class QemuVm extends Vm {
       '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
     ]
   }
-
-  protected override async shutdown(): Promise<void> {
-    await this.execute('sudo shutdown -p now')
-  }
 }

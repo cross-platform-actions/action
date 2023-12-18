@@ -111,9 +111,6 @@ class Action {
                 finally {
                     core.startGroup('Tearing down VM');
                     yield this.syncBack();
-                    if (this.input.shutdownVm) {
-                        yield vm.stop();
-                    }
                 }
             }
             finally {
@@ -1521,19 +1518,10 @@ exports["default"] = FreeBsd;
 /***/ }),
 
 /***/ 9250:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QemuVm = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
@@ -1547,11 +1535,6 @@ class QemuVm extends qemu_vm_1.Vm {
             '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
         ];
     }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute('sudo shutdown -p now');
-        });
-    }
 }
 exports.QemuVm = QemuVm;
 //# sourceMappingURL=qemu_vm.js.map
@@ -1559,19 +1542,10 @@ exports.QemuVm = QemuVm;
 /***/ }),
 
 /***/ 6176:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XhyveVm = void 0;
 const xhyve_vm_1 = __nccwpck_require__(3321);
@@ -1579,11 +1553,6 @@ class XhyveVm extends xhyve_vm_1.Vm {
     get command() {
         // prettier-ignore
         return super.command.concat('-f', `fbsd,${this.configuration.userboot},${this.configuration.diskImage},`);
-    }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute('sudo shutdown -p now');
-        });
     }
     get networkDevice() {
         return 'virtio-net';
@@ -1745,30 +1714,16 @@ exports["default"] = NetBsd;
 /***/ }),
 
 /***/ 7598:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Vm = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
 class Vm extends qemu_vm_1.Vm {
     get hardDriverFlags() {
         return this.defaultHardDriveFlags;
-    }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute('sudo shutdown -h -p now');
-        });
     }
     get ipv6() {
         return 'ipv6=off';
@@ -1903,19 +1858,10 @@ exports["default"] = OpenBsd;
 /***/ }),
 
 /***/ 8841:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QemuVm = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
@@ -1926,11 +1872,6 @@ class QemuVm extends qemu_vm_1.Vm {
     get netDevive() {
         return this.architecture.networkDevice;
     }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute('sudo shutdown -h -p now');
-        });
-    }
 }
 exports.QemuVm = QemuVm;
 //# sourceMappingURL=qemu_vm.js.map
@@ -1938,19 +1879,10 @@ exports.QemuVm = QemuVm;
 /***/ }),
 
 /***/ 9662:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XhyveVm = void 0;
 const xhyve_vm_1 = __nccwpck_require__(3321);
@@ -1958,11 +1890,6 @@ class XhyveVm extends xhyve_vm_1.Vm {
     get command() {
         // prettier-ignore
         return super.command.concat('-l', `bootrom,${this.configuration.firmware}`, '-w');
-    }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute('sudo shutdown -h -p now');
-        });
     }
     get networkDevice() {
         return 'e1000';
@@ -2618,12 +2545,6 @@ class Vm {
             throw Error(`Waiting for VM to become ready timed out after ${timeout} seconds`);
         });
     }
-    stop() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.info('Shuting down VM');
-            yield this.shutdown();
-        });
-    }
     terminate() {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Terminating VM');
@@ -2637,11 +2558,6 @@ class Vm {
                 `sudo mkdir -p '${workDirectory}' && ` +
                 `sudo chown -R '${Vm.user}' '${homeDirectory}' && ` +
                 `ln -sf '${homeDirectory}/' '${homeDirectoryLinuxHost}'`);
-        });
-    }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            throw Error('Not implemented');
         });
     }
     execute(command, options = {}) {

@@ -5,10 +5,6 @@ export class Vm extends QemuVm {
     return this.defaultHardDriveFlags
   }
 
-  protected override async shutdown(): Promise<void> {
-    await this.execute('sudo shutdown -h -p now')
-  }
-
   protected override get ipv6(): string {
     return 'ipv6=off'
   }

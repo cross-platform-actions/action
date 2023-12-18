@@ -147,11 +147,6 @@ export abstract class Vm {
     )
   }
 
-  async stop(): Promise<void> {
-    core.info('Shuting down VM')
-    await this.shutdown()
-  }
-
   async terminate(): Promise<number> {
     core.info('Terminating VM')
     return await exec.exec(
@@ -173,10 +168,6 @@ export abstract class Vm {
         `sudo chown -R '${Vm.user}' '${homeDirectory}' && ` +
         `ln -sf '${homeDirectory}/' '${homeDirectoryLinuxHost}'`
     )
-  }
-
-  protected async shutdown(): Promise<void> {
-    throw Error('Not implemented')
   }
 
   async execute(

@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     has run. This adds a new input parameter: `shutdown_vm`. When set to `false`,
     this will hopefully mitigate very frequent freezing of VM during teardown ([#61](https://github.com/cross-platform-actions/action/issues/61), [#72](https://github.com/cross-platform-actions/action/issues/72)).
 
+### Changed
+- Always terminate VM instead of shutting down. This is more efficient and this
+    will hopefully mitigate very frequent freezing of VM during teardown
+    ([#61](https://github.com/cross-platform-actions/action/issues/61),
+    [#72](https://github.com/cross-platform-actions/action/issues/72)).
+
 ## [0.21.1] - 2023-11-03
 ### Fixed
 - FreeBSD jobs occasionally fail when ejecting the disk ([#64](https://github.com/cross-platform-actions/action/issues/64))

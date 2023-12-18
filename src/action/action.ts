@@ -112,10 +112,6 @@ export class Action {
       } finally {
         core.startGroup('Tearing down VM')
         await this.syncBack()
-
-        if (this.input.shutdownVm) {
-          await vm.stop()
-        }
       }
     } finally {
       try {

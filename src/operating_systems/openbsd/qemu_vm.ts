@@ -8,8 +8,4 @@ export class QemuVm extends Vm {
   protected override get netDevive(): string {
     return this.architecture.networkDevice
   }
-
-  protected override async shutdown(): Promise<void> {
-    await this.execute('sudo shutdown -h -p now')
-  }
 }
