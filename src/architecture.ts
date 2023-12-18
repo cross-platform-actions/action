@@ -156,7 +156,7 @@ export abstract class Architecture {
     }
 
     override get efiHypervisor(): hypervisor.Hypervisor {
-      return this.host.efiHypervisor
+      return this.selectedHypervisor.efi
     }
   }
 

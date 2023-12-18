@@ -23,6 +23,7 @@ export abstract class Hypervisor {
   abstract get sshPort(): number
   abstract get firmwareFile(): string
   abstract get vmModule(): typeof QemuVm | typeof XhyveVm
+  abstract get efi(): Hypervisor
   abstract getResourceUrl(architecture: Architecture): string
   abstract resolve<T>(implementation: Record<string, T>): T
 }
@@ -42,6 +43,10 @@ export class Xhyve extends Hypervisor {
 
   override get vmModule(): typeof XhyveVm {
     return XhyveVm
+  }
+
+  override get efi(): Hypervisor {
+    return this
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -71,6 +76,10 @@ export class Qemu extends Hypervisor {
 
   override get vmModule(): typeof QemuVm {
     return QemuVm
+  }
+
+  override get efi(): Hypervisor {
+    return new QemuEfi()
   }
 
   override getResourceUrl(architecture: Architecture): string {

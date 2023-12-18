@@ -95,7 +95,7 @@ export class Action {
     try {
       await implementation.run()
       implementation.configSSH(vm.ipAddress)
-      await implementation.wait(120)
+      await implementation.wait(240)
       await implementation.setupWorkDirectory(
         this.homeDirectory,
         this.workDirectory

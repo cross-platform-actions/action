@@ -100,7 +100,7 @@ class Action {
             try {
                 yield implementation.run();
                 implementation.configSSH(vm.ipAddress);
-                yield implementation.wait(120);
+                yield implementation.wait(240);
                 yield implementation.setupWorkDirectory(this.homeDirectory, this.workDirectory);
                 yield this.syncFiles(this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
@@ -818,7 +818,7 @@ Architecture.X86_64 = class extends Architecture {
         return this.selectedHypervisor;
     }
     get efiHypervisor() {
-        return this.host.efiHypervisor;
+        return this.selectedHypervisor.efi;
     }
 };
 Architecture.X86_64OpenBsd = class extends _a.X86_64 {
@@ -1053,6 +1053,9 @@ class Xhyve extends Hypervisor {
     get vmModule() {
         return xhyve_vm_1.Vm;
     }
+    get efi() {
+        return this;
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getResourceUrl(_architecture) {
         return `${resource_urls_1.ResourceUrls.create().resourceBaseUrl}/xhyve-macos.tar`;
@@ -1078,6 +1081,9 @@ class Qemu extends Hypervisor {
     }
     get vmModule() {
         return qemu_vm_1.Vm;
+    }
+    get efi() {
+        return new QemuEfi();
     }
     getResourceUrl(architecture) {
         return architecture.resourceUrl;
@@ -1815,7 +1821,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const factory_1 = __nccwpck_require__(133);
-const host_1 = __nccwpck_require__(8215);
 const qemu_vm_1 = __nccwpck_require__(8841);
 const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
@@ -1845,7 +1850,11 @@ let OpenBsd = class OpenBsd extends os.OperatingSystem {
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        const cls = host_1.host.hypervisor.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
+        let qemuVmClass = this.architecture.resolve({
+            x86_64: qemu_vm_1.QemuVmX86_64,
+            default: qemu_vm_1.QemuVm
+        });
+        const cls = this.hypervisor.resolve({ qemu: qemuVmClass, xhyve: xhyve_vm_1.XhyveVm });
         return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 };
@@ -1863,7 +1872,7 @@ exports["default"] = OpenBsd;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.QemuVm = void 0;
+exports.QemuVmX86_64 = exports.QemuVm = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
 class QemuVm extends qemu_vm_1.Vm {
     get hardDriverFlags() {
@@ -1874,6 +1883,19 @@ class QemuVm extends qemu_vm_1.Vm {
     }
 }
 exports.QemuVm = QemuVm;
+class QemuVmX86_64 extends QemuVm {
+    get cpuidFlags() {
+        // disable huge pages, otherwise OpenBSD will not boot: https://gitlab.com/qemu-project/qemu/-/issues/1091
+        return ['-pdpe1gb'];
+    }
+    get firmwareFlags() {
+        return [
+            '-drive',
+            `if=pflash,format=raw,unit=0,file=${this.configuration.firmware},readonly=on`
+        ];
+    }
+}
+exports.QemuVmX86_64 = QemuVmX86_64;
 //# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
@@ -2026,7 +2048,7 @@ class Vm extends vm.Vm {
             this.hypervisorPath.toString(),
             '-daemonize',
             '-machine', `type=${this.configuration.machineType},accel=${accel}`,
-            '-cpu', this.configuration.cpu,
+            '-cpu', this.cpuFlagValue,
             '-smp', this.configuration.cpuCount.toString(),
             '-m', this.configuration.memory,
             '-device', `${this.netDevive},netdev=user.0`,
@@ -2035,9 +2057,9 @@ class Vm extends vm.Vm {
             '-monitor', 'none',
             // '-nographic',
             '-boot', 'strict=off',
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            '-bios', this.configuration.firmware.toString()
-        ].concat(this.hardDriverFlags);
+            ...this.firmwareFlags,
+            ...this.hardDriverFlags
+        ];
     }
     get defaultHardDriveFlags() {
         // prettier-ignore
@@ -2055,6 +2077,12 @@ class Vm extends vm.Vm {
     get ipv6() {
         return '';
     }
+    get cpuidFlags() {
+        return [];
+    }
+    get firmwareFlags() {
+        return ['-bios', this.configuration.firmware.toString()];
+    }
     get netdev() {
         return [
             'user',
@@ -2064,6 +2092,9 @@ class Vm extends vm.Vm {
         ]
             .filter(e => e !== '')
             .join(',');
+    }
+    get cpuFlagValue() {
+        return [this.configuration.cpu, ...this.cpuidFlags].join(',');
     }
 }
 exports.Vm = Vm;
@@ -2511,7 +2542,7 @@ class Vm {
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
-            core.info('Booting VM');
+            core.info('Booting VM of type: ' + this.constructor.name);
             core.debug(this.command.join(' '));
             this.vmProcess = (0, child_process_1.spawn)('sudo', this.command, {
                 detached: false,

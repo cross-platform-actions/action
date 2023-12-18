@@ -6,8 +6,7 @@ import * as core from '@actions/core'
 import * as architecture from '../../architecture'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
-import {host} from '../../host'
-import {QemuVm} from './qemu_vm'
+import {QemuVm, QemuVmX86_64} from './qemu_vm'
 import * as os from '../../operating_system'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
@@ -66,7 +65,13 @@ export default class OpenBsd extends os.OperatingSystem {
       uuid: this.uuid
     }
 
-    const cls = host.hypervisor.resolve({qemu: QemuVm, xhyve: XhyveVm})
+    let qemuVmClass = this.architecture.resolve({
+      x86_64: QemuVmX86_64,
+      default: QemuVm
+    })
+
+    const cls = this.hypervisor.resolve({qemu: qemuVmClass, xhyve: XhyveVm})
+
     return new cls(
       hypervisorDirectory,
       resourcesDirectory,

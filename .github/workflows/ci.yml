@@ -396,3 +396,25 @@ jobs:
           hypervisor: qemu
           shutdown_vm: true
           run: test -f foo.txt
+
+  openbsd-qemu-macos:
+    timeout-minutes: 5
+    name: Test OpenBSD with QEMU on macOS runner
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: openbsd
+          architecture: x86-64
+          version: '7.4'
+          hypervisor: qemu
+          sync_files: false
+          shutdown_vm: false
+          run: true

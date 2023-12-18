@@ -103,7 +103,7 @@ export abstract class Vm {
   }
 
   async run(): Promise<void> {
-    core.info('Booting VM')
+    core.info('Booting VM of type: ' + this.constructor.name)
     core.debug(this.command.join(' '))
     this.vmProcess = spawn('sudo', this.command, {
       detached: false,
