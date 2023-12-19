@@ -18,51 +18,51 @@ const architectureMap: Record<string, Kind> = {
   qemu: Kind.qemu
 } as const
 
-export abstract class Hypervisor {
-  abstract get kind(): Kind
-  abstract get sshPort(): number
-  abstract get firmwareFile(): string
-  abstract get vmModule(): typeof QemuVm | typeof XhyveVm
-  abstract get efi(): Hypervisor
-  abstract getResourceUrl(architecture: Architecture): string
-  abstract resolve<T>(implementation: Record<string, T>): T
+export interface Hypervisor {
+  get kind(): Kind
+  get sshPort(): number
+  get firmwareFile(): string
+  get vmModule(): typeof QemuVm | typeof XhyveVm
+  get efi(): Hypervisor
+  getResourceUrl(architecture: Architecture): string
+  resolve<T>(implementation: Record<string, T>): T
 }
 
-export class Xhyve extends Hypervisor {
-  override get kind(): Kind {
+export class Xhyve implements Hypervisor {
+  get kind(): Kind {
     return Kind.xhyve
   }
 
-  override get sshPort(): number {
+  get sshPort(): number {
     return 22
   }
 
-  override get firmwareFile(): string {
+  get firmwareFile(): string {
     return 'uefi.fd'
   }
 
-  override get vmModule(): typeof XhyveVm {
+  get vmModule(): typeof XhyveVm {
     return XhyveVm
   }
 
-  override get efi(): Hypervisor {
+  get efi(): Hypervisor {
     return this
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  override getResourceUrl(_architecture: Architecture): string {
+  getResourceUrl(_architecture: Architecture): string {
     return `${ResourceUrls.create().resourceBaseUrl}/xhyve-macos.tar`
   }
 
-  override resolve<T>(implementation: Record<string, T>): T {
+  resolve<T>(implementation: Record<string, T>): T {
     return getOrDefaultOrThrow(implementation, 'xhyve')
   }
 }
 
-export class Qemu extends Hypervisor {
+export class Qemu implements Hypervisor {
   protected readonly firmwareDirectory = 'share/qemu'
 
-  override get kind(): Kind {
+  get kind(): Kind {
     return Kind.qemu
   }
 
@@ -70,23 +70,23 @@ export class Qemu extends Hypervisor {
     return 2847
   }
 
-  override get firmwareFile(): string {
+  get firmwareFile(): string {
     return `${this.firmwareDirectory}/bios-256k.bin`
   }
 
-  override get vmModule(): typeof QemuVm {
+  get vmModule(): typeof QemuVm {
     return QemuVm
   }
 
-  override get efi(): Hypervisor {
+  get efi(): Hypervisor {
     return new QemuEfi()
   }
 
-  override getResourceUrl(architecture: Architecture): string {
+  getResourceUrl(architecture: Architecture): string {
     return architecture.resourceUrl
   }
 
-  override resolve<T>(implementation: Record<string, T>): T {
+  resolve<T>(implementation: Record<string, T>): T {
     return getOrDefaultOrThrow(implementation, 'qemu')
   }
 }

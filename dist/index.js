@@ -1019,7 +1019,7 @@ HostQemu.MacosHostQemu = class extends HostQemu {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toHypervisor = exports.QemuEfi = exports.Qemu = exports.Xhyve = exports.Hypervisor = exports.toKind = exports.Kind = void 0;
+exports.toHypervisor = exports.QemuEfi = exports.Qemu = exports.Xhyve = exports.toKind = exports.Kind = void 0;
 const resource_urls_1 = __nccwpck_require__(3990);
 const qemu_vm_1 = __nccwpck_require__(1106);
 const xhyve_vm_1 = __nccwpck_require__(3321);
@@ -1037,10 +1037,7 @@ const architectureMap = {
     xhyve: Kind.xhyve,
     qemu: Kind.qemu
 };
-class Hypervisor {
-}
-exports.Hypervisor = Hypervisor;
-class Xhyve extends Hypervisor {
+class Xhyve {
     get kind() {
         return Kind.xhyve;
     }
@@ -1065,9 +1062,8 @@ class Xhyve extends Hypervisor {
     }
 }
 exports.Xhyve = Xhyve;
-class Qemu extends Hypervisor {
+class Qemu {
     constructor() {
-        super(...arguments);
         this.firmwareDirectory = 'share/qemu';
     }
     get kind() {
