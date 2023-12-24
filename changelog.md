@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     ([#61](https://github.com/cross-platform-actions/action/issues/61),
     [#72](https://github.com/cross-platform-actions/action/issues/72)).
 
+- Use `unsafe` as the cache mode for QEMU disks. This should improve performance ([#67](https://github.com/cross-platform-actions/action/issues/67)).
+
 ## [0.21.1] - 2023-11-03
 ### Fixed
 - FreeBSD jobs occasionally fail when ejecting the disk ([#64](https://github.com/cross-platform-actions/action/issues/64))

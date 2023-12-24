@@ -1530,9 +1530,9 @@ class QemuVm extends qemu_vm_1.Vm {
         // prettier-ignore
         return [
             '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
-            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=unsafe,discard=ignore,format=raw`,
             '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
-            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=unsafe,discard=ignore,format=raw`,
         ];
     }
 }
@@ -2044,9 +2044,9 @@ class Vm extends vm.Vm {
         return [
             '-device', 'virtio-scsi-pci',
             '-device', 'scsi-hd,drive=drive0,bootindex=0',
-            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=unsafe,discard=ignore,format=raw`,
             '-device', 'scsi-hd,drive=drive1,bootindex=1',
-            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=unsafe,discard=ignore,format=raw`,
         ];
     }
     get netDevive() {
