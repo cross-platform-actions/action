@@ -30,10 +30,10 @@ jobs:
   test:
     runs-on: macos-12
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Test
-        uses: cross-platform-actions/action@v0.15.0
+        uses: cross-platform-actions/action@v0.22.0
         with:
           operating_system: freebsd
           version: '13.2'
@@ -85,10 +85,10 @@ jobs:
             host: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.15.0
+        uses: cross-platform-actions/action@v0.22.0
         env:
           MY_ENV1: MY_ENV1
           MY_ENV2: MY_ENV2
