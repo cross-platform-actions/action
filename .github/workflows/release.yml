@@ -16,14 +16,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Extract changelog
-        uses: sean0x42/markdown-extract@v2
-        id: extract_changelog
-        with:
-         file: changelog.md
-         pattern: '\[${{ steps.version.outputs.version }}\].+'
-         no-print-matched-heading: true
-
       - name: Validate version
         id: version
         run: |
@@ -34,6 +26,14 @@ jobs:
             echo valid=true >> "$GITHUB_OUTPUT"
             echo version="$(echo "$tag" | sed 's/^v//')" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Extract changelog
+        uses: sean0x42/markdown-extract@v2
+        id: extract_changelog
+        with:
+         file: changelog.md
+         pattern: '\[${{ steps.version.outputs.version }}\].+'
+         no-print-matched-heading: true
 
       - name: Create release
         if: steps.version.outputs.valid
