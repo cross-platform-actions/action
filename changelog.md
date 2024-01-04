@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Update qemu to 8.2.0 for CVTPS2PD fix ([#78](https://github.com/cross-platform-actions/action/issues/78))
+
 ## [0.22.0] - 2023-12-27
 ### Added
 - Added support for using the action in multiple steps in the same job ([#26](https://github.com/cross-platform-actions/action/issues/26)).

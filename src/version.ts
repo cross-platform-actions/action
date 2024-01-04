@@ -5,7 +5,7 @@ const version = {
     openbsd: 'v0.7.0'
   },
 
-  resources: 'v0.9.1'
+  resources: 'v0.10.0'
 }
 
 export default version
