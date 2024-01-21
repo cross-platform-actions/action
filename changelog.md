@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for FreeBSD 13.3
+- Add support for NetBSD 10.0
+- Add support for NetBSD ARM64 ([#55](https://github.com/cross-platform-actions/action/issues/55))
 
 ## [0.23.0] - 2024-02-18
 ### Added

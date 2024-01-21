@@ -775,7 +775,7 @@ Architecture.Arm64 = class extends Architecture {
         return 'virt';
     }
     get hypervisor() {
-        return new hypervisor.Qemu();
+        return this.host.efiHypervisor;
     }
     get efiHypervisor() {
         return new hypervisor.QemuEfi();
@@ -1332,75 +1332,31 @@ const factories = new Map();
 
 /***/ }),
 
-/***/ 1169:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const architecture_1 = __nccwpck_require__(4019);
-class Arm64 extends architecture_1.Architecture.Arm64 {
-    get hypervisor() {
-        return this.host.efiHypervisor;
-    }
-}
-exports["default"] = Arm64;
-//# sourceMappingURL=arm64.js.map
-
-/***/ }),
-
 /***/ 9122:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const architecture = __importStar(__nccwpck_require__(4019));
-const arm64_1 = __importDefault(__nccwpck_require__(1169));
 const factory_1 = __nccwpck_require__(133);
 const freebsd_1 = __importDefault(__nccwpck_require__(791));
 let FreeBsdFactory = 
 //@ts-ignore
 class FreeBsdFactory extends factory_1.Factory {
-    createImpl(version, hypervisor) {
-        return new freebsd_1.default(this.resolveArchitecture(hypervisor), version);
+    createImpl(version) {
+        return new freebsd_1.default(this.architecture, version);
     }
     validateHypervisor(kind) {
         this.architecture.validateHypervisor(kind);
-    }
-    resolveArchitecture(hypervisor) {
-        if (this.architecture.kind == architecture.Kind.arm64) {
-            return new arm64_1.default(this.architecture.kind, this.architecture.host, hypervisor);
-        }
-        return this.architecture;
     }
 };
 FreeBsdFactory = __decorate([
@@ -1659,7 +1615,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
-const architecture = __importStar(__nccwpck_require__(4019));
 const factory_1 = __nccwpck_require__(133);
 const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
@@ -1682,9 +1637,6 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating NetBSD VM');
-        if (this.architecture.kind !== architecture.Kind.x86_64) {
-            throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
-        }
         const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
@@ -1920,7 +1872,11 @@ const hypervisor_1 = __nccwpck_require__(4288);
 const operating_system_1 = __nccwpck_require__(9385);
 class Qemu extends operating_system_1.OperatingSystem {
     get hypervisor() {
-        return new hypervisor_1.Qemu();
+        const cls = this.architecture.resolve({
+            arm64: hypervisor_1.QemuEfi,
+            x86_64: hypervisor_1.Qemu
+        });
+        return new cls();
     }
     get ssHostPort() {
         return 2847;
@@ -2442,7 +2398,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const version = {
     operating_system: {
         freebsd: 'v0.7.0',
-        netbsd: 'v0.2.0',
+        netbsd: 'v0.3.0',
         openbsd: 'v0.7.0'
     },
     resources: 'v0.11.0'
