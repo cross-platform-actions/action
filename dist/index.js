@@ -1673,7 +1673,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
-const architecture = __importStar(__nccwpck_require__(4019));
 const factory_1 = __nccwpck_require__(133);
 const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
@@ -1696,10 +1695,7 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating NetBSD VM');
-        if (this.architecture.kind !== architecture.Kind.x86_64) {
-            throw Error(`Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`);
-        }
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
@@ -2447,7 +2443,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const version = {
     operating_system: {
         freebsd: 'v0.5.0',
-        netbsd: 'v0.2.0',
+        netbsd: 'v0.3.0-rc1',
         openbsd: 'v0.7.0'
     },
     resources: 'v0.10.0'

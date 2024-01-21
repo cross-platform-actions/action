@@ -43,19 +43,13 @@ export default class NetBsd extends Qemu {
   ): vmModule.Vm {
     core.debug('Creating NetBSD VM')
 
-    if (this.architecture.kind !== architecture.Kind.x86_64) {
-      throw Error(
-        `Not implemented: NetBSD guests are not implemented on ${this.architecture.name}`
-      )
-    }
-
     const config: vmModule.Configuration = {
       ...configuration,
 
       ssHostPort: this.ssHostPort,
       firmware: path.join(
         firmwareDirectory.toString(),
-        this.hypervisor.firmwareFile
+        this.architecture.hypervisor.firmwareFile
       ),
 
       // qemu
