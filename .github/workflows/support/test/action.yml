@@ -34,6 +34,8 @@ runs:
           shutdown_vm: false
           run: |
             uname -a
+            uname -m
+            uname -p
             echo $SHELL
             pwd
             ls -lah
@@ -41,5 +43,5 @@ runs:
             env | sort
             [ "`uname -s`" = '${{ inputs.name }}' ]
             [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ]
-            [ "`uname -m`" = '${{ inputs.uname_hardware }}' ]
+            [ "`uname -m`" = '${{ inputs.uname_hardware }}' ] || [ "`uname -p`" = '${{ inputs.uname_hardware }}' ]
             [ "`pwd`" = '${{ inputs.work_directory }}' ]

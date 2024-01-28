@@ -105,7 +105,7 @@ export abstract class Architecture {
     }
 
     override get hypervisor(): hypervisor.Hypervisor {
-      return new hypervisor.Qemu()
+      return this.host.efiHypervisor
     }
 
     override get efiHypervisor(): hypervisor.Hypervisor {
