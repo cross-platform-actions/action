@@ -1369,6 +1369,9 @@ class FreeBsdFactory extends factory_1.Factory {
     createImpl(version) {
         return new freebsd_1.default(this.architecture, version);
     }
+    validateHypervisor(kind) {
+        this.architecture.validateHypervisor(kind);
+    }
 };
 FreeBsdFactory = __decorate([
     factory_1.factory
