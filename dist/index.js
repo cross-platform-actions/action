@@ -208,7 +208,7 @@ class Action {
             core.debug(`Syncing files to VM, excluding: ${excludePaths}`);
             // prettier-ignore
             yield exec.exec('rsync', [
-                `-auzrtopg${this.syncVerboseFlag}`,
+                `-auz${this.syncVerboseFlag}`,
                 '--exclude', '_actions/cross-platform-actions/action',
                 ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
                 `${this.homeDirectory}/`,
@@ -223,7 +223,7 @@ class Action {
             core.info('Syncing back files');
             // prettier-ignore
             yield exec.exec('rsync', [
-                `-uzrtopg${this.syncVerboseFlag}`,
+                `-auz${this.syncVerboseFlag}`,
                 `runner@${this.cpaHost}:work/`,
                 this.homeDirectory
             ]);
