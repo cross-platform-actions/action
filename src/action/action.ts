@@ -232,7 +232,7 @@ export class Action {
     core.debug(`Syncing files to VM, excluding: ${excludePaths}`)
     // prettier-ignore
     await exec.exec('rsync', [
-      `-auzrtopg${this.syncVerboseFlag}`,
+      `-auz${this.syncVerboseFlag}`,
       '--exclude', '_actions/cross-platform-actions/action',
       ...flatMap(excludePaths, p => ['--exclude', p]),
       `${this.homeDirectory}/`,
@@ -246,7 +246,7 @@ export class Action {
     core.info('Syncing back files')
     // prettier-ignore
     await exec.exec('rsync', [
-      `-uzrtopg${this.syncVerboseFlag}`,
+      `-auz${this.syncVerboseFlag}`,
       `runner@${this.cpaHost}:work/`,
       this.homeDirectory
     ])
