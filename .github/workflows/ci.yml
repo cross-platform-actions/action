@@ -25,7 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '14.0'
           - '13.2'
           - '13.1'
           - '13.0'
@@ -51,6 +50,29 @@ jobs:
 
           - architecture: { name: arm64 }
             host: { name: macos-latest }
+
+        include:
+          - version: '14.0'
+            architecture: { name: arm64 }
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '14.0'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '14.0'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: macos-latest
+              work_directory: /Users/runner/work/action/action
 
     steps:
       - name: Checkout
