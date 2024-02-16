@@ -8,6 +8,12 @@ export class QemuVm extends Vm {
   protected override get netDevive(): string {
     return this.architecture.networkDevice
   }
+
+  protected override get accelerators(): string[] {
+    return this.input.version.startsWith('6')
+      ? ['hvf', 'tcg'] // KVM doesn't work with versions older than 7.0
+      : ['hvf', 'kvm', 'tcg']
+  }
 }
 
 export class QemuVmX86_64 extends QemuVm {

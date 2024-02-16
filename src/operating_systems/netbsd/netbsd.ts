@@ -60,7 +60,6 @@ export default class NetBsd extends Qemu {
 
       // qemu
       cpu: this.architecture.cpu,
-      accelerator: this.architecture.accelerator,
       machineType: this.architecture.machineType,
 
       // xhyve

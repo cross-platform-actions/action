@@ -2,7 +2,6 @@ import {Vm} from '../../../src/operating_systems/netbsd/qemu_vm'
 import * as arch from '../../../src/architecture'
 import {host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
-import {Accelerator} from '../../../src/vm'
 import '../../../src/operating_systems/netbsd/netbsd'
 import {Input} from '../../../src/action/input'
 
@@ -25,7 +24,6 @@ describe('NetBSD QemuVm', () => {
     diskImage: '',
     ssHostPort: ssHostPort,
     cpu: '',
-    accelerator: Accelerator.tcg,
     machineType: '',
     uuid: '',
     resourcesDiskImage: '',

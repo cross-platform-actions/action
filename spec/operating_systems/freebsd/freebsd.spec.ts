@@ -4,7 +4,6 @@ import FreeBsd from '../../../src/operating_systems/freebsd/freebsd'
 import hostModule from '../../../src/host'
 import * as arch from '../../../src/architecture'
 import * as os from '../../../src/operating_systems/kind'
-import {Accelerator} from '../../../src/vm'
 import * as hypervisor from '../../../src/hypervisor'
 import {Input} from '../../../src/action/input'
 import {Host} from '../../../src/host'
@@ -55,7 +54,6 @@ describe('FreeBSD OperatingSystem', () => {
           ...config,
           ssHostPort: 2847,
           cpu: 'max',
-          accelerator: Accelerator.tcg,
           machineType: 'q35',
           uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
           firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`

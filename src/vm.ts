@@ -11,11 +11,6 @@ import {wait} from './wait'
 import * as architecture from './architecture'
 import {Input} from './action/input'
 
-export enum Accelerator {
-  hvf,
-  tcg
-}
-
 export interface Configuration {
   memory: string
   cpuCount: number
@@ -24,7 +19,6 @@ export interface Configuration {
 
   // qemu
   cpu: string
-  accelerator: Accelerator
   machineType: string
 
   // xhyve
@@ -72,7 +66,7 @@ export abstract class Vm {
   protected readonly hypervisorDirectory: fs.PathLike
   protected readonly resourcesDirectory: fs.PathLike
 
-  private readonly input: Input
+  protected readonly input: Input
 
   constructor(
     hypervisorDirectory: fs.PathLike,

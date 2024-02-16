@@ -2,7 +2,6 @@ import NetBsd from '../../../src/operating_systems/netbsd/netbsd'
 import * as hostModule from '../../../src/host'
 import * as arch from '../../../src/architecture'
 import * as os from '../../../src/operating_systems/kind'
-import {Accelerator} from '../../../src/vm'
 import HostQemu from '../../../src/host_qemu'
 import * as hypervisor from '../../../src/hypervisor'
 import * as qemu from '../../../src/qemu_vm'
@@ -82,7 +81,6 @@ describe('NetBSD OperatingSystem', () => {
           ...config,
           ssHostPort: 2847,
           cpu: 'max',
-          accelerator: Accelerator.tcg,
           machineType: 'q35',
           uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
           firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`
@@ -150,7 +148,6 @@ describe('NetBSD OperatingSystem', () => {
             ...config,
             ssHostPort: 2847,
             cpu: 'max',
-            accelerator: Accelerator.hvf,
             machineType: 'q35',
             uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
             firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`

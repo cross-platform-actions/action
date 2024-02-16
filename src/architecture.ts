@@ -5,7 +5,6 @@ import {ResourceUrls} from './operating_systems/resource_urls'
 import * as os from './operating_systems/kind'
 import OpenBsd from './operating_systems/openbsd/openbsd'
 import {getOrThrow, getOrDefaultOrThrow} from './utility'
-import * as vm from './vm'
 
 export enum Kind {
   arm64,
@@ -50,7 +49,6 @@ export abstract class Architecture {
   abstract get resourceUrl(): string
   abstract get cpu(): string
   abstract get machineType(): string
-  abstract get accelerator(): vm.Accelerator
   abstract get hypervisor(): hypervisor.Hypervisor
   abstract get efiHypervisor(): hypervisor.Hypervisor
 
@@ -100,10 +98,6 @@ export abstract class Architecture {
       return 'virt'
     }
 
-    override get accelerator(): vm.Accelerator {
-      return vm.Accelerator.tcg
-    }
-
     override get hypervisor(): hypervisor.Hypervisor {
       return new hypervisor.Qemu()
     }
@@ -145,10 +139,6 @@ export abstract class Architecture {
 
     override get machineType(): string {
       return 'q35'
-    }
-
-    override get accelerator(): vm.Accelerator {
-      return this.hostQemu.accelerator
     }
 
     override get hypervisor(): hypervisor.Hypervisor {
