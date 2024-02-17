@@ -45,6 +45,7 @@ export abstract class Vm extends vm.Vm {
 
       '-display', 'none',
       '-monitor', 'none',
+      '-serial', `file:${this.logFile}`,
       // '-nographic',
 
       '-boot', 'strict=off',

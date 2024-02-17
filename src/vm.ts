@@ -65,6 +65,7 @@ export abstract class Vm {
   private static _isRunning?: boolean
 
   readonly hypervisorPath: fs.PathLike
+  protected readonly logFile: fs.PathLike = '/tmp/cross-platform-actions.log'
   protected vmProcess: Process = new LiveProcess()
   protected readonly architecture: architecture.Architecture
   protected readonly configuration: vm.Configuration

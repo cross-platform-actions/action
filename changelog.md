@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for FreeBSD 14.0 ([#74](https://github.com/cross-platform-actions/action/issues/74))
+- Add post run step that prints the VM output
 
 ### Fixed
 - OpenBSD VM fails during "Initializing VM" with QEMU on macOS ([#73](https://github.com/cross-platform-actions/action/issues/73))

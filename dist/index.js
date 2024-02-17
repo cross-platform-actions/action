@@ -2051,6 +2051,7 @@ class Vm extends vm.Vm {
             '-netdev', this.netdev,
             '-display', 'none',
             '-monitor', 'none',
+            '-serial', `file:${this.logFile}`,
             // '-nographic',
             '-boot', 'strict=off',
             ...this.firmwareFlags,
@@ -2518,6 +2519,7 @@ class LiveProcess {
 }
 class Vm {
     constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, architecture, input, configuration) {
+        this.logFile = '/tmp/cross-platform-actions.log';
         this.vmProcess = new LiveProcess();
         this.hypervisorDirectory = hypervisorDirectory;
         this.resourcesDirectory = resourcesDirectory;
