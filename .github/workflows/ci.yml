@@ -25,6 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '13.3'
           - '13.2'
           - '13.1'
           - '13.0'
