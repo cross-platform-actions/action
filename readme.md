@@ -180,6 +180,7 @@ operating system will list which versions are supported.
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
 | 14.0    | ✅     | ✅     |
+| 13.3    | ✅     | ✅     |
 | 13.2    | ✅     | ✅     |
 | 13.1    | ✅     | ✅     |
 | 13.0    | ✅     | ✅     |
