@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for NetBSD 9.4
 - Add support for FreeBSD 14.1
 
+### Deprecated
+- The Xhyve hypervisor has been deprecated and will be removed in a future
+    release. QEMU will be the only available hypervisor. The reason being
+    maintenance of the Xhyve hypervisor seemed to have stopped. It's also
+    starting to become next to impossible to build on later versions of macOS.
+    Please switch to the QEMU hypervisor by switching to the `ubuntu-latest`
+    runner.
+
+- The `hypervisor` input parameter has been deprecated will be removed in a
+    future release. The reason being support for the Xhyve hypervisor has been
+    deprecated, making this input parameter redundant. Please remove the use of
+    the `hypervisor` input parameter and switch to the `ubuntu-latest` runner.
+
 ## [0.24.0] - 2024-04-12
 ### Added
 - Add support for FreeBSD 13.3

@@ -38,6 +38,10 @@ inputs:
   hypervisor:
     required: false
     description: The hypervisor to use when  starting the virtual machine
+    deprecationMessage: >
+      The Xhyve hypervisor has been deprecated and will be removed in a future
+      update. QEMU will be the only available hypervisor, making this input
+      parameter redundant.
   image_url:
     required: false
     description: URL for running the action with a custom image.
