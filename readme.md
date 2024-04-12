@@ -48,9 +48,10 @@ jobs:
 
 ### Full Example
 
-Here's a sample workflow file which will set up a matrix resulting in four jobs.
-One which will run on FreeBSD 14.0, one which runs OpenBSD 7.5, one which runs
-NetBSD 10.0 and one which runs OpenBSD 7.5 on ARM64.
+Here's a sample workflow file which will set up a matrix resulting in four
+jobs. One which will run on FreeBSD 14.0, one which runs OpenBSD 7.5, one which
+runs NetBSD 10.0, one which runs OpenBSD 7.5 on ARM64 and one which runs NetBSD
+10.0 on ARM64.
 
 ```yaml
 name: CI
@@ -79,6 +80,9 @@ jobs:
             architecture: x86-64
             version: '10.0'
 
+          - name: netbsd
+            architecture: arm64
+            version: '10.0
     steps:
       - uses: actions/checkout@v4
 
