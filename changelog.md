@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for FreeBSD 13.3
 - Add support for NetBSD 10.0
 - Add support for NetBSD ARM64 ([#55](https://github.com/cross-platform-actions/action/issues/55))
-- Add support for OpenBSD ([openbsd-builder#16](https://github.com/cross-platform-actions/openbsd-builder/issues/16))
+- Add support for OpenBSD 7.5 ([openbsd-builder#16](https://github.com/cross-platform-actions/openbsd-builder/issues/16))
 
 ## [0.23.0] - 2024-02-18
 ### Added
