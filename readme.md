@@ -82,7 +82,8 @@ jobs:
 
           - name: netbsd
             architecture: arm64
-            version: '10.0
+            version: '10.0'
+
     steps:
       - uses: actions/checkout@v4
 
