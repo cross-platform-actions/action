@@ -194,10 +194,11 @@ operating system will list which versions are supported.
 
 ### [NetBSD][netbsd_builder] (`netbsd`)
 
-| Version | x86-64 |
-| ------- | ------ |
-| 9.3     | ✅     |
-| 9.2     | ✅     |
+| Version | x86-64 | arm64 |
+|---------|--------|-------|
+| 10.0    | ✅     | ✅    |
+| 9.3     | ✅     | ❌    |
+| 9.2     | ✅     | ❌    |
 
 ### Architectures
 
