@@ -150,6 +150,7 @@ jobs:
       matrix:
         version:
           - '10.0'
+          - '9.4'
           - '9.3'
           - '9.2'
 
@@ -168,6 +169,9 @@ jobs:
             work_directory: /Users/runner/work/action/action
 
         exclude:
+          - version: '9.4'
+            architecture: { name: arm64 }
+
           - version: '9.3'
             architecture: { name: arm64 }
 

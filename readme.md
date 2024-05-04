@@ -197,6 +197,7 @@ operating system will list which versions are supported.
 | Version | x86-64 | arm64 |
 |---------|--------|-------|
 | 10.0    | ✅     | ✅    |
+| 9.4     | ✅     | ❌    |
 | 9.3     | ✅     | ❌    |
 | 9.2     | ✅     | ❌    |
 
