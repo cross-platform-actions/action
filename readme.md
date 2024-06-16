@@ -66,7 +66,7 @@ jobs:
         os:
           - name: freebsd
             architecture: x86-64
-            version: '14.0'
+            version: '14.1'
 
           - name: openbsd
             architecture: x86-64
@@ -184,6 +184,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
+| 14.1    | ✅     | ✅     |
 | 14.0    | ✅     | ✅     |
 | 13.3    | ✅     | ✅     |
 | 13.2    | ✅     | ✅     |

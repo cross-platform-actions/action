@@ -53,6 +53,20 @@ jobs:
             host: { name: macos-13 }
 
         include:
+          - version: '14.1'
+            architecture: { name: arm64 }
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '14.1'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
           - version: '14.0'
             architecture: { name: arm64 }
             host:
