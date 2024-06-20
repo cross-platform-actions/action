@@ -124,9 +124,8 @@ This section lists the available inputs for the action.
 | `version`               | ✅       | ❌                | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                                                                                                                                 |
 | `shell`                 | ❌       | `default`         | string  | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash`                                                                                                       |
 | `environment_variables` | ❌       | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces. The `CI` and any environment variables starting with `GITHUB_` are forwarded automatically.                                                     |
-| `memory`                | ❌       | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                                                                                                                       |
-| `cpu_count`             | ❌       | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                                                                                                                       |
-| `hypervisor`            | ❌       | `xhyve` or `qemu` | string  | The hypervisor to use for running the virtual machine. For Linux runners the only valid value is `qemu`. For macOS runners the default for OpenBSD and FreeBSD is `xhyve` for all other platforms the default is `qemu`.                                     |
+| `memory`                | ❌       | `6G`              | string  | The amount of memory for the virtual machine.                                                                                                                                                                                                                |
+| `cpu_count`             | ❌       | `2`               | integer | The number of CPU cores for the virtual machine.                                                                                                                                                                                                             |
 | `image_url`             | ❌       | ❌                | string  | URL a custom VM image that should be used in place of the default ones.                                                                                                                                                                                      |
 | `sync_files`            | ❌       | `true`            | string  | Specifies if the local files should be synchronized to the virtual machine and in which direction. Valid values are `true`, `false`, `runner-to-vm` and `vm-to-runner`. `true` synchronizes files in both directions. `false` disables file synchronization. |
 | `shutdown_vm`           | ❌       | `true`            | boolean | Specifies if the VM should be shutdown after the action has been run.                                                                                                                                                                                        |
@@ -219,14 +218,9 @@ operating systems, see the sections for each operating system above.
 This section lists the available hypervisors, which platforms they can run and
 which runners they can run on.
 
-| Hypervisor | Linux Runner | macOS Runner | FreeBSD | OpenBSD | Other Platforms |
-|------------|--------------|--------------|---------|---------|-----------------|
-| `xhyve`    | ❌           | ✅          | ✅      | ✅      | ❌              |
-| `qemu`     | ✅           | ✅          | ✅      | ✅      | ✅              |
-
-`xhyve` is in general slightly faster than `qemu`. `xhyve` might have slightly
-larger boot overhead due to the need to discover the IP-address. `qemu` is
-slightly more stable than `xhyve`.
+| Hypervisor | Linux Runner | FreeBSD | OpenBSD | Other Platforms |
+|------------|--------------|---------|---------|-----------------|
+| `qemu`     | ✅           | ✅      | ✅      | ✅             |
 
 ### Runners
 
@@ -236,17 +230,6 @@ they can run.
 | Runner                                        | OpenBSD | FreeBSD | NetBSD | ARM64 |
 | ----------------------------------------------| ------- | ------- | ------ | ----- |
 | **Linux**                                     | ✅      | ✅      | ✅     | ✅   |
-| **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ✅     | ❌   |
-
-In general the Ubuntu runners are the preferred choice. Both macOS and Ubuntu
-runners support hardware accelerated nested virtualization. But the Ubuntu
-runners have more resources and therefore better performance. Hardware
-acceleration only applies when the runner architecture and the guest
-architecture are the same, in this case `x86-64`. `macos-14` runners which run
-on Apple Silicon does not support hardware accelerated nested virtualization
-and are not supported at all. For OpenBSD, only version 7.0 and later work with
-hardware acceleration on Linux runners. For macOS runners, all versions work
-with hardware acceleration.
 
 ## `Linux on Non-x86 Architectures`
 
@@ -285,36 +268,27 @@ For those not familiar with Docker, here's an explanation of the above command:
 
 ## `Under the Hood`
 
-GitHub Actions currently only support macOS, Linux, and
-Windows. To be able to run other platforms, this GitHub action runs the
-commands inside a virtual machine (VM). If the host platform is macOS the
-hypervisor can take advantage of nested virtualization.
+GitHub Actions currently only support macOS, Linux, and Windows. To be able to
+run other platforms, this GitHub action runs the commands inside a virtual
+machine (VM). If the host platform is macOS or Linux the hypervisor can take
+advantage of nested virtualization.
 
-The FreeBSD and OpenBSD VMs run on the [xhyve][xhyve] hypervisor (on a macOS
-host), while the other platforms run on the [QEMU][qemu] hypervisor (on a Linux
-host). xhyve is built on top of Apple's [Hypervisor][hypervisor_framework]
-framework. The Hypervisor framework allows to implement hypervisors with
-support for hardware acceleration without the need for kernel extensions. xhyve
-is a lightweight hypervisor that boots the guest operating systems quickly and
-requires no dependencies outside of what's provided by the system. QEMU is a
-more general purpose hypervisor that runs on most host platforms and supports
-most guest systems. It's a bit slower than xhyve because it's general purpose
-and it cannot use nested virtualization on the Linux hosts provided by GitHub.
+All platforms run on the [QEMU][qemu] hypervisor. QEMU is a general purpose
+hypervisor and emulator that runs on most host platforms and supports most
+guest systems.
 
 The VM images running inside the hypervisor are built using [Packer][packer].
 It's a tool for automatically creating VM images, installing the guest
 operating system and doing any final provisioning.
 
 The GitHub action uses SSH to communicate and execute commands inside the VM.
-It uses [rsync][rsync] to share files between the guest VM and the host. xhyve
-does not have any native support for sharing files. To authenticate the SSH
-connection a unique key pair is used. This pair is generated each time the
-action is run. The public key is added to the VM image and the host stores the private key.
-Since xhyve does not support file sharing, a secondary hard
-drive, which is backed by a file, is created. The public key is stored on this
-hard drive, which the VM then mounts. At boot time, the secondary hard
-drive will be identified and the public key will be copied to the appropriate
-location.
+It uses [rsync][rsync] to share files between the guest VM and the host. To
+authenticate the SSH connection a unique key pair is used. This pair is
+generated each time the action is run. The public key is added to the VM image
+and the host stores the private key. A secondary hard drive, which is backed by
+a file, is created. The public key is stored on this hard drive, which the VM
+then mounts. At boot time, the secondary hard drive will be identified and the
+public key will be copied to the appropriate location.
 
 To reduce the time it takes for the GitHub action to start executing the
 commands specified by the user, it aims to boot the guest operating systems as
@@ -416,9 +390,7 @@ files within the [`test/http`](test/http) are ignore by Git.
     machine, for macOS, this is `http://host.docker.internal:8080`. By default,
     the HTTP server is listening on port `8080`.
 
-[xhyve]: https://github.com/machyve/xhyve
 [qemu]: https://www.qemu.org
-[hypervisor_framework]: https://developer.apple.com/library/mac/documentation/DriversKernelHardware/Reference/Hypervisor/index.html
 [rsync]: https://en.wikipedia.org/wiki/Rsync
 [resources]: https://github.com/cross-platform-actions/resources
 [packer]: https://www.packer.io
