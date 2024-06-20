@@ -877,6 +877,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const process = __importStar(__nccwpck_require__(7282));
+const core = __importStar(__nccwpck_require__(2186));
 const host_qemu_1 = __importDefault(__nccwpck_require__(9097));
 const hypervisor = __importStar(__nccwpck_require__(4288));
 const qemu = __importStar(__nccwpck_require__(1106));
@@ -910,6 +911,11 @@ class Module {
     }
     Module.Host = Host;
     class MacOs extends Host {
+        constructor() {
+            super();
+            core.warning('Support for macOS runners has been deprecated and will be removed in' +
+                'a future update. Please use the `ubuntu-latest` runner instead.');
+        }
         get vmModule() {
             return xhyve;
         }

@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for FreeBSD 14.1
 
 ### Deprecated
+- Support for macOS runners has been deprecated and will be removed in a future
+    release. The reason for using macOS runners in the past has been because of
+    the support for hardware accelerated nested virtualization using the
+    Hypervisor framework. Since the creation of this action, the Ubuntu runners
+    have been upgraded with better performance and added support for hardware
+    accelerated nested virtualization using KVM. QEMU is also more stable when
+    using KVM compared to the Hypervisor framework. Please use the
+    `ubuntu-latest` runner instead.
+
 - The Xhyve hypervisor has been deprecated and will be removed in a future
     release. QEMU will be the only available hypervisor. The reason being
     maintenance of the Xhyve hypervisor seemed to have stopped. It's also

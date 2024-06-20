@@ -1,5 +1,7 @@
 import * as process from 'process'
 
+import * as core from '@actions/core'
+
 import HostQemu from './host_qemu'
 import * as hypervisor from './hypervisor'
 import * as qemu from './qemu_vm'
@@ -49,6 +51,15 @@ namespace Module {
   }
 
   class MacOs extends Host {
+    constructor() {
+      super()
+
+      core.warning(
+        'Support for macOS runners has been deprecated and will be removed in' +
+          'a future update. Please use the `ubuntu-latest` runner instead.'
+      )
+    }
+
     get vmModule(): typeof xhyve | typeof qemu {
       return xhyve
     }
