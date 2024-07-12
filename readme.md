@@ -172,6 +172,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
+| 7.5     | ✅     | ✅     |
 | 7.4     | ✅     | ✅     |
 | 7.3     | ✅     | ✅     |
 | 7.2     | ✅     | ✅     |
