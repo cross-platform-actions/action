@@ -2403,7 +2403,7 @@ exports.group = group;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const version = {
     operating_system: {
-        freebsd: 'v0.9.0',
+        freebsd: 'v0.10.0',
         netbsd: 'v0.4.0',
         openbsd: 'v0.9.0'
     },
