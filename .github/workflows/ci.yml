@@ -179,6 +179,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '10.1'
           - '10.0'
           - '9.4'
           - '9.3'

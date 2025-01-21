@@ -78,11 +78,11 @@ jobs:
 
           - name: netbsd
             architecture: x86-64
-            version: '10.0'
+            version: '10.1'
 
           - name: netbsd
             architecture: arm64
-            version: '10.0'
+            version: '10.1'
 
     steps:
       - uses: actions/checkout@v4
@@ -200,6 +200,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64 |
 |---------|--------|-------|
+| 10.1    | ✅     | ✅    |
 | 10.0    | ✅     | ✅    |
 | 9.4     | ✅     | ❌    |
 | 9.3     | ✅     | ❌    |
