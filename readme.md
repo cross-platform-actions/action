@@ -188,6 +188,7 @@ operating system will list which versions are supported.
 | 14.2    | ✅     | ✅     |
 | 14.1    | ✅     | ✅     |
 | 14.0    | ✅     | ✅     |
+| 13.5    | ✅     | ✅     |
 | 13.4    | ✅     | ✅     |
 | 13.3    | ✅     | ✅     |
 | 13.2    | ✅     | ✅     |
