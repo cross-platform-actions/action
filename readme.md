@@ -49,9 +49,9 @@ jobs:
 ### Full Example
 
 Here's a sample workflow file which will set up a matrix resulting in four
-jobs. One which will run on FreeBSD 14.0, one which runs OpenBSD 7.6, one which
-runs NetBSD 10.0, one which runs OpenBSD 7.6 on ARM64 and one which runs NetBSD
-10.0 on ARM64.
+jobs. One which will run on FreeBSD 14.0, one which runs OpenBSD 7.7, one which
+runs NetBSD 10.0, one which runs OpenBSD 7.7 on ARM64 and one which runs NetBSD
+10.1 on ARM64.
 
 ```yaml
 name: CI
@@ -70,11 +70,11 @@ jobs:
 
           - name: openbsd
             architecture: x86-64
-            version: '7.6'
+            version: '7.7'
 
           - name: openbsd
             architecture: arm64
-            version: '7.6'
+            version: '7.7'
 
           - name: netbsd
             architecture: x86-64
@@ -172,6 +172,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
+| 7.7     | ✅     | ✅     |
 | 7.6     | ✅     | ✅     |
 | 7.5     | ✅     | ✅     |
 | 7.4     | ✅     | ✅     |
