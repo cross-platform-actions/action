@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+# This script is a wrapper around the `node` command. It's used to handle both
+# newer versions that does type stripping by default and older versions which
+# does not suppor type stripping.
+
+set -eu
+
+# If we have the `--no-experimental-strip-types` use it, otherwise we don't.
+# We need to pass the `--help` flag otherwise it will enter the interactive
+# mode.
+if node --no-experimental-strip-types --help > /dev/null 2>&1; then
+  node --no-experimental-strip-types "$@"
+else
+  node "$@"
+fi
