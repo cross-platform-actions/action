@@ -30,7 +30,10 @@ export async function execWithOutput(
   return output.toString()
 }
 
-export function getOrDefaultOrThrow<V>(record: Record<string, V>, key: string) {
+export function getOrDefaultOrThrow<V>(
+  record: Record<string, V>,
+  key: string
+): V {
   const value = record[key] ?? record['default']
 
   if (value === undefined) throw Error(`Missing key and no default key: ${key}`)
@@ -38,7 +41,10 @@ export function getOrDefaultOrThrow<V>(record: Record<string, V>, key: string) {
   return value
 }
 
-export function getOrThrow<Key, Value>(map: ReadonlyMap<Key, Value>, key: Key) {
+export function getOrThrow<Key, Value>(
+  map: ReadonlyMap<Key, Value>,
+  key: Key
+): Value {
   const value = map.get(key)
 
   if (value === undefined) throw new Error(`Key not found: ${key}`)
