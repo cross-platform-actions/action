@@ -1230,6 +1230,21 @@ class OperatingSystem {
     get name() {
         return this.constructor.name.toLocaleLowerCase();
     }
+    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Converting qcow2 image to raw');
+            const resDir = resourcesDirectory.toString();
+            yield exec.exec(path.join(resDir, 'qemu-img'), [
+                'convert',
+                '-f',
+                'qcow2',
+                '-O',
+                'raw',
+                diskImage.toString(),
+                path.join(resDir, targetDiskName.toString())
+            ]);
+        });
+    }
     get uuid() {
         return '864ED7F0-7876-4AA7-8511-816FABCFA87F';
     }
@@ -1403,15 +1418,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -1425,19 +1431,11 @@ const resource_disk_1 = __nccwpck_require__(7102);
 const version_1 = __importDefault(__nccwpck_require__(8217));
 const xhyve_vm_1 = __nccwpck_require__(6176);
 let FreeBsd = class FreeBsd extends os.OperatingSystem {
-    constructor(arch, version) {
-        super(arch, version);
-    }
     get hypervisorUrl() {
         return this.hypervisor.getResourceUrl(this.architecture);
     }
     get ssHostPort() {
         return this.hypervisor.sshPort;
-    }
-    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
-        });
     }
     get virtualMachineImageReleaseVersion() {
         return version_1.default.operating_system.freebsd;
@@ -1606,15 +1604,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -1622,24 +1611,15 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const factory_1 = __nccwpck_require__(133);
-const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
 const qemu_1 = __nccwpck_require__(1526);
 const qemu_vm = __importStar(__nccwpck_require__(7598));
 let NetBsd = class NetBsd extends qemu_1.Qemu {
-    constructor(arch, version) {
-        super(arch, version);
-    }
     get hypervisorUrl() {
         return this.architecture.resourceUrl;
     }
     get virtualMachineImageReleaseVersion() {
         return version_1.default.operating_system.netbsd;
-    }
-    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
-        });
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating NetBSD VM');
@@ -1745,15 +1725,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -1766,19 +1737,11 @@ const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
 const xhyve_vm_1 = __nccwpck_require__(9662);
 let OpenBsd = class OpenBsd extends os.OperatingSystem {
-    constructor(arch, version) {
-        super(arch, version);
-    }
     get hypervisorUrl() {
         return this.hypervisor.getResourceUrl(this.architecture);
     }
     get ssHostPort() {
         return this.hypervisor.sshPort;
-    }
-    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
-        });
     }
     get virtualMachineImageReleaseVersion() {
         return version_1.default.operating_system.openbsd;

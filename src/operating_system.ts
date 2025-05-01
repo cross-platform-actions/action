@@ -80,11 +80,23 @@ export abstract class OperatingSystem {
     configuration: VmConfiguration
   ): vmModule.Vm
 
-  abstract prepareDisk(
+  async prepareDisk(
     diskImage: fs.PathLike,
     targetDiskName: fs.PathLike,
     resourcesDirectory: fs.PathLike
-  ): Promise<void>
+  ): Promise<void> {
+    core.debug('Converting qcow2 image to raw')
+    const resDir = resourcesDirectory.toString()
+    await exec.exec(path.join(resDir, 'qemu-img'), [
+      'convert',
+      '-f',
+      'qcow2',
+      '-O',
+      'raw',
+      diskImage.toString(),
+      path.join(resDir, targetDiskName.toString())
+    ])
+  }
 
   protected get uuid(): string {
     return '864ED7F0-7876-4AA7-8511-816FABCFA87F'

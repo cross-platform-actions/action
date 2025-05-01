@@ -21,14 +21,6 @@ export default class NetBsd extends Qemu {
     return versions.operating_system.netbsd
   }
 
-  override async prepareDisk(
-    diskImage: fs.PathLike,
-    targetDiskName: fs.PathLike,
-    resourcesDirectory: fs.PathLike
-  ): Promise<void> {
-    await os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
-  }
-
   createVirtualMachine(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,

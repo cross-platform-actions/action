@@ -22,14 +22,6 @@ export default class FreeBsd extends os.OperatingSystem {
     return this.hypervisor.sshPort
   }
 
-  override async prepareDisk(
-    diskImage: fs.PathLike,
-    targetDiskName: fs.PathLike,
-    resourcesDirectory: fs.PathLike
-  ): Promise<void> {
-    await os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory)
-  }
-
   get virtualMachineImageReleaseVersion(): string {
     return versions.operating_system.freebsd
   }
