@@ -3,7 +3,6 @@ import * as path from 'path'
 
 import * as core from '@actions/core'
 
-import * as architecture from '../../architecture'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
 import * as os from '../../operating_system'
@@ -14,10 +13,6 @@ import {Input} from '../../action/input'
 
 @operatingSystem
 export default class NetBsd extends Qemu {
-  constructor(arch: architecture.Architecture, version: string) {
-    super(arch, version)
-  }
-
   get hypervisorUrl(): string {
     return this.architecture.resourceUrl
   }
