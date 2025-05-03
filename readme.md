@@ -50,8 +50,8 @@ jobs:
 
 Here's a sample workflow file which will set up a matrix resulting in four
 jobs. One which will run on FreeBSD 14.0, one which runs OpenBSD 7.7, one which
-runs NetBSD 10.0, one which runs OpenBSD 7.7 on ARM64 and one which runs NetBSD
-10.1 on ARM64.
+runs NetBSD 10.0, one which runs OpenBSD 7.7 on ARM64, one which runs NetBSD
+10.1 on ARM64 and one which runs Haiku R1/beta5 on x86-64.
 
 ```yaml
 name: CI
@@ -83,6 +83,10 @@ jobs:
           - name: netbsd
             architecture: arm64
             version: '10.1'
+
+          - name: haiku
+            architecture: x86-64
+            version: 'r1beta5'
 
     steps:
       - uses: actions/checkout@v4
@@ -207,6 +211,16 @@ operating system will list which versions are supported.
 | 9.4     | ✅     | ❌    |
 | 9.3     | ✅     | ❌    |
 | 9.2     | ✅     | ❌    |
+
+### [Haiku][haiku_builder] (`haiku`)
+
+Note, Haiku is a single user system. That means the user that runs the the job
+is the default (and only) user, `user`, instead of `runner`, as for the other
+operating systems.
+
+| Version | x86-64 |
+|---------|--------|
+| r1beta5 | ✅     |
 
 ### Architectures
 
@@ -404,4 +418,5 @@ files within the [`test/http`](test/http) are ignore by Git.
 [openbsd_builder]: https://github.com/cross-platform-actions/openbsd-builder
 [freebsd_builder]: https://github.com/cross-platform-actions/freebsd-builder
 [netbsd_builder]: https://github.com/cross-platform-actions/netbsd-builder
+[haiku_builder]: https://github.com/cross-platform-actions/haiku-builder
 [act]: https://github.com/nektos/act
