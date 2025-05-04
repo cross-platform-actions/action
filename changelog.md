@@ -11,8 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for OpenBSD 7.7 ([openbsd-builder#21](https://github.com/cross-platform-actions/openbsd-builder/pull/21))
 
 ### Changed
-- Use `virtio-blk-pci-non-transitional` as the block device to improve
-    performance
+- Use `virtio-blk-pci` as the block device to improve performance
 
 ## [0.27.0] - 2025-01-22
 ### Added
