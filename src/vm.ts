@@ -6,10 +6,14 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
 import * as vm from './vm'
-import {ExecuteOptions} from './utility'
+import {ExecuteOptions, ExecExecutor, Executor} from './utility'
 import {wait} from './wait'
 import * as architecture from './architecture'
 import {Input} from './action/input'
+import {
+  DefaultVmFileSystemSynchronizer,
+  VmFileSystemSynchronizer
+} from './vm_file_system_synchronizer'
 
 export interface Configuration {
   memory: string
@@ -50,24 +54,6 @@ class LiveProcess implements Process {
   }
 }
 
-export interface Executor {
-  execute(
-    commandLine: string,
-    args?: string[],
-    options?: exec.ExecOptions
-  ): Promise<number>
-}
-
-export class ExecExecutor implements Executor {
-  async execute(
-    commandLine: string,
-    args?: string[],
-    options?: exec.ExecOptions
-  ): Promise<number> {
-    return await exec.exec(commandLine, args, options)
-  }
-}
-
 export abstract class Vm {
   ipAddress!: string
 
@@ -87,6 +73,7 @@ export abstract class Vm {
   protected readonly input: Input
 
   private readonly executor: Executor
+  private readonly vmFileSystemSynchronizer: VmFileSystemSynchronizer
 
   constructor(
     hypervisorDirectory: fs.PathLike,
@@ -107,6 +94,11 @@ export abstract class Vm {
       hypervisorBinary.toString()
     )
     this.executor = executor
+    this.vmFileSystemSynchronizer = new DefaultVmFileSystemSynchronizer({
+      input,
+      user: this.user,
+      executor
+    })
   }
 
   static get isRunning(): boolean {
@@ -211,6 +203,14 @@ export abstract class Vm {
         input: intput
       }
     )
+  }
+
+  async synchronizePaths(...excludePaths: string[]): Promise<void> {
+    await this.vmFileSystemSynchronizer.synchronizePaths(...excludePaths)
+  }
+
+  async synchronizeBack(): Promise<void> {
+    await this.vmFileSystemSynchronizer.synchronizeBack()
   }
 
   protected async getIpAddress(): Promise<string> {

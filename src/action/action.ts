@@ -6,8 +6,6 @@ import * as cache from '@actions/tool-cache'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
-import flatMap from 'array.prototype.flatmap'
-
 import * as architecture from '../architecture'
 import * as hostModule from '../host'
 import * as os from '../operating_system'
@@ -17,7 +15,7 @@ import * as vmModule from '../vm'
 import * as input from './input'
 import * as shell from './shell'
 import * as utility from '../utility'
-import {SyncDirection} from './sync_direction'
+
 import {execSync} from 'child_process'
 
 export class Action {
@@ -100,7 +98,7 @@ export class Action {
         this.homeDirectory,
         this.workDirectory
       )
-      await this.syncFiles(
+      await vm.synchronizePaths(
         this.targetDiskName,
         this.resourceDisk.diskPath,
         ...excludes
@@ -111,7 +109,7 @@ export class Action {
         await this.runCommand(vm)
       } finally {
         core.startGroup('Tearing down VM')
-        await this.syncBack()
+        await vm.synchronizeBack()
       }
     } finally {
       try {
@@ -196,10 +194,6 @@ export class Action {
     this.resourceDisk.unmount()
   }
 
-  private get syncVerboseFlag(): string {
-    return core.isDebug() ? 'v' : ''
-  }
-
   private get homeDirectory(): string {
     const components = this.workDirectory.split(path.sep).slice(0, -2)
     return path.join('/', ...components)
@@ -208,56 +202,6 @@ export class Action {
   private get workDirectory(): string {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return process.env['GITHUB_WORKSPACE']!
-  }
-
-  private get shouldSyncFiles(): boolean {
-    return (
-      this.input.syncFiles === SyncDirection.runner_to_vm ||
-      this.input.syncFiles === SyncDirection.both
-    )
-  }
-
-  private get shouldSyncBack(): boolean {
-    return (
-      this.input.syncFiles === SyncDirection.vm_to_runner ||
-      this.input.syncFiles === SyncDirection.both
-    )
-  }
-
-  private async syncFiles(...excludePaths: string[]): Promise<void> {
-    if (!this.shouldSyncFiles) {
-      return
-    }
-
-    core.debug(`Syncing files to VM, excluding: ${excludePaths}`)
-    // prettier-ignore
-    await exec.exec('rsync', [
-      this.rsyncFlags,
-      '--exclude', '_actions/cross-platform-actions/action',
-      ...flatMap(excludePaths, p => ['--exclude', p]),
-      `${this.homeDirectory}/`,
-      this.rsyncTarget
-    ])
-  }
-
-  private async syncBack(): Promise<void> {
-    if (!this.shouldSyncBack) return
-
-    core.info('Syncing back files')
-    // prettier-ignore
-    await exec.exec('rsync', [
-      this.rsyncFlags,
-      `${this.rsyncTarget}/`,
-      this.homeDirectory
-    ])
-  }
-
-  private get rsyncFlags(): string {
-    return `-auz${this.syncVerboseFlag}`
-  }
-
-  private get rsyncTarget(): string {
-    return `runner@${this.cpaHost}:work`
   }
 
   private async runCommand(vm: vmModule.Vm): Promise<void> {

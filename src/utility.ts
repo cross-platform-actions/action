@@ -68,3 +68,21 @@ export function group(name: string, block: () => void): void {
     core.endGroup()
   }
 }
+
+export interface Executor {
+  execute(
+    commandLine: string,
+    args?: string[],
+    options?: exec.ExecOptions
+  ): Promise<number>
+}
+
+export class ExecExecutor implements Executor {
+  async execute(
+    commandLine: string,
+    args?: string[],
+    options?: exec.ExecOptions
+  ): Promise<number> {
+    return await exec.exec(commandLine, args, options)
+  }
+}

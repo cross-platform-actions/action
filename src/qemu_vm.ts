@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as architecture from './architecture'
-import {getOrDefaultOrThrow} from './utility'
+import {ExecExecutor, Executor, getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
 import {Input} from './action/input'
 
@@ -13,7 +13,7 @@ export abstract class Vm extends vm.Vm {
     architecture: architecture.Architecture,
     input: Input,
     configuration: vm.Configuration,
-    executor: vm.Executor = new vm.ExecExecutor()
+    executor: Executor = new ExecExecutor()
   ) {
     super(
       hypervisorDirectory,
