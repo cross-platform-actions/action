@@ -36,10 +36,12 @@ runs:
           shutdown_vm: false
           run: |
             uname -a
+            uname -s
+            uname -r
             uname -m
             uname -p
-            echo $SHELL
             pwd
+            echo $SHELL
             ls -lah
             whoami
             env | sort
