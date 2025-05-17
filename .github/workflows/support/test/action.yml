@@ -6,6 +6,8 @@ inputs:
   version:
     description: "The version of the operating system"
   uname_release:
+    description: "The release as reported by uname"
+  uname_version:
     description: "The version as reported by uname"
   uname_hardware:
     description: "The hardware as reported by uname"
@@ -38,6 +40,7 @@ runs:
             uname -a
             uname -s
             uname -r
+            uname -v
             uname -m
             uname -p
             pwd
@@ -46,6 +49,6 @@ runs:
             whoami
             env | sort
             [ "`uname -s`" = '${{ inputs.name }}' ]
-            [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ]
+            [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ] || uname -v | grep -q '${{ inputs.uname_version }}'
             [ "`uname -m`" = '${{ inputs.uname_hardware }}' ] || [ "`uname -p`" = '${{ inputs.uname_hardware }}' ]
             [ "`pwd`" = '${{ inputs.work_directory }}' ]
