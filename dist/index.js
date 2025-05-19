@@ -1608,27 +1608,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const path = __importStar(__nccwpck_require__(1017));
-const core = __importStar(__nccwpck_require__(2186));
 const factory_1 = __nccwpck_require__(133);
 const version_1 = __importDefault(__nccwpck_require__(8217));
 const qemu_1 = __nccwpck_require__(1526);
 const qemu_vm = __importStar(__nccwpck_require__(7598));
 let NetBsd = class NetBsd extends qemu_1.Qemu {
-    get hypervisorUrl() {
-        return this.architecture.resourceUrl;
-    }
     get virtualMachineImageReleaseVersion() {
         return version_1.default.operating_system.netbsd;
     }
-    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
-        core.debug('Creating NetBSD VM');
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
-            // qemu
-            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
-            // xhyve
-            uuid: this.uuid });
-        return new qemu_vm.Vm(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
+    get vmClass() {
+        return qemu_vm.Vm;
     }
 };
 NetBsd = __decorate([
@@ -1831,15 +1820,39 @@ exports.XhyveVm = XhyveVm;
 /***/ }),
 
 /***/ 1526:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Qemu = void 0;
+const path = __importStar(__nccwpck_require__(1017));
+const core = __importStar(__nccwpck_require__(2186));
+const os = __importStar(__nccwpck_require__(9385));
 const hypervisor_1 = __nccwpck_require__(4288);
-const operating_system_1 = __nccwpck_require__(9385);
-class Qemu extends operating_system_1.OperatingSystem {
+class Qemu extends os.OperatingSystem {
+    get hypervisorUrl() {
+        return this.architecture.resourceUrl;
+    }
     get hypervisor() {
         const cls = this.architecture.resolve({
             arm64: hypervisor_1.QemuEfi,
@@ -1849,6 +1862,15 @@ class Qemu extends operating_system_1.OperatingSystem {
     }
     get ssHostPort() {
         return 2847;
+    }
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
+        core.debug(`Creating ${this.name} VM`);
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
+            // qemu
+            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
+            // xhyve
+            uuid: this.uuid });
+        return new this.vmClass(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 }
 exports.Qemu = Qemu;
