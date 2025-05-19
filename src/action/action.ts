@@ -232,11 +232,11 @@ export class Action {
     core.debug(`Syncing files to VM, excluding: ${excludePaths}`)
     // prettier-ignore
     await exec.exec('rsync', [
-      `-auz${this.syncVerboseFlag}`,
+      this.rsyncFlags,
       '--exclude', '_actions/cross-platform-actions/action',
       ...flatMap(excludePaths, p => ['--exclude', p]),
       `${this.homeDirectory}/`,
-      `runner@${this.cpaHost}:work`
+      this.rsyncTarget
     ])
   }
 
@@ -246,10 +246,18 @@ export class Action {
     core.info('Syncing back files')
     // prettier-ignore
     await exec.exec('rsync', [
-      `-auz${this.syncVerboseFlag}`,
-      `runner@${this.cpaHost}:work/`,
+      this.rsyncFlags,
+      `${this.rsyncTarget}/`,
       this.homeDirectory
     ])
+  }
+
+  private get rsyncFlags(): string {
+    return `-auz${this.syncVerboseFlag}`
+  }
+
+  private get rsyncTarget(): string {
+    return `runner@${this.cpaHost}:work`
   }
 
   private async runCommand(vm: vmModule.Vm): Promise<void> {

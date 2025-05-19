@@ -208,11 +208,11 @@ class Action {
             core.debug(`Syncing files to VM, excluding: ${excludePaths}`);
             // prettier-ignore
             yield exec.exec('rsync', [
-                `-auz${this.syncVerboseFlag}`,
+                this.rsyncFlags,
                 '--exclude', '_actions/cross-platform-actions/action',
                 ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
                 `${this.homeDirectory}/`,
-                `runner@${this.cpaHost}:work`
+                this.rsyncTarget
             ]);
         });
     }
@@ -223,11 +223,17 @@ class Action {
             core.info('Syncing back files');
             // prettier-ignore
             yield exec.exec('rsync', [
-                `-auz${this.syncVerboseFlag}`,
-                `runner@${this.cpaHost}:work/`,
+                this.rsyncFlags,
+                `${this.rsyncTarget}/`,
                 this.homeDirectory
             ]);
         });
+    }
+    get rsyncFlags() {
+        return `-auz${this.syncVerboseFlag}`;
+    }
+    get rsyncTarget() {
+        return `runner@${this.cpaHost}:work`;
     }
     runCommand(vm) {
         return __awaiter(this, void 0, void 0, function* () {
