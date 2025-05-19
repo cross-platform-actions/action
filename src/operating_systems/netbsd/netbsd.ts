@@ -13,10 +13,6 @@ import {Input} from '../../action/input'
 
 @operatingSystem
 export default class NetBsd extends Qemu {
-  get hypervisorUrl(): string {
-    return this.architecture.resourceUrl
-  }
-
   get virtualMachineImageReleaseVersion(): string {
     return versions.operating_system.netbsd
   }
