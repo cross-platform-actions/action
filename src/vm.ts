@@ -50,6 +50,24 @@ class LiveProcess implements Process {
   }
 }
 
+export interface Executor {
+  execute(
+    commandLine: string,
+    args?: string[],
+    options?: exec.ExecOptions
+  ): Promise<number>
+}
+
+export class ExecExecutor implements Executor {
+  async execute(
+    commandLine: string,
+    args?: string[],
+    options?: exec.ExecOptions
+  ): Promise<number> {
+    return await exec.exec(commandLine, args, options)
+  }
+}
+
 export abstract class Vm {
   ipAddress!: string
 
@@ -68,13 +86,16 @@ export abstract class Vm {
 
   protected readonly input: Input
 
+  private readonly executor: Executor
+
   constructor(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     hypervisorBinary: fs.PathLike,
     architecture: architecture.Architecture,
     input: Input,
-    configuration: vm.Configuration
+    configuration: vm.Configuration,
+    executor: Executor = new ExecExecutor()
   ) {
     this.hypervisorDirectory = hypervisorDirectory
     this.resourcesDirectory = resourcesDirectory
@@ -85,6 +106,7 @@ export abstract class Vm {
       hypervisorDirectory.toString(),
       hypervisorBinary.toString()
     )
+    this.executor = executor
   }
 
   static get isRunning(): boolean {
@@ -174,15 +196,19 @@ export abstract class Vm {
     if (options.log) core.info(`Executing command inside VM: ${command}`)
     const buffer = Buffer.from(command)
 
-    return await exec.exec('ssh', ['-t', `${Vm.user}@${Vm.cpaHost}`], {
-      input: buffer,
-      silent: options.silent,
-      ignoreReturnCode: options.ignoreReturnCode
-    })
+    return await this.executor.execute(
+      'ssh',
+      ['-t', `${Vm.user}@${Vm.cpaHost}`],
+      {
+        input: buffer,
+        silent: options.silent,
+        ignoreReturnCode: options.ignoreReturnCode
+      }
+    )
   }
 
   async execute2(args: string[], intput: Buffer): Promise<number> {
-    return await exec.exec(
+    return await this.executor.execute(
       'ssh',
       ['-t', `${Vm.user}@${Vm.cpaHost}`].concat(args),
       {input: intput}

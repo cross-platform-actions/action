@@ -12,7 +12,8 @@ export abstract class Vm extends vm.Vm {
     resourcesDirectory: fs.PathLike,
     architecture: architecture.Architecture,
     input: Input,
-    configuration: vm.Configuration
+    configuration: vm.Configuration,
+    executor: vm.Executor = new vm.ExecExecutor()
   ) {
     super(
       hypervisorDirectory,
@@ -20,7 +21,8 @@ export abstract class Vm extends vm.Vm {
       'qemu',
       architecture,
       input,
-      configuration
+      configuration,
+      executor
     )
   }
 
