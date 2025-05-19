@@ -196,22 +196,20 @@ export abstract class Vm {
     if (options.log) core.info(`Executing command inside VM: ${command}`)
     const buffer = Buffer.from(command)
 
-    return await this.executor.execute(
-      'ssh',
-      ['-t', `${Vm.user}@${Vm.cpaHost}`],
-      {
-        input: buffer,
-        silent: options.silent,
-        ignoreReturnCode: options.ignoreReturnCode
-      }
-    )
+    return await this.executor.execute('ssh', ['-t', this.sshTarget], {
+      input: buffer,
+      silent: options.silent,
+      ignoreReturnCode: options.ignoreReturnCode
+    })
   }
 
   async execute2(args: string[], intput: Buffer): Promise<number> {
     return await this.executor.execute(
       'ssh',
-      ['-t', `${Vm.user}@${Vm.cpaHost}`].concat(args),
-      {input: intput}
+      ['-t', this.sshTarget].concat(args),
+      {
+        input: intput
+      }
     )
   }
 
@@ -220,4 +218,12 @@ export abstract class Vm {
   }
 
   protected abstract get command(): string[]
+
+  protected get user(): string {
+    return 'runner'
+  }
+
+  private get sshTarget(): string {
+    return `${this.user}@${Vm.cpaHost}`
+  }
 }
