@@ -287,6 +287,44 @@ For those not familiar with Docker, here's an explanation of the above command:
     Basically the Linux distribution to use
 * `<command to run>` - The command you want to run inside the container
 
+## `Common Issues`
+
+### FreeBSD Operating System Version Mismatch
+
+#### Issue
+
+When installing packages on FreeBSD you might see an error related to
+mismatching of operating system or kernel version. This occurs because FreeBSD
+only supports one minor version of the previous major version. Therefore
+FreeBSD only has one package repository for each **major** version, not each
+**minor** version. When a new minor version is released, all packages in the
+repository are rebuilt targeting this new minor version. If you're on an older
+minor version of the operating system the package manager will give you an
+error.
+
+For more information, see: https://www.freebsd.org/security/#sup and
+https://www.freebsd.org/releases.
+
+#### Solution
+
+##### Alternative 1
+
+The best solution is to upgrade to the latest supported minor version.
+
+##### Alternative 2
+
+If Alternative 1 is not possible, you can ignore the operating system version
+mismatch by setting the `IGNORE_OSVERSION` environment variable with the value
+`yes`. Ignoring the operating system version mismatch can lead to runtime
+issues if the package depends on features or libraries only present in the
+newer operating system version. Example:
+
+```
+env IGNORE_OSVERSION=yes pkg install <package>
+```
+
+Where `<package>` is the name of the package to install.
+
 ## `Under the Hood`
 
 GitHub Actions currently only support macOS, Linux, and Windows. To be able to
