@@ -25,6 +25,10 @@ runs:
     # - name: Setup SSH session
     #   uses: lhotari/action-upterm@v1
 
+    - name: create file
+      shell: bash
+      run: echo 'host to guest' > host_to_guest.txt
+
     - name: test
       uses: ./
       env:
@@ -52,3 +56,9 @@ runs:
           [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ] || uname -v | grep -q '${{ inputs.uname_version }}'
           [ "`uname -m`" = '${{ inputs.uname_hardware }}' ] || [ "`uname -p`" = '${{ inputs.uname_hardware }}' ]
           [ "`pwd`" = '${{ inputs.work_directory }}' ]
+          cat host_to_guest.txt | grep -q 'host to guest'
+          echo 'guest to host' > guest_to_host.txt
+
+    - name: verify file synchronization
+      shell: bash
+      run: cat guest_to_host.txt | grep -q 'guest to host'
