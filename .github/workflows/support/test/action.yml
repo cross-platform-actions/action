@@ -1,54 +1,54 @@
 inputs:
   name:
-    description: "The name of the operating system"
+    description: 'The name of the operating system'
   architecture:
-    description: "The architecture of the operating system"
+    description: 'The architecture of the operating system'
   version:
-    description: "The version of the operating system"
+    description: 'The version of the operating system'
   uname_release:
-    description: "The release as reported by uname"
+    description: 'The release as reported by uname'
   uname_version:
-    description: "The version as reported by uname"
+    description: 'The version as reported by uname'
   uname_hardware:
-    description: "The hardware as reported by uname"
+    description: 'The hardware as reported by uname'
   work_directory:
-    description: "The working directory"
+    description: 'The working directory'
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   with:
-      #     limit-access-to-actor: true
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3
+    #   with:
+    #     limit-access-to-actor: true
 
-      # - name: Setup SSH session
-      #   uses: lhotari/action-upterm@v1
+    # - name: Setup SSH session
+    #   uses: lhotari/action-upterm@v1
 
-      - name: test
-        uses: ./
-        env:
-          FOO: A
-          BAR: B
-        with:
-          environment_variables: FOO BAR
-          operating_system: ${{ inputs.name }}
-          architecture: ${{ inputs.architecture }}
-          version: '${{ inputs.version }}'
-          shutdown_vm: false
-          run: |
-            uname -a
-            uname -s
-            uname -r
-            uname -v
-            uname -m
-            uname -p
-            pwd
-            echo $SHELL
-            ls -lah
-            whoami
-            env | sort
-            [ "`uname -s`" = '${{ inputs.name }}' ]
-            [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ] || uname -v | grep -q '${{ inputs.uname_version }}'
-            [ "`uname -m`" = '${{ inputs.uname_hardware }}' ] || [ "`uname -p`" = '${{ inputs.uname_hardware }}' ]
-            [ "`pwd`" = '${{ inputs.work_directory }}' ]
+    - name: test
+      uses: ./
+      env:
+        FOO: A
+        BAR: B
+      with:
+        environment_variables: FOO BAR
+        operating_system: ${{ inputs.name }}
+        architecture: ${{ inputs.architecture }}
+        version: '${{ inputs.version }}'
+        shutdown_vm: false
+        run: |
+          uname -a
+          uname -s
+          uname -r
+          uname -v
+          uname -m
+          uname -p
+          pwd
+          echo $SHELL
+          ls -lah
+          whoami
+          env | sort
+          [ "`uname -s`" = '${{ inputs.name }}' ]
+          [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ] || uname -v | grep -q '${{ inputs.uname_version }}'
+          [ "`uname -m`" = '${{ inputs.uname_hardware }}' ] || [ "`uname -p`" = '${{ inputs.uname_hardware }}' ]
+          [ "`pwd`" = '${{ inputs.work_directory }}' ]
