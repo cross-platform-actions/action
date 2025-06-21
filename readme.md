@@ -366,6 +366,74 @@ fast as possible. This is achieved in a couple of ways:
 - It performs as much as possible of the setup ahead of time when the VM image
   is provisioned
 
+## `Contributing`
+
+### Supporting a New Operating System Version
+
+To add support for a new version of an existing operating system follow the
+steps below:
+
+#### In The *-builder` Repository
+
+First, make the necessary changes in the appropriate [*-builder repository](https://github.com/orgs/cross-platform-actions/repositories?type=source&q=builder):
+
+1. Add a new subdirectory under the `var_files` directory
+1. Name the subdirectory after the new version, i.e. `14.3`
+1. Add a `.pkrvars.hcl` file for each supported architecture
+1. The content of the above files should be:
+
+    ```hcl
+    checksum = "<hash>"
+    ```
+
+    Where `<hash>` should be replaced with the hash of the install media. Make
+    sure the hash value is prefixed with the hashing algorithm, example:
+
+    ```hcl
+    checksum = "sha256:1c41fdca8fcd8c746eb05f31a82a4bff2ad866c5fde1808f16b822a6df3f0de5"
+    ```
+
+    The hash of the install media can usually be found at a nearby URL where the
+    install media is downloaded from. Exactly where to find this depends on the
+    operating system. The URL for the install media can be found the main Packer
+    configuration file in the `*-builder` repository.'
+
+1. Add a new entry to the table in the readme containing supported versions and
+    architectures.
+
+1. Update the GitHub Action workflow with a new entry in the existing matrix of
+    versions.
+
+1. If there's a changelog file, update that as well
+1. Create a pull request with the changes
+
+##### By a Maintainer
+
+1. Push a new tag to create a draft release
+1. Publish the release
+
+#### In the Action Repository
+
+1. Update the [`src/version.ts`](src/version.ts) file with the new tag from the previous step
+1. Compile the TypeScript by running `npm run all`
+
+1. Update the [`.github/workflows/ci.yml`](.github/workflows/ci.yml) file by adding the new version to the existing
+    matrix of versions of the operating system
+
+1. Update the [`readme.md`](readme.md) file and add new entry in the version and
+    architecture table of the operating system in the
+    [`Supported Platforms`](https://github.com/cross-platform-actions/action#supported-platforms)
+    section
+
+1. If the new version is the latest version available of the operating system,
+    update [`Full Example`](https://github.com/cross-platform-actions/action#full-example)
+    section in the [`readme.md`](readme.md), both the description and the
+    example usage of the GitHub action
+
+1. Update the changelog: [`changelog.md`](changelog.md)
+
+1. Create a pull request with all the changes
+
 ## `Local Development`
 
 ### Prerequisites
