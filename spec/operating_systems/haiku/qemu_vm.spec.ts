@@ -31,6 +31,7 @@ describe('Haiku QemuVm', () => {
     userboot: '',
     firmware: ''
   }
+
   let executor = jasmine.createSpyObj<Executor>('executor', ['execute'])
   let vm = new Vm('', '', architecture, input, config, executor)
 
@@ -96,12 +97,7 @@ describe('Haiku QemuVm', () => {
     it('sets up the working directory', async () => {
       let homeDirectory = '/home/runner/work'
       let workDirectory = '/home/runner/work/repo/repo'
-      let buffer = Buffer.from(
-        undent`
-          mkdir -p '/home/runner/work/repo/repo' && \
-          ln -sf '/boot/home/' '/home/runner/work'
-        `
-      )
+      let buffer = Buffer.from("mkdir -p '/home/runner/work/repo/repo'")
 
       await vm.setupWorkDirectory(homeDirectory, workDirectory)
 
@@ -113,14 +109,3 @@ describe('Haiku QemuVm', () => {
     })
   })
 })
-
-function undent(strings: TemplateStringsArray): string {
-  const fullString = strings.join('')
-  const match = fullString.match(/^[ \t]*(?=\S)/gm)
-  const minIndent = match ? Math.min(...match.map(x => x.length)) : 0
-
-  return fullString
-    .replace(new RegExp(`^[ \\t]{${minIndent}}`, 'gm'), '')
-    .replace(/ {2,}/g, ' ')
-    .trim()
-}

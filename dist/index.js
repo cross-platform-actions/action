@@ -99,7 +99,7 @@ class Action {
                 yield implementation.run();
                 implementation.configSSH(vm.ipAddress);
                 yield implementation.wait(240);
-                yield implementation.setupWorkDirectory(this.homeDirectory, this.workDirectory);
+                yield implementation.setupWorkDirectory(vm.homeDirectory, vm.workDirectory);
                 yield vm.synchronizePaths(this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
                 try {
@@ -180,12 +180,10 @@ class Action {
         });
     }
     get homeDirectory() {
-        const components = this.workDirectory.split(path.sep).slice(0, -2);
-        return path.join('/', ...components);
-    }
-    get workDirectory() {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return process.env['GITHUB_WORKSPACE'];
+        const workDirectory = process.env['GITHUB_WORKSPACE'];
+        const components = workDirectory.split(path.sep).slice(0, -2);
+        return path.join('/', ...components);
     }
     runCommand(vm) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -193,7 +191,7 @@ class Action {
             const sh = this.input.shell === shell.Shell.default
                 ? '$SHELL'
                 : shell.toString(this.input.shell);
-            yield vm.execute2(['sh', '-c', `'cd "${this.workDirectory}" && exec "${sh}" -e'`], Buffer.from(this.input.run));
+            yield vm.execute2(['sh', '-c', `'cd "${vm.workDirectory}" && exec "${sh}" -e'`], Buffer.from(this.input.run));
         });
     }
     getHomeDirectory() {
@@ -1562,6 +1560,25 @@ exports["default"] = Haiku;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -1573,13 +1590,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Vm = void 0;
+const path = __importStar(__nccwpck_require__(1017));
 const qemu_vm_1 = __nccwpck_require__(1106);
 class Vm extends qemu_vm_1.Vm {
-    setupWorkDirectory(homeDirectory, workDirectory) {
+    setupWorkDirectory(_homeDirectory, workDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.execute(`mkdir -p '${workDirectory}' && ` +
-                `ln -sf '/boot/home/' '${homeDirectory}'`);
+            yield this.execute(`mkdir -p '${workDirectory}'`);
         });
+    }
+    get workDirectory() {
+        return path.join('/boot/home', super.workDirectory);
     }
     get hardDriverFlags() {
         return this.defaultHardDriveFlags;
@@ -2566,6 +2586,8 @@ class Vm {
         this.vmFileSystemSynchronizer = new vm_file_system_synchronizer_1.DefaultVmFileSystemSynchronizer({
             input,
             user: this.user,
+            guestHomeDirectory: this.homeDirectory,
+            hostHomeDirectory: this.hostHomeDirectory,
             executor
         });
     }
@@ -2573,6 +2595,17 @@ class Vm {
         if (this._isRunning !== undefined)
             return this._isRunning;
         return (this._isRunning = fs.existsSync(Vm.pidfile));
+    }
+    get homeDirectory() {
+        return this.extractHomeDirectory(this.workDirectory);
+    }
+    get hostHomeDirectory() {
+        var _a;
+        return this.extractHomeDirectory((_a = process.env['GITHUB_WORKSPACE']) !== null && _a !== void 0 ? _a : '');
+    }
+    get workDirectory() {
+        var _a;
+        return (_a = process.env['GITHUB_WORKSPACE']) !== null && _a !== void 0 ? _a : '';
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -2672,6 +2705,10 @@ class Vm {
     get sshTarget() {
         return `${this.user}@${Vm.cpaHost}`;
     }
+    extractHomeDirectory(directory) {
+        const components = directory.split(path.sep).slice(0, -2);
+        return path.join('/', ...components);
+    }
 }
 exports.Vm = Vm;
 Vm.user = 'runner';
@@ -2720,20 +2757,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DefaultVmFileSystemSynchronizer = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const path_1 = __importDefault(__nccwpck_require__(1017));
 const array_prototype_flatmap_1 = __importDefault(__nccwpck_require__(9092));
 const utility_1 = __nccwpck_require__(2857);
 const sync_direction_1 = __nccwpck_require__(3377);
 const vm = __importStar(__nccwpck_require__(2772));
 class DefaultVmFileSystemSynchronizer {
-    constructor({ input, user, executor = new utility_1.ExecExecutor(), 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    workingDirectory = process.env['GITHUB_WORKSPACE'], isDebug = core.isDebug() }) {
+    constructor({ input, user, guestHomeDirectory, hostHomeDirectory, executor = new utility_1.ExecExecutor(), isDebug = core.isDebug() }) {
         this.cpaHost = vm.Vm.cpaHost;
         this.input = input;
         this.user = user;
         this.executor = executor;
-        this.workingDirectory = workingDirectory;
+        this.guestHomeDirectory = guestHomeDirectory;
+        this.hostHomeDirectory = hostHomeDirectory;
         this.isDebug = isDebug;
     }
     synchronizePaths(...excludePaths) {
@@ -2747,8 +2782,8 @@ class DefaultVmFileSystemSynchronizer {
                 this.rsyncFlags,
                 '--exclude', '_actions/cross-platform-actions/action',
                 ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
-                `${this.homeDirectory}/`,
-                this.rsyncTarget
+                toDirectoryPath(this.hostHomeDirectory),
+                stripDirectoryPath(this.rsyncTarget)
             ]);
         });
     }
@@ -2760,8 +2795,8 @@ class DefaultVmFileSystemSynchronizer {
             // prettier-ignore
             yield this.executor.execute('rsync', [
                 this.rsyncFlags,
-                `${this.rsyncTarget}/`,
-                this.homeDirectory
+                toDirectoryPath(this.rsyncTarget),
+                stripDirectoryPath(this.hostHomeDirectory)
             ]);
         });
     }
@@ -2779,15 +2814,17 @@ class DefaultVmFileSystemSynchronizer {
     get syncVerboseFlag() {
         return this.isDebug ? 'v' : '';
     }
-    get homeDirectory() {
-        const components = this.workingDirectory.split(path_1.default.sep).slice(0, -2);
-        return path_1.default.join('/', ...components);
-    }
     get rsyncTarget() {
-        return `${this.user}@${this.cpaHost}:work`;
+        return `${this.user}@${this.cpaHost}:${this.guestHomeDirectory}`;
     }
 }
 exports.DefaultVmFileSystemSynchronizer = DefaultVmFileSystemSynchronizer;
+function toDirectoryPath(path) {
+    return path.endsWith('/') ? path : `${path}/`;
+}
+function stripDirectoryPath(path) {
+    return path.endsWith('/') ? path.slice(0, -1) : path;
+}
 //# sourceMappingURL=vm_file_system_synchronizer.js.map
 
 /***/ }),

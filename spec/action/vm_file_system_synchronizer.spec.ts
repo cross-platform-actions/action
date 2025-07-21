@@ -20,7 +20,8 @@ describe('DefaultVmFileSystemSynchronizer', () => {
       input,
       executor,
       user: 'user',
-      workingDirectory: '/home/runner/runner/work',
+      guestHomeDirectory: '/boot/home/home/runner',
+      hostHomeDirectory: '/home/runner',
       isDebug: false
     })
   })
@@ -36,7 +37,7 @@ describe('DefaultVmFileSystemSynchronizer', () => {
         '--exclude',
         'that_that_is_excluded',
         '/home/runner/',
-        'user@cross_platform_actions_host:work'
+        'user@cross_platform_actions_host:/boot/home/home/runner'
       ])
     })
   })
@@ -47,7 +48,7 @@ describe('DefaultVmFileSystemSynchronizer', () => {
 
       expect(executor.execute).toHaveBeenCalledWith('rsync', [
         '-auz',
-        'user@cross_platform_actions_host:work/',
+        'user@cross_platform_actions_host:/boot/home/home/runner/',
         '/home/runner'
       ])
     })

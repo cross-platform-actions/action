@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for FreeBSD 14.3 ([#106](https://github.com/cross-platform-actions/action/issues/106), [freebsd-builder#9](https://github.com/cross-platform-actions/freebsd-builder/pull/9))
 
+### Fixed
+- Fix file sync on Haiku ([#104](https://github.com/cross-platform-actions/action/issues/104))
+
 ## [0.28.0] - 2025-05-19
 ### Added
 - Add support for FreeBSD 13.5 ([#99](https://github.com/cross-platform-actions/action/issues/99))

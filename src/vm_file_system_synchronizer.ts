@@ -1,5 +1,4 @@
 import * as core from '@actions/core'
-import path from 'path'
 
 import flatMap from 'array.prototype.flatmap'
 
@@ -19,28 +18,31 @@ export class DefaultVmFileSystemSynchronizer
   private readonly executor: Executor
   private readonly input: Input
   private readonly cpaHost = vm.Vm.cpaHost
-  private readonly workingDirectory: string
+  private readonly guestHomeDirectory: string
+  private readonly hostHomeDirectory: string
   private readonly user: string
   private readonly isDebug: boolean
 
   constructor({
     input,
     user,
+    guestHomeDirectory,
+    hostHomeDirectory,
     executor = new ExecExecutor(),
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    workingDirectory = process.env['GITHUB_WORKSPACE']!,
     isDebug = core.isDebug()
   }: {
     input: Input
     user: string
+    guestHomeDirectory: string
+    hostHomeDirectory: string
     executor?: Executor
-    workingDirectory?: string
     isDebug?: boolean
   }) {
     this.input = input
     this.user = user
     this.executor = executor
-    this.workingDirectory = workingDirectory
+    this.guestHomeDirectory = guestHomeDirectory
+    this.hostHomeDirectory = hostHomeDirectory
     this.isDebug = isDebug
   }
 
@@ -55,8 +57,8 @@ export class DefaultVmFileSystemSynchronizer
       this.rsyncFlags,
       '--exclude', '_actions/cross-platform-actions/action',
       ...flatMap(excludePaths, p => ['--exclude', p]),
-      `${this.homeDirectory}/`,
-      this.rsyncTarget
+      toDirectoryPath(this.hostHomeDirectory),
+      stripDirectoryPath(this.rsyncTarget)
     ])
   }
 
@@ -67,8 +69,8 @@ export class DefaultVmFileSystemSynchronizer
     // prettier-ignore
     await this.executor.execute('rsync', [
       this.rsyncFlags,
-      `${this.rsyncTarget}/`,
-      this.homeDirectory
+      toDirectoryPath(this.rsyncTarget),
+      stripDirectoryPath(this.hostHomeDirectory)
     ])
   }
 
@@ -94,12 +96,15 @@ export class DefaultVmFileSystemSynchronizer
     return this.isDebug ? 'v' : ''
   }
 
-  private get homeDirectory(): string {
-    const components = this.workingDirectory.split(path.sep).slice(0, -2)
-    return path.join('/', ...components)
-  }
-
   get rsyncTarget(): string {
-    return `${this.user}@${this.cpaHost}:work`
+    return `${this.user}@${this.cpaHost}:${this.guestHomeDirectory}`
   }
+}
+
+function toDirectoryPath(path: string): string {
+  return path.endsWith('/') ? path : `${path}/`
+}
+
+function stripDirectoryPath(path: string): string {
+  return path.endsWith('/') ? path.slice(0, -1) : path
 }

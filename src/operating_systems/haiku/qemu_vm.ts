@@ -1,14 +1,17 @@
+import * as path from 'path'
+
 import {Vm as QemuVm} from '../../qemu_vm'
 
 export class Vm extends QemuVm {
   override async setupWorkDirectory(
-    homeDirectory: string,
+    _homeDirectory: string,
     workDirectory: string
   ): Promise<void> {
-    await this.execute(
-      `mkdir -p '${workDirectory}' && ` +
-        `ln -sf '/boot/home/' '${homeDirectory}'`
-    )
+    await this.execute(`mkdir -p '${workDirectory}'`)
+  }
+
+  override get workDirectory(): string {
+    return path.join('/boot/home', super.workDirectory)
   }
 
   protected get hardDriverFlags(): string[] {

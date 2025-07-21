@@ -95,8 +95,8 @@ export class Action {
       implementation.configSSH(vm.ipAddress)
       await implementation.wait(240)
       await implementation.setupWorkDirectory(
-        this.homeDirectory,
-        this.workDirectory
+        vm.homeDirectory,
+        vm.workDirectory
       )
       await vm.synchronizePaths(
         this.targetDiskName,
@@ -195,13 +195,10 @@ export class Action {
   }
 
   private get homeDirectory(): string {
-    const components = this.workDirectory.split(path.sep).slice(0, -2)
-    return path.join('/', ...components)
-  }
-
-  private get workDirectory(): string {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return process.env['GITHUB_WORKSPACE']!
+    const workDirectory = process.env['GITHUB_WORKSPACE']!
+    const components = workDirectory.split(path.sep).slice(0, -2)
+    return path.join('/', ...components)
   }
 
   private async runCommand(vm: vmModule.Vm): Promise<void> {
@@ -212,7 +209,7 @@ export class Action {
         ? '$SHELL'
         : shell.toString(this.input.shell)
     await vm.execute2(
-      ['sh', '-c', `'cd "${this.workDirectory}" && exec "${sh}" -e'`],
+      ['sh', '-c', `'cd "${vm.workDirectory}" && exec "${sh}" -e'`],
       Buffer.from(this.input.run)
     )
   }

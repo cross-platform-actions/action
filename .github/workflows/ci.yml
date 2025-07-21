@@ -137,7 +137,7 @@ jobs:
 
         host:
           - name: ubuntu-latest
-            work_directory: /home/runner/work/action/action
+            work_directory: /boot/home/home/runner/work/action/action
 
     steps:
       - name: Checkout

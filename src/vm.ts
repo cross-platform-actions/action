@@ -97,6 +97,8 @@ export abstract class Vm {
     this.vmFileSystemSynchronizer = new DefaultVmFileSystemSynchronizer({
       input,
       user: this.user,
+      guestHomeDirectory: this.homeDirectory,
+      hostHomeDirectory: this.hostHomeDirectory,
       executor
     })
   }
@@ -105,6 +107,18 @@ export abstract class Vm {
     if (this._isRunning !== undefined) return this._isRunning
 
     return (this._isRunning = fs.existsSync(Vm.pidfile))
+  }
+
+  get homeDirectory(): string {
+    return this.extractHomeDirectory(this.workDirectory)
+  }
+
+  get hostHomeDirectory(): string {
+    return this.extractHomeDirectory(process.env['GITHUB_WORKSPACE'] ?? '')
+  }
+
+  get workDirectory(): string {
+    return process.env['GITHUB_WORKSPACE'] ?? ''
   }
 
   async init(): Promise<void> {
@@ -225,5 +239,10 @@ export abstract class Vm {
 
   private get sshTarget(): string {
     return `${this.user}@${Vm.cpaHost}`
+  }
+
+  private extractHomeDirectory(directory: string): string {
+    const components = directory.split(path.sep).slice(0, -2)
+    return path.join('/', ...components)
   }
 }
