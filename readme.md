@@ -442,6 +442,58 @@ First, make the necessary changes in the appropriate [*-builder repository](http
 
 1. Create a pull request with all the changes
 
+### Creating a Release
+
+For creating a new release, follow the steps below.
+
+#### Decide Version Number
+
+Decide what the next version number should be. Cross-Platform Action follows
+the [semantic versioning scheme][semver]. In a version number like: `2.1.1`, the
+digits are divided as follows:
+
+```
+  2.    1.    1
+  ^     ^     ^
+  |     |     |
+  |     |     |
+major minor patch
+```
+
+To decide what the next version should be, this is fairly straightforward. Look
+at current version number, then look at the [Unreleased] section of the
+changelog:
+
+1. If the section only contains a `Fixed` sub header, then increment the patch
+    digit
+
+1. If the section contains an `Added`, `Changed` or `Deprecated` sub headers,
+    then increment the minor digit
+
+1. If the section contains a `Removed` sub header, increment the major digit
+
+#### Update the Changelog
+
+1. Rename the [Unreleased] section to match the version that is being released
+1. Add the current date in the section from previous step. See existing entries
+1. Add a new section for the `Unreleased` section at the top
+1. Add a new reference link for the new section at the bottom of the changelog
+1. Update the `Unreleased` reference link at the bottom of the changelog
+
+#### Creating the Release
+
+These steps need to be performed by a maintainer.
+
+1. Create a new annotated Git tag with the version of the release, prefixed with `v`,
+    i.e. `v2.0.0`. See existing tags, i.e. `git show v0.29.0`.
+
+1. Push the tag. Pushing the tag will automatically trigger a CI workflow that
+    creates a new draft release. It will copy the content of the newly added
+    section in the changelog and use that as the release notes.
+
+1. Check the release at GitHub to make sure everything looks good. Publish the
+    relese.
+
 ## `Local Development`
 
 ### Prerequisites
@@ -536,3 +588,4 @@ files within the [`test/http`](test/http) are ignore by Git.
 [act]: https://github.com/nektos/act
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: #unreleased
+[semver]: https://semver.org
