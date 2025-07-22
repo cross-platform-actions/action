@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.29.0] - 2025-07-22
 ### Added
 - Add support for FreeBSD 14.3 ([#106](https://github.com/cross-platform-actions/action/issues/106), [freebsd-builder#9](https://github.com/cross-platform-actions/freebsd-builder/pull/9))
 
@@ -234,8 +236,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.29.0...HEAD
 
+[0.29.0]: https://github.com/cross-platform-actions/action/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/cross-platform-actions/action/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/cross-platform-actions/action/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/cross-platform-actions/action/compare/v0.25.0...v0.26.0
