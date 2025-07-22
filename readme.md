@@ -369,6 +369,13 @@ fast as possible. This is achieved in a couple of ways:
 
 ## `Contributing`
 
+### Changelog
+
+The changelog is maintained in the [changelog.md](changelog.md) file, following
+the [Keep a Changelog] format. The changelog is updated incrementally. That is,
+for every new feature or bugfix, add an entry to the changelog. New entries are
+added below the [Unreleased] section, with an appropriate sub header.
+
 ### Supporting a New Operating System Version
 
 To add support for a new version of an existing operating system follow the
@@ -527,3 +534,5 @@ files within the [`test/http`](test/http) are ignore by Git.
 [netbsd_builder]: https://github.com/cross-platform-actions/netbsd-builder
 [haiku_builder]: https://github.com/cross-platform-actions/haiku-builder
 [act]: https://github.com/nektos/act
+[Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
+[Unreleased]: #unreleased
