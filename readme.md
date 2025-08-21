@@ -326,6 +326,11 @@ env IGNORE_OSVERSION=yes pkg install <package>
 
 Where `<package>` is the name of the package to install.
 
+## Security
+
+To report a security vulnerability, follow the guidelines described in the
+[`security.md`](./security.md) document.
+
 ## `Under the Hood`
 
 GitHub Actions currently only support macOS, Linux, and Windows. To be able to
