@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
+    branches: [master]
 
 jobs:
   release:
@@ -18,9 +19,10 @@ jobs:
 
       - name: Validate version
         id: version
+        env:
+          tag: ${{ github.event.workflow_run.head_branch }}
         run: |
           set -x
-          tag='${{ github.event.workflow_run.head_branch }}'
 
           if echo "$tag" | grep -Pq '^v\d+\.\d+\.\d+(-.+)?'; then
             echo valid=true >> "$GITHUB_OUTPUT"

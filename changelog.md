@@ -5,7 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
 - Document how to report a security vulnerability
+
+### Security
+- Fix potential code injection in the GitHub release workflow ([#GHSA-928q-63gf-mc2x](https://github.com/cross-platform-actions/action/security/advisories/GHSA-928q-63gf-mc2x))
 
 ## [0.29.0] - 2025-07-22
 ### Added
