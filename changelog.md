@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Document how to report a security vulnerability
+- Add support for OpenBSD 7.8 ([#112](https://github.com/cross-platform-actions/action/issues/112))
 
 ### Security
 - Fix potential code injection in the GitHub release workflow ([#GHSA-928q-63gf-mc2x](https://github.com/cross-platform-actions/action/security/advisories/GHSA-928q-63gf-mc2x))
