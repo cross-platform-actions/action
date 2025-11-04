@@ -43,7 +43,7 @@ jobs:
             # /home is symlinked to /usr/home. pwd will return the resolved path.
             work_directory: /usr/home/runner/work/action/action
 
-          - name: macos-13
+          - name: macos-15-intel
             work_directory: /Users/runner/work/action/action
 
         exclude:
@@ -51,7 +51,7 @@ jobs:
             architecture: { name: arm64 }
 
           - architecture: { name: arm64 }
-            host: { name: macos-13 }
+            host: { name: macos-15-intel }
 
         include:
           - version: '14.2'
@@ -101,7 +101,7 @@ jobs:
               name: x86-64
               uname: amd64
             host:
-              name: macos-13
+              name: macos-15-intel
               work_directory: /Users/runner/work/action/action
 
     steps:
@@ -183,7 +183,7 @@ jobs:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action
 
-          - name: macos-13
+          - name: macos-15-intel
             work_directory: /Users/runner/work/action/action
 
         exclude:
@@ -191,7 +191,7 @@ jobs:
             architecture: { name: arm64 }
 
           - architecture: { name: arm64 }
-            host: { name: macos-13 }
+            host: { name: macos-15-intel }
 
     steps:
       - name: Checkout
@@ -233,7 +233,7 @@ jobs:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action
 
-          - name: macos-13
+          - name: macos-15-intel
             work_directory: /Users/runner/work/action/action
 
         exclude:
@@ -247,7 +247,7 @@ jobs:
             architecture: { name: arm64 }
 
           - architecture: { name: arm64 }
-            host: { name: macos-13 }
+            host: { name: macos-15-intel }
 
     steps:
       - name: Checkout
@@ -310,7 +310,7 @@ jobs:
   test-hypervisor-config:
     timeout-minutes: 5
     name: Test configuring hypervisor
-    runs-on: macos-13
+    runs-on: macos-15-intel
 
     steps:
       - name: Checkout
@@ -334,7 +334,7 @@ jobs:
   test-custom-vm-image:
     timeout-minutes: 5
     name: Test custom VM image
-    runs-on: macos-13
+    runs-on: macos-15-intel
 
     steps:
       - name: Checkout
@@ -469,7 +469,7 @@ jobs:
   multiple-steps:
     timeout-minutes: 5
     name: Test running the action multiple times
-    runs-on: macos-13
+    runs-on: macos-15-intel
 
     strategy:
       fail-fast: false
@@ -511,7 +511,7 @@ jobs:
   openbsd-qemu-macos:
     timeout-minutes: 5
     name: Test OpenBSD with QEMU on macOS runner
-    runs-on: macos-13
+    runs-on: macos-15-intel
 
     steps:
       - name: Checkout
