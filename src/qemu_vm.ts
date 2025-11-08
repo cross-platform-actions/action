@@ -42,7 +42,7 @@ export abstract class Vm extends vm.Vm {
       '-smp', this.configuration.cpuCount.toString(),
       '-m', this.configuration.memory,
 
-      '-device', `${this.netDevive},netdev=user.0`,
+      '-device', `${this.netDevive},netdev=user.0,addr=0x03`,
       '-netdev', this.netdev,
 
       '-display', 'none',

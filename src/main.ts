@@ -4,6 +4,7 @@ import {Action} from './action/action'
 import './operating_systems/freebsd/factory'
 import './operating_systems/haiku/factory'
 import './operating_systems/netbsd/factory'
+import './operating_systems/omnios/factory'
 import './operating_systems/openbsd/factory'
 
 async function main(): Promise<void> {

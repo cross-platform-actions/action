@@ -1094,6 +1094,7 @@ const action_1 = __nccwpck_require__(6072);
 __nccwpck_require__(9122);
 __nccwpck_require__(2078);
 __nccwpck_require__(2146);
+__nccwpck_require__(6627);
 __nccwpck_require__(6653);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -1757,6 +1758,115 @@ exports.Vm = Vm;
 
 /***/ }),
 
+/***/ 6627:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const factory_1 = __nccwpck_require__(133);
+const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
+const omnios_1 = __importDefault(__nccwpck_require__(6090));
+let OmniOsFactory = 
+//@ts-ignore
+class OmniOsFactory extends qemu_factory_1.default {
+    createImpl(version) {
+        return new omnios_1.default(this.architecture, version);
+    }
+};
+OmniOsFactory = __decorate([
+    factory_1.factory
+    //@ts-ignore
+], OmniOsFactory);
+//# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 6090:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const factory_1 = __nccwpck_require__(133);
+const version_1 = __importDefault(__nccwpck_require__(8217));
+const qemu_1 = __nccwpck_require__(1526);
+const qemu_vm = __importStar(__nccwpck_require__(9559));
+let OmniOs = class OmniOs extends qemu_1.Qemu {
+    get virtualMachineImageReleaseVersion() {
+        return version_1.default.operating_system.omnios;
+    }
+    get vmClass() {
+        return qemu_vm.Vm;
+    }
+};
+OmniOs = __decorate([
+    factory_1.operatingSystem
+], OmniOs);
+exports["default"] = OmniOs;
+//# sourceMappingURL=omnios.js.map
+
+/***/ }),
+
+/***/ 9559:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Vm = void 0;
+const qemu_vm_1 = __nccwpck_require__(1106);
+class Vm extends qemu_vm_1.Vm {
+    get hardDriverFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-blk,drive=drive0,bootindex=0,addr=0x02',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=unsafe,discard=ignore,format=raw`,
+        ];
+    }
+}
+exports.Vm = Vm;
+//# sourceMappingURL=qemu_vm.js.map
+
+/***/ }),
+
 /***/ 6653:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -2093,7 +2203,7 @@ class Vm extends vm.Vm {
             '-cpu', this.cpuFlagValue,
             '-smp', this.configuration.cpuCount.toString(),
             '-m', this.configuration.memory,
-            '-device', `${this.netDevive},netdev=user.0`,
+            '-device', `${this.netDevive},netdev=user.0,addr=0x03`,
             '-netdev', this.netdev,
             '-display', 'none',
             '-monitor', 'none',
@@ -2507,7 +2617,8 @@ const version = {
         freebsd: 'v0.13.1',
         haiku: 'v0.0.2',
         netbsd: 'v0.5.1',
-        openbsd: 'v0.11.1'
+        openbsd: 'v0.11.1',
+        omnios: 'v0.0.1'
     },
     resources: 'v0.11.0'
 };
@@ -2660,7 +2771,7 @@ class Vm {
             yield this.execute(`rm -rf '${homeDirectoryLinuxHost}' && ` +
                 `sudo mkdir -p '${workDirectory}' && ` +
                 `sudo chown -R '${Vm.user}' '${homeDirectory}' && ` +
-                `ln -sf '${homeDirectory}/' '${homeDirectoryLinuxHost}'`);
+                `ln -sf '${homeDirectory}' '${homeDirectoryLinuxHost}'`);
         });
     }
     execute(command, options = {}) {

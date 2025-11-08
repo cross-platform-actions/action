@@ -189,7 +189,7 @@ export abstract class Vm {
       `rm -rf '${homeDirectoryLinuxHost}' && ` +
         `sudo mkdir -p '${workDirectory}' && ` +
         `sudo chown -R '${Vm.user}' '${homeDirectory}' && ` +
-        `ln -sf '${homeDirectory}/' '${homeDirectoryLinuxHost}'`
+        `ln -sf '${homeDirectory}' '${homeDirectoryLinuxHost}'`
     )
   }
 

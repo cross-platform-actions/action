@@ -30,7 +30,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Test
         uses: cross-platform-actions/action@v0.31.0
@@ -48,10 +48,10 @@ jobs:
 
 ### Full Example
 
-Here's a sample workflow file which will set up a matrix resulting in four
+Here's a sample workflow file which will set up a matrix resulting in seven
 jobs. One which will run on FreeBSD 15.0, one which runs OpenBSD 7.8, one which
 runs NetBSD 10.0, one which runs OpenBSD 7.8 on ARM64, one which runs NetBSD
-10.1 on ARM64 and one which runs Haiku R1/beta5 on x86-64.
+10.1 on ARM64, one which runs Haiku R1/beta5 and one which runs OmniOS r151056.
 
 ```yaml
 name: CI
@@ -88,8 +88,12 @@ jobs:
             architecture: x86-64
             version: 'r1beta5'
 
+          - name: omnios
+            architecture: x86-64
+            version: 'r151056'
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Test on ${{ matrix.os.name }}
         uses: cross-platform-actions/action@v0.31.0
@@ -224,6 +228,12 @@ operating systems.
 | Version | x86-64 |
 |---------|--------|
 | r1beta5 | ✅     |
+
+### [OmniOS][omnios_builder] (`omnios`)
+
+| Version | x86-64 |
+|---------|--------|
+| r151056 | ✅     |
 
 ### Architectures
 
@@ -449,6 +459,50 @@ First, make the necessary changes in the appropriate [*-builder repository](http
 
 1. Create a pull request with all the changes
 
+### Adding Support for a New Operating System
+
+In addition to the steps below, a new builder repository for the operating
+system needs to be added and implemented.
+
+To add support for a new operating system, follow these steps:
+
+1. **Create the Operating System Implementation**:
+   * Create a new directory under `src/operating_systems` with the name of the
+       operating system.
+   * Implement the following files:
+     * `qemu_vm.ts`: Define the virtual machine class for the operating system.
+     * `<os_name>.ts`: Implement the operating system class extending the `Qemu`
+         class.
+     * `factory.ts`: Implement the factory class for the operating system.
+     * Look at existing implementations, like Haiku or OmniOS
+
+2. **Write Tests**:
+   * Create a corresponding directory under `spec/operating_systems` with the
+       name of the operating system.
+   * Write test files for the virtual machine and operating system classes.
+
+3. **Update the Main Entry Point**:
+   * Add an import for the new operating system's factory in `src/main.ts`.
+
+4. **Update the CI Configuration**:
+   * Add a new job for the operating system in `.github/workflows/ci.yml`.
+
+5. **Update the [`readme.md`](readme.md)**:
+   * Add the operating system to the
+       [`Supported Platforms`](#supported-platforms) section.
+   * Document any specific details or limitations of the operating system.
+
+6. **Test the Implementation**:
+   * Run the tests locally and ensure all tests pass.
+   * Verify the CI pipeline runs successfully for the new operating system.
+
+7. **Submit a Pull Request**:
+   * Open a pull request with the changes and request a review from the
+       maintainers.
+
+By following these steps, you can ensure the new operating system is integrated
+seamlessly into the project.
+
 ### Creating a Release
 
 For creating a new release, follow the steps below.
@@ -592,6 +646,7 @@ files within the [`test/http`](test/http) are ignore by Git.
 [freebsd_builder]: https://github.com/cross-platform-actions/freebsd-builder
 [netbsd_builder]: https://github.com/cross-platform-actions/netbsd-builder
 [haiku_builder]: https://github.com/cross-platform-actions/haiku-builder
+[omnios_builder]: https://github.com/cross-platform-actions/omnios-builder
 [act]: https://github.com/nektos/act
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: #unreleased

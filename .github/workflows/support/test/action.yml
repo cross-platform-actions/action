@@ -57,11 +57,11 @@ runs:
           ls -lah
           whoami
           env | sort
-          [ "`uname -s`" = '${{ inputs.name }}' ]
+          [ "`uname -s`" = '${{ inputs.name }}' ] || [ "`uname -n`" = '${{ inputs.name }}' ] || uname -v | grep -q -i '${{ inputs.name }}'
           [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ] || uname -v | grep -q '${{ inputs.uname_version }}'
           [ "`uname -m`" = '${{ inputs.uname_hardware }}' ] || [ "`uname -p`" = '${{ inputs.uname_hardware }}' ]
           [ "`pwd`" = '${{ inputs.work_directory }}' ]
-          [ "`hostname -f`" = '${{ inputs.hostname }}' ] || [ "`hostname`" = '${{ inputs.hostname }}' ]
+          [ "`hostname -f 2> /dev/null`" = '${{ inputs.hostname }}' ] || [ "`hostname`" = '${{ inputs.hostname }}' ]
           cat host_to_guest.txt | grep -q 'host to guest'
           echo 'guest to host' > guest_to_host.txt
 

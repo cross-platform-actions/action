@@ -1,17 +1,17 @@
-import {Vm} from '../../../src/operating_systems/haiku/qemu_vm'
+import {Vm} from '../../../src/operating_systems/omnios/qemu_vm'
 import * as arch from '../../../src/architecture'
 import {host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
-import '../../../src/operating_systems/haiku/haiku'
+import '../../../src/operating_systems/omnios/omnios'
 import {Input} from '../../../src/action/input'
 import {Executor} from '../../../src/utility'
 
-describe('Haiku QemuVm', () => {
-  let memory = '5G'
-  let cpuCount = 10
-  let ssHostPort = 1234
+describe('OmniOS QemuVm', () => {
+  let memory = '4G'
+  let cpuCount = 8
+  let ssHostPort = 5678
 
-  let osKind = os.Kind.for('haiku')
+  let osKind = os.Kind.for('omnios')
   let architecture = arch.Architecture.for(
     arch.Kind.x86_64,
     host,
@@ -38,7 +38,6 @@ describe('Haiku QemuVm', () => {
   let getFlagValue = (flag: string) => vm.command[vm.command.indexOf(flag) + 1]
   let actualMemory = () => getFlagValue('-m')
   let actualSmp = () => getFlagValue('-smp')
-  let actualNetworkBackend = () => getFlagValue('-netdev')
 
   beforeEach(() => {
     executor = jasmine.createSpyObj<Executor>('executor', ['execute'])
@@ -46,22 +45,12 @@ describe('Haiku QemuVm', () => {
   })
 
   describe('command', () => {
-    it('constucts a command with the correct memory configuration', () => {
+    it('constructs a command with the correct memory configuration', () => {
       expect(actualMemory()).toEqual(memory)
     })
 
-    it('constucts a command with the correct SMP configuration', () => {
+    it('constructs a command with the correct SMP configuration', () => {
       expect(actualSmp()).toEqual(cpuCount.toString())
-    })
-
-    it('constucts a command with the IPv6 disabled for the network backend', () => {
-      expect(actualNetworkBackend()).toEqual(
-        `user,id=user.0,hostfwd=tcp::${ssHostPort}-:22,ipv6=off`
-      )
-    })
-
-    it('constucts a command with the network device set to "e1000"', () => {
-      expect(vm.command).toContain('e1000,netdev=user.0,addr=0x03')
     })
   })
 
@@ -73,7 +62,7 @@ describe('Haiku QemuVm', () => {
 
       expect(executor.execute).toHaveBeenCalledOnceWith(
         'ssh',
-        ['-t', 'user@cross_platform_actions_host'],
+        ['-t', 'runner@cross_platform_actions_host'],
         jasmine.objectContaining({input: buffer})
       )
     })
@@ -87,7 +76,7 @@ describe('Haiku QemuVm', () => {
 
       expect(executor.execute).toHaveBeenCalledOnceWith(
         'ssh',
-        ['-t', 'user@cross_platform_actions_host', 'foo'],
+        ['-t', 'runner@cross_platform_actions_host', 'foo'],
         jasmine.objectContaining({input: buffer})
       )
     })
@@ -95,15 +84,20 @@ describe('Haiku QemuVm', () => {
 
   describe('setupWorkDirectory', () => {
     it('sets up the working directory', async () => {
-      let homeDirectory = '/home/runner/work'
-      let workDirectory = '/home/runner/work/repo/repo'
-      let buffer = Buffer.from("mkdir -p '/home/runner/work/repo/repo'")
+      const homeDirectory = '/home/runner/work'
+      const workDirectory = '/home/runner/work/repo/repo'
+      const content =
+        `rm -rf '/home/runner/work' && ` +
+        `sudo mkdir -p '/home/runner/work/repo/repo' && ` +
+        `sudo chown -R 'runner' '/home/runner/work' && ` +
+        `ln -sf '/home/runner/work' '/home/runner/work'`
+      let buffer = Buffer.from(content)
 
       await vm.setupWorkDirectory(homeDirectory, workDirectory)
 
       expect(executor.execute).toHaveBeenCalledWith(
         'ssh',
-        ['-t', 'user@cross_platform_actions_host'],
+        ['-t', 'runner@cross_platform_actions_host'],
         jasmine.objectContaining({input: buffer})
       )
     })
