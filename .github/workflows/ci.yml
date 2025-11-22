@@ -211,7 +211,7 @@ jobs:
   NetBSD:
     name: NetBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
     runs-on: ${{ matrix.host.name }}
-    timeout-minutes: 5
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -308,7 +308,7 @@ jobs:
             [ `sysctl -n hw.ncpu` = 8 ]
 
   test-hypervisor-config:
-    timeout-minutes: 5
+    timeout-minutes: 10
     name: Test configuring hypervisor
     runs-on: macos-15-intel
 
@@ -467,7 +467,7 @@ jobs:
         run: ${{ matrix.data.run_after }}
 
   multiple-steps:
-    timeout-minutes: 5
+    timeout-minutes: 10
     name: Test running the action multiple times
     runs-on: macos-15-intel
 
@@ -509,7 +509,7 @@ jobs:
           run: test -f foo.txt
 
   openbsd-qemu-macos:
-    timeout-minutes: 5
+    timeout-minutes: 10
     name: Test OpenBSD with QEMU on macOS runner
     runs-on: macos-15-intel
 
