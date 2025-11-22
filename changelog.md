@@ -105,6 +105,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix empty hostname ([#113](https://github.com/cross-platform-actions/action/issues/113))
 
+### Changed
+- Bump QEMU to 10.1.2
+
 ## [0.30.0] - 2025-11-04
 ### Added
 - Document how to report a security vulnerability
