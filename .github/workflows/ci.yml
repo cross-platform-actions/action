@@ -68,6 +68,20 @@ jobs:
               name: ubuntu-latest
               work_directory: /home/runner/work/action/action
 
+          - version: '14.3'
+            architecture: { name: arm64 }
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '14.3'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
           - version: '14.2'
             architecture: { name: arm64 }
             host:
