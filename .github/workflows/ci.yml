@@ -24,6 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        hostname: [runnervmg1sw1.local]
         version:
           - '15.0'
           - '14.3'
@@ -94,6 +95,7 @@ jobs:
           name: FreeBSD
           architecture: ${{ matrix.architecture.name }}
           version: ${{ matrix.version }}
+          hostname: ${{ matrix.hostname }}
           uname_release: ${{ matrix.version}}-RELEASE
           uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
           work_directory: ${{ matrix.host.work_directory }}
@@ -129,6 +131,7 @@ jobs:
           name: Haiku
           architecture: ${{ matrix.architecture.name }}
           version: ${{ matrix.version.name }}
+          hostname: ${{ matrix.hostname }}
           uname_version: ${{ matrix.version.uname }}
           uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
           work_directory: ${{ matrix.host.work_directory }}
@@ -183,6 +186,7 @@ jobs:
           name: OpenBSD
           architecture: ${{ matrix.architecture.name }}
           version: ${{ matrix.version }}
+          hostname: ${{ matrix.hostname }}
           uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
           work_directory: ${{ matrix.host.work_directory }}
 
@@ -239,6 +243,7 @@ jobs:
           name: NetBSD
           architecture: ${{ matrix.architecture.name }}
           version: ${{ matrix.version }}
+          hostname: ${{ matrix.hostname }}
           uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
           work_directory: ${{ matrix.host.work_directory }}
 

@@ -5,6 +5,8 @@ inputs:
     description: 'The architecture of the operating system'
   version:
     description: 'The version of the operating system'
+  hostname:
+    description: 'The hostname as reported by "hostname -f" or "hostname"'
   uname_release:
     description: 'The release as reported by uname'
   uname_version:
@@ -51,6 +53,7 @@ runs:
           uname -p
           pwd
           echo $SHELL
+          hostname -f 2> /dev/null || hostname
           ls -lah
           whoami
           env | sort
@@ -58,6 +61,7 @@ runs:
           [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ] || uname -v | grep -q '${{ inputs.uname_version }}'
           [ "`uname -m`" = '${{ inputs.uname_hardware }}' ] || [ "`uname -p`" = '${{ inputs.uname_hardware }}' ]
           [ "`pwd`" = '${{ inputs.work_directory }}' ]
+          [ "`hostname -f`" = '${{ inputs.hostname }}' ] || [ "`hostname`" = '${{ inputs.hostname }}' ]
           cat host_to_guest.txt | grep -q 'host to guest'
           echo 'guest to host' > guest_to_host.txt
 

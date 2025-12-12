@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for FreeBSD 15.0 ([#114](https://github.com/cross-platform-actions/action/issues/114))
 
+### Fixed
+- Fix empty hostname ([#113](https://github.com/cross-platform-actions/action/issues/113))
+
 ## [0.30.0] - 2025-11-04
 ### Added
 - Document how to report a security vulnerability
