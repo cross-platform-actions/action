@@ -25,12 +25,16 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '15.0'
+          - '14.3'
+          - '14.2'
+          - '14.1'
+          - '14.0'
           - '13.4'
           - '13.3'
           - '13.2'
           - '13.1'
           - '13.0'
-          - '12.4'
           - '12.2'
 
         architecture:
@@ -40,8 +44,7 @@ jobs:
 
         host:
           - name: ubuntu-latest
-            # /home is symlinked to /usr/home. pwd will return the resolved path.
-            work_directory: /usr/home/runner/work/action/action
+            work_directory: /home/runner/work/action/action
 
           - name: macos-15-intel
             work_directory: /Users/runner/work/action/action
@@ -54,80 +57,27 @@ jobs:
             host: { name: macos-15-intel }
 
         include:
-          - version: '15.0'
+          - version: '12.4'
             architecture: { name: arm64 }
+            hostname: ''
             host:
               name: ubuntu-latest
               work_directory: /home/runner/work/action/action
 
-          - version: '15.0'
+          - version: '12.4'
             architecture:
               name: x86-64
               uname: amd64
+            hostname: 'runnervmg1sw1.local'
             host:
               name: ubuntu-latest
               work_directory: /home/runner/work/action/action
 
-          - version: '14.3'
-            architecture: { name: arm64 }
-            host:
-              name: ubuntu-latest
-              work_directory: /home/runner/work/action/action
-
-          - version: '14.3'
+          - version: '12.4'
             architecture:
               name: x86-64
               uname: amd64
-            host:
-              name: ubuntu-latest
-              work_directory: /home/runner/work/action/action
-
-          - version: '14.2'
-            architecture: { name: arm64 }
-            host:
-              name: ubuntu-latest
-              work_directory: /home/runner/work/action/action
-
-          - version: '14.2'
-            architecture:
-              name: x86-64
-              uname: amd64
-            host:
-              name: ubuntu-latest
-              work_directory: /home/runner/work/action/action
-
-          - version: '14.1'
-            architecture: { name: arm64 }
-            host:
-              name: ubuntu-latest
-              work_directory: /home/runner/work/action/action
-
-          - version: '14.1'
-            architecture:
-              name: x86-64
-              uname: amd64
-            host:
-              name: ubuntu-latest
-              work_directory: /home/runner/work/action/action
-
-          - version: '14.0'
-            architecture: { name: arm64 }
-            host:
-              name: ubuntu-latest
-              work_directory: /home/runner/work/action/action
-
-          - version: '14.0'
-            architecture:
-              name: x86-64
-              uname: amd64
-            host:
-              name: ubuntu-latest
-              work_directory: /home/runner/work/action/action
-
-          - version: '14.0'
-            architecture:
-              name: x86-64
-              uname: amd64
+            hostname: 'runnervmg1sw1.local'
             host:
               name: macos-15-intel
               work_directory: /Users/runner/work/action/action

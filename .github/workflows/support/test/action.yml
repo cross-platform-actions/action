@@ -40,7 +40,9 @@ runs:
         architecture: ${{ inputs.architecture }}
         version: '${{ inputs.version }}'
         shutdown_vm: false
+        shell: bash
         run: |
+          set -x
           uname -a
           uname -s
           uname -r
