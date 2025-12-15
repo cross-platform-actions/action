@@ -19,7 +19,7 @@ Some of the features that this action supports include:
 
 ### Minimal Example
 
-Here's a sample workflow file which will run the given commands on FreeBSD 14.0.
+Here's a sample workflow file which will run the given commands on FreeBSD 15.0.
 
 ```yaml
 name: CI
@@ -33,10 +33,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Test
-        uses: cross-platform-actions/action@v0.26.0
+        uses: cross-platform-actions/action@v0.31.0
         with:
           operating_system: freebsd
-          version: '14.2'
+          version: '15.0'
           run: |
             uname -a
             echo $SHELL
@@ -49,7 +49,7 @@ jobs:
 ### Full Example
 
 Here's a sample workflow file which will set up a matrix resulting in four
-jobs. One which will run on FreeBSD 14.3, one which runs OpenBSD 7.8, one which
+jobs. One which will run on FreeBSD 15.0, one which runs OpenBSD 7.8, one which
 runs NetBSD 10.0, one which runs OpenBSD 7.8 on ARM64, one which runs NetBSD
 10.1 on ARM64 and one which runs Haiku R1/beta5 on x86-64.
 
@@ -66,7 +66,7 @@ jobs:
         os:
           - name: freebsd
             architecture: x86-64
-            version: '14.3'
+            version: '15.0'
 
           - name: openbsd
             architecture: x86-64
@@ -92,7 +92,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.30.0
+        uses: cross-platform-actions/action@v0.31.0
         env:
           MY_ENV1: MY_ENV1
           MY_ENV2: MY_ENV2
