@@ -1,5 +1,6 @@
 import {QemuVm} from '../../../src/operating_systems/freebsd/qemu_vm'
-import * as arch from '../../../src/architecture'
+import * as arch from '../../../src/architectures/factory'
+import * as archKind from '../../../src/architectures/kind'
 import {host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
 import '../../../src/operating_systems/freebsd/freebsd'
@@ -11,8 +12,8 @@ describe('FreeBSD QemuVm', () => {
   let ssHostPort = 1234
 
   let osKind = os.Kind.for('freebsd')
-  let architecture = arch.Architecture.for(
-    arch.Kind.x86_64,
+  let architecture = arch.Factory.for(
+    archKind.Kind.x86_64,
     host,
     osKind,
     host.hypervisor

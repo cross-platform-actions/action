@@ -1,5 +1,5 @@
-import * as architecture from '../src/architecture'
-import {Architecture} from '../src/architecture'
+import * as architecture from '../src/architectures/kind'
+import {Factory} from '../src/architectures/factory'
 import {Host} from '../src/host'
 import * as os from '../src/operating_systems/kind'
 import {Qemu, QemuEfi, Xhyve} from '../src/hypervisor'
@@ -19,7 +19,7 @@ describe('Architecture', () => {
 
           context('OpenBSD', () => {
             let osKind = os.Kind.for('openbsd')
-            let arch = Architecture.for(kind, host, osKind, selectedHypervisor)
+            let arch = Factory.for(kind, host, osKind, selectedHypervisor)
 
             it('returns the QEMU EFI hypervisor', () => {
               expect(arch.efiHypervisor).toBeInstanceOf(QemuEfi)
@@ -32,7 +32,7 @@ describe('Architecture', () => {
 
           context('OpenBSD', () => {
             let osKind = os.Kind.for('openbsd')
-            let arch = Architecture.for(kind, host, osKind, selectedHypervisor)
+            let arch = Factory.for(kind, host, osKind, selectedHypervisor)
 
             it('returns the Xhyve hypervisor', () => {
               expect(arch.efiHypervisor).toBeInstanceOf(Xhyve)
@@ -49,7 +49,7 @@ describe('Architecture', () => {
 
           context('OpenBSD', () => {
             let osKind = os.Kind.for('openbsd')
-            let arch = Architecture.for(kind, host, osKind, selectedHypervisor)
+            let arch = Factory.for(kind, host, osKind, selectedHypervisor)
 
             it('returns the QEMU EFI hypervisor', () => {
               expect(arch.efiHypervisor).toBeInstanceOf(QemuEfi)
@@ -72,7 +72,7 @@ describe('Architecture', () => {
 
           context('OpenBSD', () => {
             let osKind = os.Kind.for('openbsd')
-            let arch = Architecture.for(kind, host, osKind, selectedHypervisor)
+            let arch = Factory.for(kind, host, osKind, selectedHypervisor)
 
             it('returns the QEMU EFI hypervisor', () => {
               expect(arch.hypervisor).toBeInstanceOf(Qemu)
@@ -85,7 +85,7 @@ describe('Architecture', () => {
 
           context('OpenBSD', () => {
             let osKind = os.Kind.for('openbsd')
-            let arch = Architecture.for(kind, host, osKind, selectedHypervisor)
+            let arch = Factory.for(kind, host, osKind, selectedHypervisor)
 
             it('returns the Xhyve hypervisor', () => {
               expect(arch.hypervisor).toBeInstanceOf(Xhyve)
@@ -102,7 +102,7 @@ describe('Architecture', () => {
 
           context('OpenBSD', () => {
             let osKind = os.Kind.for('openbsd')
-            let arch = Architecture.for(kind, host, osKind, selectedHypervisor)
+            let arch = Factory.for(kind, host, osKind, selectedHypervisor)
 
             it('returns the QEMU EFI hypervisor', () => {
               expect(arch.hypervisor).toBeInstanceOf(Qemu)

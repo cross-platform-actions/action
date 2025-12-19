@@ -1,5 +1,6 @@
 import {Vm} from '../../../src/operating_systems/netbsd/qemu_vm'
-import * as arch from '../../../src/architecture'
+import * as arch from '../../../src/architectures/factory'
+import * as archKind from '../../../src/architectures/kind'
 import {host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
 import '../../../src/operating_systems/netbsd/netbsd'
@@ -11,8 +12,8 @@ describe('NetBSD QemuVm', () => {
   let ssHostPort = 1234
 
   let osKind = os.Kind.for('netbsd')
-  let architecture = arch.Architecture.for(
-    arch.Kind.x86_64,
+  let architecture = arch.Factory.for(
+    archKind.Kind.x86_64,
     host,
     osKind,
     host.hypervisor

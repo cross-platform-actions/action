@@ -2,7 +2,8 @@ import {basename} from 'path'
 
 import FreeBsd from '../../../src/operating_systems/freebsd/freebsd'
 import hostModule from '../../../src/host'
-import * as arch from '../../../src/architecture'
+import * as arch from '../../../src/architectures/factory'
+import * as archKind from '../../../src/architectures/kind'
 import * as os from '../../../src/operating_systems/kind'
 import * as hypervisor from '../../../src/hypervisor'
 import {Input} from '../../../src/action/input'
@@ -12,7 +13,7 @@ describe('FreeBSD OperatingSystem', () => {
   let host = Host.create('linux')
   let osKind = os.Kind.for('freebsd')
   let vmm = host.hypervisor
-  let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind, vmm)
+  let architecture = arch.Factory.for(archKind.Kind.x86_64, host, osKind, vmm)
   let freebsd = new FreeBsd(architecture, '0.0.0')
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
@@ -63,8 +64,8 @@ describe('FreeBSD OperatingSystem', () => {
 
     describe('when the given hypervisor is Xhyve', () => {
       it('creates a virtual machine using the Xhyve hypervisor', () => {
-        let archObject = arch.Architecture.for(
-          arch.Kind.x86_64,
+        let archObject = arch.Factory.for(
+          archKind.Kind.x86_64,
           host,
           osKind,
           new hypervisor.Xhyve()
@@ -85,8 +86,8 @@ describe('FreeBSD OperatingSystem', () => {
 
     describe('when the given hypervisor is Qemu', () => {
       it('creates a virtual machine using the Qemu hypervisor', () => {
-        let archObject = arch.Architecture.for(
-          arch.Kind.x86_64,
+        let archObject = arch.Factory.for(
+          archKind.Kind.x86_64,
           host,
           osKind,
           new hypervisor.Qemu()
