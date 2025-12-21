@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Test
-        uses: cross-platform-actions/action@v0.31.0
+        uses: cross-platform-actions/action@v0.32.0
         with:
           operating_system: freebsd
           version: '15.0'
@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.31.0
+        uses: cross-platform-actions/action@v0.32.0
         env:
           MY_ENV1: MY_ENV1
           MY_ENV2: MY_ENV2
