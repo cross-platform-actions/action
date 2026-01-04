@@ -55,7 +55,9 @@ export class Action {
   async run(): Promise<void> {
     core.startGroup('Setting up VM')
     core.debug('Running action')
+
     const runPreparer = this.createRunPreparer()
+    runPreparer.setupEnvironment()
     runPreparer.createInputHash()
     runPreparer.validateInputHash()
 
@@ -106,7 +108,9 @@ export class Action {
       core.info('VM is ready')
       try {
         core.endGroup()
-        await this.runCommand(vm)
+        if (this.input.hasRun) {
+          await this.runCommand(vm)
+        }
       } finally {
         core.startGroup('Tearing down VM')
         await vm.synchronizeBack()
@@ -239,9 +243,14 @@ export class Action {
   }
 
   private createRunPreparer(): RunPreparer {
-    const cls = runPreparerFor({isRunning: vmModule.Vm.isRunning})
+    const isRunning = vmModule.Vm.isRunning
+    const cls = runPreparerFor({isRunning})
+    const environmentSetup = environmentSetupFor({
+      isRunning,
+      isShellMode: process.env['CPA_SHELL_MODE'] === 'true'
+    })
     core.debug(`Using run preparer: ${cls.name}`)
-    return new cls(this, this.operatingSystem)
+    return new cls(this, this.operatingSystem, environmentSetup)
   }
 }
 
@@ -261,7 +270,45 @@ function runPreparerFor({
   return isRunning ? LiveRunPreparer : InitialRunPreparer
 }
 
+function environmentSetupFor({
+  isRunning,
+  isShellMode
+}: {
+  isRunning: boolean
+  isShellMode: boolean
+}): EnvironmentSetup {
+  if (isShellMode) return new ShellEnvironmentSetup()
+  return isRunning ? new LiveEnvironmentSetup() : new InitialEnvironmentSetup()
+}
+
+interface EnvironmentSetup {
+  setup(): void
+}
+
+class ShellEnvironmentSetup implements EnvironmentSetup {
+  setup(): void {
+    // noop
+  }
+}
+
+class InitialEnvironmentSetup implements EnvironmentSetup {
+  setup(): void {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    core.addPath(process.env['GITHUB_ACTION_PATH']!)
+  }
+}
+
+class LiveEnvironmentSetup implements EnvironmentSetup {
+  setup(): void {
+    core.warning(
+      'Invoking the action multiple times is deprecated. Please use the ' +
+        'shell integration instead.'
+    )
+  }
+}
+
 interface RunPreparer {
+  setupEnvironment(): void
   createInputHash(): void
   validateInputHash(): void
   download(): [Promise<string>, Promise<string>, Promise<string>]
@@ -276,10 +323,20 @@ interface RunPreparer {
 class InitialRunPreparer implements RunPreparer {
   private readonly action: Action
   private readonly operatingSystem: os.OperatingSystem
+  private readonly environmentSetup: EnvironmentSetup
 
-  constructor(action: Action, operatingSystem: os.OperatingSystem) {
+  constructor(
+    action: Action,
+    operatingSystem: os.OperatingSystem,
+    environmentSetup: EnvironmentSetup
+  ) {
     this.action = action
     this.operatingSystem = operatingSystem
+    this.environmentSetup = environmentSetup
+  }
+
+  setupEnvironment(): void {
+    this.environmentSetup.setup()
   }
 
   createInputHash(): void {
@@ -318,9 +375,19 @@ class InitialRunPreparer implements RunPreparer {
 // Used when the VM is already running
 class LiveRunPreparer implements RunPreparer {
   private readonly action: Action
+  private readonly environmentSetup: EnvironmentSetup
 
-  constructor(action: Action) {
+  constructor(
+    action: Action,
+    _operatingSystem: os.OperatingSystem,
+    environmentSetup: EnvironmentSetup
+  ) {
     this.action = action
+    this.environmentSetup = environmentSetup
+  }
+
+  setupEnvironment(): void {
+    this.environmentSetup.setup()
   }
 
   createInputHash(): void {

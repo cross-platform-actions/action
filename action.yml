@@ -3,19 +3,19 @@ description: Provides cross platform runner
 author: Jacob Carlborg
 inputs:
   run:
-    required: true
+    required: false
     description: |
       Runs command-line programs using the operating system's shell.
       This will be executed inside the virtual machine.
   operating_system:
-    required: true
+    required: false
     description: The type of operating system to run the job on
   architecture:
     required: false
     description: The architecture of the operating system.
     default: x86-64
   version:
-    required: true
+    required: false
     description: The version of the operating system to use
   shell:
     required: false
@@ -57,7 +57,6 @@ inputs:
     required: false
     description: |
       Specifies if the VM should be shutdown after the action has been run.
-    default: true
 
 runs:
   using: node20

@@ -75,6 +75,7 @@ class Action {
             core.startGroup('Setting up VM');
             core.debug('Running action');
             const runPreparer = this.createRunPreparer();
+            runPreparer.setupEnvironment();
             runPreparer.createInputHash();
             runPreparer.validateInputHash();
             const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()]);
@@ -104,7 +105,9 @@ class Action {
                 core.info('VM is ready');
                 try {
                     core.endGroup();
-                    yield this.runCommand(vm);
+                    if (this.input.hasRun) {
+                        yield this.runCommand(vm);
+                    }
                 }
                 finally {
                     core.startGroup('Tearing down VM');
@@ -209,9 +212,14 @@ class Action {
         return new cls(this, vm);
     }
     createRunPreparer() {
-        const cls = runPreparerFor({ isRunning: vmModule.Vm.isRunning });
+        const isRunning = vmModule.Vm.isRunning;
+        const cls = runPreparerFor({ isRunning });
+        const environmentSetup = environmentSetupFor({
+            isRunning,
+            isShellMode: process.env['CPA_SHELL_MODE'] === 'true'
+        });
         core.debug(`Using run preparer: ${cls.name}`);
-        return new cls(this, this.operatingSystem);
+        return new cls(this, this.operatingSystem, environmentSetup);
     }
 }
 exports.Action = Action;
@@ -221,11 +229,37 @@ function implementationFor({ isRunning }) {
 function runPreparerFor({ isRunning }) {
     return isRunning ? LiveRunPreparer : InitialRunPreparer;
 }
+function environmentSetupFor({ isRunning, isShellMode }) {
+    if (isShellMode)
+        return new ShellEnvironmentSetup();
+    return isRunning ? new LiveEnvironmentSetup() : new InitialEnvironmentSetup();
+}
+class ShellEnvironmentSetup {
+    setup() {
+        // noop
+    }
+}
+class InitialEnvironmentSetup {
+    setup() {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        core.addPath(process.env['GITHUB_ACTION_PATH']);
+    }
+}
+class LiveEnvironmentSetup {
+    setup() {
+        core.warning('Invoking the action multiple times is deprecated. Please use the ' +
+            'shell integration instead.');
+    }
+}
 // Used when the VM is not running
 class InitialRunPreparer {
-    constructor(action, operatingSystem) {
+    constructor(action, operatingSystem, environmentSetup) {
         this.action = action;
         this.operatingSystem = operatingSystem;
+        this.environmentSetup = environmentSetup;
+    }
+    setupEnvironment() {
+        this.environmentSetup.setup();
     }
     createInputHash() {
         const hash = this.action['input'].toHash();
@@ -256,8 +290,12 @@ class InitialRunPreparer {
 }
 // Used when the VM is already running
 class LiveRunPreparer {
-    constructor(action) {
+    constructor(action, _operatingSystem, environmentSetup) {
         this.action = action;
+        this.environmentSetup = environmentSetup;
+    }
+    setupEnvironment() {
+        this.environmentSetup.setup();
     }
     createInputHash() {
         // noop
@@ -463,7 +501,10 @@ class Input {
     get run() {
         if (this.run_ !== undefined)
             return this.run_;
-        return (this.run_ = core.getInput('run', { required: true }));
+        return (this.run_ = core.getInput('run', { required: false }));
+    }
+    get hasRun() {
+        return this.run !== '';
     }
     get shell() {
         if (this.shell_ !== undefined)
@@ -545,9 +586,13 @@ class Input {
     get shutdownVm() {
         if (this.shutdownVm_ !== undefined)
             return this.shutdownVm_;
-        const input = core.getBooleanInput('shutdown_vm');
-        core.debug(`shutdown_vm input: '${input}'`);
-        return (this.shutdownVm_ = input);
+        const input = core.getInput('shutdown_vm');
+        if (input === '') {
+            return (this.shutdownVm_ = this.hasRun);
+        }
+        const shutdownVm = core.getBooleanInput('shutdown_vm');
+        core.debug(`shutdown_vm input: '${shutdownVm}'`);
+        return (this.shutdownVm_ = shutdownVm);
     }
     toHash() {
         const components = [

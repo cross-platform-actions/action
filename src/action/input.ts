@@ -52,7 +52,11 @@ export class Input {
 
   get run(): string {
     if (this.run_ !== undefined) return this.run_
-    return (this.run_ = core.getInput('run', {required: true}))
+    return (this.run_ = core.getInput('run', {required: false}))
+  }
+
+  get hasRun(): boolean {
+    return this.run !== ''
   }
 
   get shell(): Shell {
@@ -153,10 +157,16 @@ export class Input {
   get shutdownVm(): boolean {
     if (this.shutdownVm_ !== undefined) return this.shutdownVm_
 
-    const input = core.getBooleanInput('shutdown_vm')
-    core.debug(`shutdown_vm input: '${input}'`)
+    const input = core.getInput('shutdown_vm')
 
-    return (this.shutdownVm_ = input)
+    if (input === '') {
+      return (this.shutdownVm_ = this.hasRun)
+    }
+
+    const shutdownVm = core.getBooleanInput('shutdown_vm')
+    core.debug(`shutdown_vm input: '${shutdownVm}'`)
+
+    return (this.shutdownVm_ = shutdownVm)
   }
 
   toHash(): string {

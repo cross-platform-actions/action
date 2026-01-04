@@ -13,7 +13,7 @@ Some of the features that this action supports include:
 - Allows to use default shell or Bash shell
 - Low boot overhead
 - Fast execution
-- Using the action in multiple steps in the same job
+- Using the action in multiple steps in the same job by using a custom shell
 
 ## `Usage`
 
@@ -61,6 +61,9 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: cpa.sh {0}
     strategy:
       matrix:
         os:
@@ -108,13 +111,14 @@ jobs:
           shell: bash
           memory: 5G
           cpu_count: 4
-          run: |
-            uname -a
-            echo $SHELL
-            pwd
-            ls -lah
-            whoami
-            env | sort
+
+      - run: |
+          uname -a
+          echo $SHELL
+          pwd
+          ls -lah
+          whoami
+          env | sort
 ```
 
 Different platforms need to run on different runners, so see the

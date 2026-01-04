@@ -548,3 +548,45 @@ jobs:
           sync_files: false
           shutdown_vm: false
           run: true
+
+  shell-mode:
+    timeout-minutes: 5
+    name: Test running the action in shell mode
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: cpa.sh {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y dosfstools rsync fdisk
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '15.0'
+          hypervisor: qemu
+          shutdown_vm: false
+          run: echo "Starting VM"
+
+      - name: Verify VM configuration
+        run: |
+          uname -a
+          [ "$(uname)" = "FreeBSD" ]
+          [ "$(uname -r | cut -d- -f1)" = "15.0" ]
+          [ "$(uname -m)" = "amd64" ]
+
+      - name: Create file in VM
+        run: touch shell_mode_test.txt
+
+      - name: Check file in subsequent step
+        run: test -f shell_mode_test.txt

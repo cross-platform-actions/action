@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Add support for running the action as a custom shell ([#23](https://github.com/cross-platform-actions/action/issues/23)).
+    This allows to run multiple steps in the same job without having to invoke
+    the action multiple times.
 
 ## [0.32.0] - 2025-12-21
 ### Added
