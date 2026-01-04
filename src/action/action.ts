@@ -295,6 +295,9 @@ class InitialEnvironmentSetup implements EnvironmentSetup {
   setup(): void {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     core.addPath(process.env['GITHUB_ACTION_PATH']!)
+    const actionPath = process.env['GITHUB_ACTION_PATH']!
+    const cpaShellPath = path.join(actionPath, 'cpa.sh')
+    fs.chmodSync(cpaShellPath, '755')
   }
 }
 
