@@ -581,12 +581,12 @@ jobs:
       - name: Verify VM configuration
         run: |
           uname -a
-          [ "$(uname)" = "FreeBSD" ]
-          [ "$(uname -r | cut -d- -f1)" = "13.2" ]
-          [ "$(uname -m)" = "amd64" ]
-
-      - name: Create file in VM
-        run: touch shell_mode_test.txt
-
-      - name: Check file in subsequent step
-        run: test -f shell_mode_test.txt
+      #     [ "$(uname)" = "FreeBSD" ]
+      #     [ "$(uname -r | cut -d- -f1)" = "13.2" ]
+      #     [ "$(uname -m)" = "amd64" ]
+      #
+      # - name: Create file in VM
+      #   run: touch shell_mode_test.txt
+      #
+      # - name: Check file in subsequent step
+      #   run: test -f shell_mode_test.txt

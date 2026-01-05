@@ -241,11 +241,22 @@ class ShellEnvironmentSetup {
 }
 class InitialEnvironmentSetup {
     setup() {
-        const actionPath = process.env['GITHUB_ACTION_PATH'];
+        let actionPath = process.env['GITHUB_ACTION_PATH'];
+        if (!actionPath) {
+            actionPath = process.cwd();
+            core.info(`GITHUB_ACTION_PATH not set, using current working directory: ${actionPath}`);
+            core.exportVariable('GITHUB_ACTION_PATH', actionPath);
+        }
         if (actionPath) {
+            core.info(`Adding ${actionPath} to PATH`);
             core.addPath(actionPath);
             const cpaShellPath = path.join(actionPath, 'cpa.sh');
-            fs.chmodSync(cpaShellPath, '755');
+            if (fs.existsSync(cpaShellPath)) {
+                fs.chmodSync(cpaShellPath, '755');
+            }
+            else {
+                core.warning(`cpa.sh not found at ${cpaShellPath}`);
+            }
         }
     }
 }
