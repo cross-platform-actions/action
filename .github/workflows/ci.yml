@@ -573,7 +573,7 @@ jobs:
         with:
           operating_system: freebsd
           architecture: x86-64
-          version: '15.0'
+          version: '13.2'
           hypervisor: qemu
           shutdown_vm: false
           run: echo "Starting VM"
@@ -582,7 +582,7 @@ jobs:
         run: |
           uname -a
           [ "$(uname)" = "FreeBSD" ]
-          [ "$(uname -r | cut -d- -f1)" = "15.0" ]
+          [ "$(uname -r | cut -d- -f1)" = "13.2" ]
           [ "$(uname -m)" = "amd64" ]
 
       - name: Create file in VM
