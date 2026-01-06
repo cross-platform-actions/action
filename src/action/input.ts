@@ -44,8 +44,14 @@ export class Input {
 
   get operatingSystem(): os.Kind {
     if (this.operatingSystem_ !== undefined) return this.operatingSystem_
-    const input = core.getInput('operating_system', {required: true})
+    const input = core.getInput('operating_system', {
+      required: process.env['CPA_SHELL_MODE'] !== 'true'
+    })
     core.debug(`operating_system input: '${input}'`)
+
+    if (input === '' && process.env['CPA_SHELL_MODE'] === 'true') {
+      return (this.operatingSystem_ = os.Kind.for('freebsd')) // Dummy value for shell mode
+    }
 
     return (this.operatingSystem_ = os.Kind.for(input))
   }
