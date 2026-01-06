@@ -32,9 +32,15 @@ export class Input {
 
   get version(): string {
     if (this.version_ !== undefined) return this.version_
-    return (this.version_ = core.getInput('version', {
-      required: true
-    }))
+    const input = core.getInput('version', {
+      required: process.env['CPA_SHELL_MODE'] !== 'true'
+    })
+
+    if (input === '' && process.env['CPA_SHELL_MODE'] === 'true') {
+      return (this.version_ = '') // Dummy value for shell mode
+    }
+
+    return (this.version_ = input)
   }
 
   get imageURL(): string {
