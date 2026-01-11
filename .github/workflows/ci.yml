@@ -283,6 +283,46 @@ jobs:
           hostname: ${{ matrix.hostname }}
           work_directory: ${{ matrix.host.work_directory }}
 
+  custom-shell:
+    timeout-minutes: 5
+    name: custom-shell
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dosfstools rsync fdisk
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          shutdown_vm: false
+          run: true
+
+      - name: Run command using custom shell
+        run: uname -a
+        shell: cpa.sh {0}
+
+      - name: Tear down VM
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          shutdown_vm: true
+          run: true
+
   test-no-env:
     timeout-minutes: 5
     name: Test without environment variables

@@ -101,10 +101,12 @@ class Action {
                 yield implementation.wait(240);
                 yield implementation.setupWorkDirectory(vm.homeDirectory, vm.workDirectory);
                 yield vm.synchronizePaths(this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
+                implementation.setupCustomShell();
                 core.info('VM is ready');
                 try {
                     core.endGroup();
-                    yield this.runCommand(vm);
+                    if (this.input.run !== '')
+                        yield this.runCommand(vm);
                 }
                 finally {
                     core.startGroup('Tearing down VM');
@@ -316,6 +318,9 @@ class LiveImplementation {
     configSSH(_ipAddress) {
         // noop
     }
+    setupCustomShell() {
+        // noop
+    }
 }
 class InitialImplementation {
     constructor(action, vm) {
@@ -355,6 +360,24 @@ class InitialImplementation {
         this.createSSHConfig();
         this.setupAuthorizedKeys();
         this.setupHostname(ipAddress);
+    }
+    setupCustomShell() {
+        var _a;
+        const workDirectory = (_a = process.env['GITHUB_WORKSPACE']) !== null && _a !== void 0 ? _a : '';
+        const cpaShellDirectory = fs.mkdtempSync('/tmp/cpa-shell-');
+        const cpaShellPath = path.join(cpaShellDirectory, 'cpa.sh');
+        const sh = this.action.input.shell === shell.Shell.default
+            ? '$SHELL'
+            : shell.toString(this.action.input.shell);
+        const script = `#!/usr/bin/env sh
+set -eu
+
+run_file="$1"
+
+ssh -t ${vmModule.Vm.user}@${vmModule.Vm.cpaHost} sh -c 'cd "${workDirectory}" && exec "${sh}" -e' < "$run_file"
+`;
+        fs.writeFileSync(cpaShellPath, script, { mode: 0o755 });
+        core.addPath(cpaShellDirectory);
     }
     createSSHConfig() {
         if (!fs.existsSync(this.sshDirectory))
@@ -463,7 +486,7 @@ class Input {
     get run() {
         if (this.run_ !== undefined)
             return this.run_;
-        return (this.run_ = core.getInput('run', { required: true }));
+        return (this.run_ = core.getInput('run'));
     }
     get shell() {
         if (this.shell_ !== undefined)

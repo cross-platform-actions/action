@@ -103,10 +103,11 @@ export class Action {
         this.resourceDisk.diskPath,
         ...excludes
       )
+      implementation.setupCustomShell()
       core.info('VM is ready')
       try {
         core.endGroup()
-        await this.runCommand(vm)
+        if (this.input.run !== '') await this.runCommand(vm)
       } finally {
         core.startGroup('Tearing down VM')
         await vm.synchronizeBack()
@@ -361,6 +362,7 @@ interface Implementation {
   ): Promise<void>
 
   configSSH(ipAddress: string): void
+  setupCustomShell(): void
 }
 
 class LiveImplementation implements Implementation {
@@ -393,6 +395,10 @@ class LiveImplementation implements Implementation {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   configSSH(_ipAddress: string): void {
+    // noop
+  }
+
+  setupCustomShell(): void {
     // noop
   }
 }
@@ -446,6 +452,28 @@ class InitialImplementation implements Implementation {
     this.createSSHConfig()
     this.setupAuthorizedKeys()
     this.setupHostname(ipAddress)
+  }
+
+  setupCustomShell(): void {
+    const workDirectory = process.env['GITHUB_WORKSPACE'] ?? ''
+    const cpaShellDirectory = fs.mkdtempSync('/tmp/cpa-shell-')
+    const cpaShellPath = path.join(cpaShellDirectory, 'cpa.sh')
+
+    const sh =
+      this.action.input.shell === shell.Shell.default
+        ? '$SHELL'
+        : shell.toString(this.action.input.shell)
+
+    const script = `#!/usr/bin/env sh
+set -eu
+
+run_file="$1"
+
+ssh -t ${vmModule.Vm.user}@${vmModule.Vm.cpaHost} sh -c 'cd "${workDirectory}" && exec "${sh}" -e' < "$run_file"
+`
+
+    fs.writeFileSync(cpaShellPath, script, {mode: 0o755})
+    core.addPath(cpaShellDirectory)
   }
 
   private createSSHConfig(): void {

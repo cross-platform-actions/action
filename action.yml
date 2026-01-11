@@ -3,7 +3,7 @@ description: Provides cross platform runner
 author: Jacob Carlborg
 inputs:
   run:
-    required: true
+    required: false
     description: |
       Runs command-line programs using the operating system's shell.
       This will be executed inside the virtual machine.
@@ -57,7 +57,7 @@ inputs:
     required: false
     description: |
       Specifies if the VM should be shutdown after the action has been run.
-    default: true
+    default: 'true'
 
 runs:
   using: node20
