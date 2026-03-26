@@ -37,7 +37,7 @@
   "devDependencies": {
     "@types/array.prototype.flatmap": "^1.2.2",
     "@types/jasmine": "^4.3.1",
-    "@types/node": "^14.14.9",
+    "@types/node": "^25.5.0",
     "@typescript-eslint/eslint-plugin": "5.37.0",
     "@typescript-eslint/parser": "^5.37.0",
     "@vercel/ncc": "^0.36.1",
