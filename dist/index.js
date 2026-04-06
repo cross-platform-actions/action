@@ -1599,6 +1599,15 @@ class Vm extends qemu_vm_1.Vm {
             yield this.execute(`mkdir -p '${workDirectory}'`);
         });
     }
+    synchronizePaths(...excludePaths) {
+        const _super = Object.create(null, {
+            synchronizePaths: { get: () => super.synchronizePaths }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            yield _super.synchronizePaths.call(this, ...excludePaths);
+            yield this.execute(`chown -R $(id -u):$(id -g) '${this.workDirectory}'`);
+        });
+    }
     get workDirectory() {
         return path.join('/boot/home', super.workDirectory);
     }
