@@ -10,6 +10,11 @@ export class Vm extends QemuVm {
     await this.execute(`mkdir -p '${workDirectory}'`)
   }
 
+  override async synchronizePaths(...excludePaths: string[]): Promise<void> {
+    await super.synchronizePaths(...excludePaths)
+    await this.execute(`chown -R $(id -u):$(id -g) '${this.workDirectory}'`)
+  }
+
   override get workDirectory(): string {
     return path.join('/boot/home', super.workDirectory)
   }

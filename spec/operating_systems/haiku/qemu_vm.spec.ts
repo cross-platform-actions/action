@@ -93,6 +93,22 @@ describe('Haiku QemuVm', () => {
     })
   })
 
+  describe('synchronizePaths', () => {
+    it('fixes ownership of the work directory after syncing', async () => {
+      const buffer = Buffer.from(
+        `chown -R $(id -u):$(id -g) '${vm.workDirectory}'`
+      )
+
+      await vm.synchronizePaths()
+
+      expect(executor.execute).toHaveBeenCalledWith(
+        'ssh',
+        ['-t', 'user@cross_platform_actions_host'],
+        jasmine.objectContaining({input: buffer})
+      )
+    })
+  })
+
   describe('setupWorkDirectory', () => {
     it('sets up the working directory', async () => {
       let homeDirectory = '/home/runner/work'

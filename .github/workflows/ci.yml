@@ -303,6 +303,26 @@ jobs:
           shutdown_vm: false
           run: env | sort
 
+  test-haiku-file-ownership:
+    timeout-minutes: 5
+    name: Test Haiku file ownership after rsync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: haiku
+          architecture: x86-64
+          version: r1beta5
+          shutdown_vm: false
+          run: '! find . -nouser | grep -q .'
+
   test-cpu-count-config:
     timeout-minutes: 5
     name: Test configuring CPU count

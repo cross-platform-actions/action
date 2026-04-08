@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Fix #108: Fix file ownership on Haiku after rsync, resolving git
+    `safe.directory` errors
+
 ### Changed
 - **Breaking**: Update the requirement of Node for running this action from
     version 20 to 24.
