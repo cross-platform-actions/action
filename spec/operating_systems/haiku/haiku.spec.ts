@@ -5,13 +5,12 @@ import * as os from '../../../src/operating_systems/kind'
 import HostQemu from '../../../src/host_qemu'
 import * as hypervisor from '../../../src/hypervisor'
 import * as qemu from '../../../src/qemu_vm'
-import * as xhyve from '../../../src/xhyve_vm'
 import * as haikuQemuVm from '../../../src/operating_systems/haiku/qemu_vm'
 import {Input} from '../../../src/action/input'
 
 describe('Haiku OperatingSystem', () => {
   class Host extends hostModule.Host {
-    get vmModule(): typeof xhyve | typeof qemu {
+    get vmModule(): typeof qemu {
       return qemu
     }
 
@@ -34,8 +33,6 @@ describe('Haiku OperatingSystem', () => {
     override get defaultCpuCount(): number {
       return 6
     }
-
-    override validateHypervisor(_kind: hypervisor.Kind): void {}
   }
 
   let host = new Host()
@@ -51,14 +48,13 @@ describe('Haiku OperatingSystem', () => {
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
   let firmwareDirectory = 'firmware/directory'
-  let input = new Input()
+  let input = new Input(host)
 
   let config = {
     memory: '4G',
     cpuCount: 7,
     diskImage: '',
-    resourcesDiskImage: '',
-    userboot: ''
+    resourcesDiskImage: ''
   }
 
   describe('createVirtualMachine', () => {
@@ -83,7 +79,6 @@ describe('Haiku OperatingSystem', () => {
           ssHostPort: 2847,
           cpu: 'max',
           machineType: 'q35',
-          uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
           firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`
         }
       )

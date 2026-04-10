@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Update the requirement of Node for running this action from
     version 20 to 24.
 
+### Removed
+- **Breaking**: Remove support for running on macOS runners. Only Linux runners
+    (e.g. `ubuntu-latest`) are now supported. This was deprecated in v0.25.0.
+- **Breaking**: Remove the Xhyve hypervisor. QEMU is now the only supported
+    hypervisor, making the `hypervisor` input parameter redundant. This was
+    deprecated in v0.25.0.
+
 ## [0.32.0] - 2025-12-21
 ### Added
 - Add support for OmniOS

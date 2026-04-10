@@ -156,10 +156,7 @@ export class Action {
       {
         ...config,
         diskImage: path.join(resourcesDirectory, this.targetDiskName),
-
-        // xhyve
-        resourcesDiskImage: this.resourceDisk.diskPath,
-        userboot: path.join(firmwareDirectory, 'userboot.so')
+        resourcesDiskImage: this.resourceDisk.diskPath
       }
     )
   }

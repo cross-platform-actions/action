@@ -8,7 +8,6 @@ import * as exec from '@actions/exec'
 import {Action} from './action/action'
 import {execWithOutput} from './utility'
 import type {OperatingSystem} from './operating_system'
-import {wait} from './wait'
 
 export default abstract class ResourceDisk {
   protected readonly operatingSystem: OperatingSystem
@@ -25,7 +24,6 @@ export default abstract class ResourceDisk {
 
   static for(action: Action): ResourceDisk {
     const implementationClass = action.host.resolve({
-      macos: MacOs,
       linux: Linux
     })
 
@@ -78,68 +76,6 @@ export default abstract class ResourceDisk {
   private async unmountDisk(): Promise<void> {
     core.debug('Unmounting disk')
     await exec.exec('sudo', ['umount', this.mountPath])
-  }
-}
-
-class MacOs extends ResourceDisk {
-  override async createDiskFile(size: string, diskPath: string): Promise<void> {
-    await exec.exec('mkfile', ['-n', size, diskPath])
-  }
-
-  override async createDiskDevice(diskPath: string): Promise<string> {
-    const devicePath = await execWithOutput(
-      'hdiutil',
-      [
-        'attach',
-        '-imagekey',
-        'diskimage-class=CRawDiskImage',
-        '-nomount',
-        diskPath
-      ],
-      {silent: true}
-    )
-
-    return devicePath.trim()
-  }
-
-  override async partitionDisk(
-    devicePath: string,
-    mountName: string
-  ): Promise<void> {
-    await exec.exec('diskutil', [
-      'partitionDisk',
-      devicePath,
-      '1',
-      'GPT',
-      'fat32',
-      mountName,
-      '100%'
-    ])
-  }
-
-  override async mountDisk(
-    _devicePath: string,
-    mountPath: string
-  ): Promise<string> {
-    return path.join('/Volumes', path.basename(mountPath))
-  }
-
-  override async detachDevice(devicePath: string): Promise<void> {
-    const maxRetries = 150
-    const waitTimeSeconds = 1
-
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        await exec.exec('hdiutil', ['detach', devicePath])
-        return
-      } catch (error: unknown) {
-        const err = error as Error
-        core.debug(`Failed to detach device: ${err.message}`)
-        await wait(waitTimeSeconds * 1000)
-      }
-    }
-
-    core.error(`Failed to detach device after ${maxRetries} retries`)
   }
 }
 

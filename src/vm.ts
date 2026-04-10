@@ -20,15 +20,9 @@ export interface Configuration {
   cpuCount: number
   diskImage: fs.PathLike
   ssHostPort: number
-
-  // qemu
   cpu: string
   machineType: string
-
-  // xhyve
-  uuid: string
   resourcesDiskImage: fs.PathLike
-  userboot: fs.PathLike
   firmware?: fs.PathLike
 }
 

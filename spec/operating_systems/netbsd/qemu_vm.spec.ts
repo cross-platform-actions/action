@@ -1,6 +1,6 @@
 import {Vm} from '../../../src/operating_systems/netbsd/qemu_vm'
 import * as arch from '../../../src/architecture'
-import {host} from '../../../src/host'
+import {Host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
 import '../../../src/operating_systems/netbsd/netbsd'
 import {Input} from '../../../src/action/input'
@@ -10,6 +10,7 @@ describe('NetBSD QemuVm', () => {
   let cpuCount = 10
   let ssHostPort = 1234
 
+  let host = Host.create('linux')
   let osKind = os.Kind.for('netbsd')
   let architecture = arch.Architecture.for(
     arch.Kind.x86_64,
@@ -17,7 +18,7 @@ describe('NetBSD QemuVm', () => {
     osKind,
     host.hypervisor
   )
-  let input = new Input()
+  let input = new Input(host)
   let config = {
     memory: memory,
     cpuCount: cpuCount,
@@ -25,9 +26,7 @@ describe('NetBSD QemuVm', () => {
     ssHostPort: ssHostPort,
     cpu: '',
     machineType: '',
-    uuid: '',
     resourcesDiskImage: '',
-    userboot: '',
     firmware: ''
   }
   let vm = new Vm('', '', architecture, input, config)

@@ -66,7 +66,12 @@ export abstract class Architecture {
   }
 
   validateHypervisor(kind: hypervisor.Kind): void {
-    this.host.validateHypervisor(kind)
+    switch (kind) {
+      case hypervisor.Kind.qemu:
+        break
+      default:
+        throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`)
+    }
   }
 
   protected get hostString(): string {
@@ -110,10 +115,6 @@ export abstract class Architecture {
       switch (kind) {
         case hypervisor.Kind.qemu:
           break
-        case hypervisor.Kind.xhyve:
-          throw new Error(
-            'Unsupported hypervisor for architecture ARM64: xhyve'
-          )
         default:
           throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`)
       }

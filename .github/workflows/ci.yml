@@ -47,15 +47,9 @@ jobs:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action
 
-          - name: macos-15-intel
-            work_directory: /Users/runner/work/action/action
-
         exclude:
           - version: '12.2'
             architecture: { name: arm64 }
-
-          - architecture: { name: arm64 }
-            host: { name: macos-15-intel }
 
         include:
           - version: '12.4'
@@ -73,15 +67,6 @@ jobs:
             host:
               name: ubuntu-latest
               work_directory: /home/runner/work/action/action
-
-          - version: '12.4'
-            architecture:
-              name: x86-64
-              uname: amd64
-            hostname: 'runnervmg1sw1.local'
-            host:
-              name: macos-15-intel
-              work_directory: /Users/runner/work/action/action
 
     steps:
       - name: Checkout
@@ -164,15 +149,9 @@ jobs:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action
 
-          - name: macos-15-intel
-            work_directory: /Users/runner/work/action/action
-
         exclude:
           - version: '6.8'
             architecture: { name: arm64 }
-
-          - architecture: { name: arm64 }
-            host: { name: macos-15-intel }
 
     steps:
       - name: Checkout
@@ -215,9 +194,6 @@ jobs:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action
 
-          - name: macos-15-intel
-            work_directory: /Users/runner/work/action/action
-
         exclude:
           - version: '9.4'
             architecture: { name: arm64 }
@@ -227,9 +203,6 @@ jobs:
 
           - version: '9.2'
             architecture: { name: arm64 }
-
-          - architecture: { name: arm64 }
-            host: { name: macos-15-intel }
 
     steps:
       - name: Checkout
@@ -349,7 +322,7 @@ jobs:
   test-hypervisor-config:
     timeout-minutes: 5
     name: Test configuring hypervisor
-    runs-on: macos-15-intel
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -373,7 +346,7 @@ jobs:
   test-custom-vm-image:
     timeout-minutes: 5
     name: Test custom VM image
-    runs-on: macos-15-intel
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -508,12 +481,7 @@ jobs:
   multiple-steps:
     timeout-minutes: 5
     name: Test running the action multiple times
-    runs-on: macos-15-intel
-
-    strategy:
-      fail-fast: false
-      matrix:
-        hypervisor: [qemu, xhyve]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -527,7 +495,7 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
-          hypervisor: ${{ matrix.hypervisor }}
+          hypervisor: qemu
           shutdown_vm: false
           run: touch foo.txt
 
@@ -546,25 +514,3 @@ jobs:
           hypervisor: qemu
           shutdown_vm: true
           run: test -f foo.txt
-
-  openbsd-qemu-macos:
-    timeout-minutes: 5
-    name: Test OpenBSD with QEMU on macOS runner
-    runs-on: macos-15-intel
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Test
-        uses: ./
-        with:
-          operating_system: openbsd
-          architecture: x86-64
-          version: '7.4'
-          hypervisor: qemu
-          sync_files: false
-          shutdown_vm: false
-          run: true

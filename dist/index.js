@@ -143,9 +143,7 @@ class Action {
         });
     }
     creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, config) {
-        return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, this.input, Object.assign(Object.assign({}, config), { diskImage: path.join(resourcesDirectory, this.targetDiskName), 
-            // xhyve
-            resourcesDiskImage: this.resourceDisk.diskPath, userboot: path.join(firmwareDirectory, 'userboot.so') }));
+        return this.operatingSystem.createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, this.input, Object.assign(Object.assign({}, config), { diskImage: path.join(resourcesDirectory, this.targetDiskName), resourcesDiskImage: this.resourceDisk.diskPath }));
     }
     unarchive(type, archivePath) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -703,7 +701,12 @@ class Architecture {
         return (0, utility_1.getOrDefaultOrThrow)(implementation, name);
     }
     validateHypervisor(kind) {
-        this.host.validateHypervisor(kind);
+        switch (kind) {
+            case hypervisor.Kind.qemu:
+                break;
+            default:
+                throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
+        }
     }
     get hostString() {
         return this.host.toString();
@@ -740,8 +743,6 @@ Architecture.Arm64 = class extends Architecture {
         switch (kind) {
             case hypervisor.Kind.qemu:
                 break;
-            case hypervisor.Kind.xhyve:
-                throw new Error('Unsupported hypervisor for architecture ARM64: xhyve');
             default:
                 throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
         }
@@ -833,12 +834,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const process = __importStar(__nccwpck_require__(7282));
-const core = __importStar(__nccwpck_require__(2186));
 const host_qemu_1 = __importDefault(__nccwpck_require__(9097));
 const hypervisor = __importStar(__nccwpck_require__(4288));
 const qemu = __importStar(__nccwpck_require__(1106));
 const utility_1 = __nccwpck_require__(2857);
-const xhyve = __importStar(__nccwpck_require__(3321));
 class Module {
     static get host() {
         return this.host_ ? this.host_ : (this.host_ = Module.Host.create());
@@ -850,8 +849,6 @@ class Module {
     class Host {
         static create(platform = process.platform) {
             switch (platform) {
-                case 'darwin':
-                    return new MacOs();
                 case 'linux':
                     return new Linux();
                 default:
@@ -866,41 +863,6 @@ class Module {
         }
     }
     Module.Host = Host;
-    class MacOs extends Host {
-        constructor() {
-            super();
-            core.warning('Support for macOS runners has been deprecated and will be removed in' +
-                'a future update. Please use the `ubuntu-latest` runner instead.');
-        }
-        get vmModule() {
-            return xhyve;
-        }
-        get qemu() {
-            return new host_qemu_1.default.MacosHostQemu();
-        }
-        get hypervisor() {
-            return new hypervisor.Xhyve();
-        }
-        get efiHypervisor() {
-            return this.hypervisor;
-        }
-        get defaultMemory() {
-            return '13G';
-        }
-        get defaultCpuCount() {
-            return 3;
-        }
-        validateHypervisor(kind) {
-            switch (kind) {
-                case hypervisor.Kind.qemu:
-                    break;
-                case hypervisor.Kind.xhyve:
-                    break;
-                default:
-                    throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
-            }
-        }
-    }
     class Linux extends Host {
         get vmModule() {
             return qemu;
@@ -919,16 +881,6 @@ class Module {
         }
         get defaultCpuCount() {
             return 2;
-        }
-        validateHypervisor(kind) {
-            switch (kind) {
-                case hypervisor.Kind.qemu:
-                    break;
-                case hypervisor.Kind.xhyve:
-                    throw new Error('Unsupported hypervisor on Linux hosts: xhyve');
-                default:
-                    throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
-            }
         }
     }
 })(Module || (Module = {}));
@@ -952,11 +904,6 @@ HostQemu.LinuxHostQemu = class extends HostQemu {
         return 'max';
     }
 };
-HostQemu.MacosHostQemu = class extends HostQemu {
-    get cpu() {
-        return 'max';
-    }
-};
 //# sourceMappingURL=host_qemu.js.map
 
 /***/ }),
@@ -967,49 +914,20 @@ HostQemu.MacosHostQemu = class extends HostQemu {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toHypervisor = exports.QemuEfi = exports.Qemu = exports.Xhyve = exports.toKind = exports.Kind = void 0;
-const resource_urls_1 = __nccwpck_require__(3990);
+exports.toHypervisor = exports.QemuEfi = exports.Qemu = exports.toKind = exports.Kind = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
-const xhyve_vm_1 = __nccwpck_require__(3321);
 const utility_1 = __nccwpck_require__(2857);
 var Kind;
 (function (Kind) {
-    Kind[Kind["xhyve"] = 0] = "xhyve";
-    Kind[Kind["qemu"] = 1] = "qemu";
+    Kind[Kind["qemu"] = 0] = "qemu";
 })(Kind = exports.Kind || (exports.Kind = {}));
 function toKind(value) {
-    return architectureMap[value.toLocaleLowerCase()];
+    return kindMap[value.toLocaleLowerCase()];
 }
 exports.toKind = toKind;
-const architectureMap = {
-    xhyve: Kind.xhyve,
+const kindMap = {
     qemu: Kind.qemu
 };
-class Xhyve {
-    get kind() {
-        return Kind.xhyve;
-    }
-    get sshPort() {
-        return 22;
-    }
-    get firmwareFile() {
-        return 'uefi.fd';
-    }
-    get vmModule() {
-        return xhyve_vm_1.Vm;
-    }
-    get efi() {
-        return this;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getResourceUrl(_architecture) {
-        return `${resource_urls_1.ResourceUrls.create().resourceBaseUrl}/xhyve-macos.tar`;
-    }
-    resolve(implementation) {
-        return (0, utility_1.getOrDefaultOrThrow)(implementation, 'xhyve');
-    }
-}
-exports.Xhyve = Xhyve;
 class Qemu {
     constructor() {
         this.firmwareDirectory = 'share/qemu';
@@ -1048,7 +966,6 @@ function toHypervisor(kind) {
 }
 exports.toHypervisor = toHypervisor;
 const hypervisorMap = {
-    [Kind.xhyve]: Xhyve,
     [Kind.qemu]: Qemu
 };
 //# sourceMappingURL=hypervisor.js.map
@@ -1155,13 +1072,11 @@ exports.convertToRawDisk = exports.OperatingSystem = void 0;
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
-const host_1 = __nccwpck_require__(8215);
 const resource_urls_1 = __nccwpck_require__(3990);
 const resource_disk_1 = __nccwpck_require__(7102);
 class OperatingSystem {
     constructor(arch, version) {
-        this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`;
-        const hostString = host_1.host.toString();
+        const hostString = arch.host.toString();
         this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`;
         this.version = version;
         this.architecture = arch;
@@ -1202,9 +1117,6 @@ class OperatingSystem {
                 path.join(resDir, targetDiskName.toString())
             ]);
         });
-    }
-    get uuid() {
-        return '864ED7F0-7876-4AA7-8511-816FABCFA87F';
     }
     get imageName() {
         const encodedVersion = encodeURIComponent(this.version);
@@ -1277,8 +1189,6 @@ class Factory {
         switch (kind) {
             case hypervisor.Kind.qemu:
                 break;
-            case hypervisor.Kind.xhyve:
-                throw new Error(`Unsupported hypervisor for this operating system: xhyve`);
             default:
                 throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
         }
@@ -1387,7 +1297,6 @@ const qemu_vm_1 = __nccwpck_require__(9250);
 const os = __importStar(__nccwpck_require__(9385));
 const resource_disk_1 = __nccwpck_require__(7102);
 const version_1 = __importDefault(__nccwpck_require__(8217));
-const xhyve_vm_1 = __nccwpck_require__(6176);
 let FreeBsd = class FreeBsd extends os.OperatingSystem {
     get hypervisorUrl() {
         return this.hypervisor.getResourceUrl(this.architecture);
@@ -1406,13 +1315,8 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating FreeBSD VM');
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
-            // qemu
-            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
-            // xhyve
-            uuid: this.uuid });
-        const cls = this.hypervisor.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
-        return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), cpu: this.architecture.cpu, machineType: this.architecture.machineType });
+        return new qemu_vm_1.QemuVm(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 };
 FreeBsd = __decorate([
@@ -1444,28 +1348,6 @@ class QemuVm extends qemu_vm_1.Vm {
 }
 exports.QemuVm = QemuVm;
 //# sourceMappingURL=qemu_vm.js.map
-
-/***/ }),
-
-/***/ 6176:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.XhyveVm = void 0;
-const xhyve_vm_1 = __nccwpck_require__(3321);
-class XhyveVm extends xhyve_vm_1.Vm {
-    get command() {
-        // prettier-ignore
-        return super.command.concat('-f', `fbsd,${this.configuration.userboot},${this.configuration.diskImage},`);
-    }
-    get networkDevice() {
-        return 'virtio-net';
-    }
-}
-exports.XhyveVm = XhyveVm;
-//# sourceMappingURL=xhyve_vm.js.map
 
 /***/ }),
 
@@ -1951,7 +1833,6 @@ const factory_1 = __nccwpck_require__(133);
 const qemu_vm_1 = __nccwpck_require__(8841);
 const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
-const xhyve_vm_1 = __nccwpck_require__(9662);
 let OpenBsd = class OpenBsd extends os.OperatingSystem {
     get hypervisorUrl() {
         return this.hypervisor.getResourceUrl(this.architecture);
@@ -1964,17 +1845,12 @@ let OpenBsd = class OpenBsd extends os.OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating OpenBSD VM');
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.efiHypervisor.firmwareFile), 
-            // qemu
-            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
-            // xhyve
-            uuid: this.uuid });
-        let qemuVmClass = this.architecture.resolve({
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.efiHypervisor.firmwareFile), cpu: this.architecture.cpu, machineType: this.architecture.machineType });
+        const qemuVmClass = this.architecture.resolve({
             x86_64: qemu_vm_1.QemuVmX86_64,
             default: qemu_vm_1.QemuVm
         });
-        const cls = this.hypervisor.resolve({ qemu: qemuVmClass, xhyve: xhyve_vm_1.XhyveVm });
-        return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
+        return new qemuVmClass(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 };
 OpenBsd = __decorate([
@@ -2024,28 +1900,6 @@ exports.QemuVmX86_64 = QemuVmX86_64;
 
 /***/ }),
 
-/***/ 9662:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.XhyveVm = void 0;
-const xhyve_vm_1 = __nccwpck_require__(3321);
-class XhyveVm extends xhyve_vm_1.Vm {
-    get command() {
-        // prettier-ignore
-        return super.command.concat('-l', `bootrom,${this.configuration.firmware}`, '-w');
-    }
-    get networkDevice() {
-        return 'e1000';
-    }
-}
-exports.XhyveVm = XhyveVm;
-//# sourceMappingURL=xhyve_vm.js.map
-
-/***/ }),
-
 /***/ 1526:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -2092,11 +1946,7 @@ class Qemu extends os.OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug(`Creating ${this.name} VM`);
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
-            // qemu
-            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
-            // xhyve
-            uuid: this.uuid });
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), cpu: this.architecture.cpu, machineType: this.architecture.machineType });
         return new this.vmClass(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 }
@@ -2316,7 +2166,6 @@ const os = __importStar(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const utility_1 = __nccwpck_require__(2857);
-const wait_1 = __nccwpck_require__(5817);
 class ResourceDisk {
     constructor(action) {
         this.mountName = 'RES';
@@ -2325,7 +2174,6 @@ class ResourceDisk {
     }
     static for(action) {
         const implementationClass = action.host.resolve({
-            macos: MacOs,
             linux: Linux
         });
         return new implementationClass(action);
@@ -2360,61 +2208,6 @@ class ResourceDisk {
     }
 }
 exports["default"] = ResourceDisk;
-class MacOs extends ResourceDisk {
-    createDiskFile(size, diskPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield exec.exec('mkfile', ['-n', size, diskPath]);
-        });
-    }
-    createDiskDevice(diskPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const devicePath = yield (0, utility_1.execWithOutput)('hdiutil', [
-                'attach',
-                '-imagekey',
-                'diskimage-class=CRawDiskImage',
-                '-nomount',
-                diskPath
-            ], { silent: true });
-            return devicePath.trim();
-        });
-    }
-    partitionDisk(devicePath, mountName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield exec.exec('diskutil', [
-                'partitionDisk',
-                devicePath,
-                '1',
-                'GPT',
-                'fat32',
-                mountName,
-                '100%'
-            ]);
-        });
-    }
-    mountDisk(_devicePath, mountPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return path_1.default.join('/Volumes', path_1.default.basename(mountPath));
-        });
-    }
-    detachDevice(devicePath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const maxRetries = 150;
-            const waitTimeSeconds = 1;
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    yield exec.exec('hdiutil', ['detach', devicePath]);
-                    return;
-                }
-                catch (error) {
-                    const err = error;
-                    core.debug(`Failed to detach device: ${err.message}`);
-                    yield (0, wait_1.wait)(waitTimeSeconds * 1000);
-                }
-            }
-            core.error(`Failed to detach device after ${maxRetries} retries`);
-        });
-    }
-}
 class Linux extends ResourceDisk {
     createDiskFile(size, diskPath) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -2977,126 +2770,6 @@ function wait(milliseconds) {
 }
 exports.wait = wait;
 //# sourceMappingURL=wait.js.map
-
-/***/ }),
-
-/***/ 3321:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.extractIpAddress = exports.Vm = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const vm = __importStar(__nccwpck_require__(2772));
-const utility_1 = __nccwpck_require__(2857);
-const wait_1 = __nccwpck_require__(5817);
-class Vm extends vm.Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, architecture, input, configuration) {
-        super(hypervisorDirectory, resourcesDirectory, 'xhyve', architecture, input, configuration);
-    }
-    init() {
-        const _super = Object.create(null, {
-            init: { get: () => super.init }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            _super.init.call(this);
-            this.macAddress = yield this.getMacAddress();
-        });
-    }
-    getIpAddress() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return getIpAddressFromArp(this.macAddress);
-        });
-    }
-    getMacAddress() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('Getting MAC address');
-            this.macAddress = (yield (0, utility_1.execWithOutput)('sudo', this.command.concat('-M'), {
-                silent: !core.isDebug()
-            }))
-                .trim()
-                .slice(5);
-            core.debug(`Found MAC address: '${this.macAddress}'`);
-            return this.macAddress;
-        });
-    }
-    /*override*/ get command() {
-        const config = this.configuration;
-        // prettier-ignore
-        return [
-            this.hypervisorPath.toString(),
-            '-U', config.uuid,
-            '-A',
-            '-H',
-            '-m', config.memory,
-            '-c', config.cpuCount.toString(),
-            '-s', '0:0,hostbridge',
-            '-s', `2:0,${this.networkDevice}`,
-            '-s', `4:0,virtio-blk,${config.diskImage}`,
-            '-s', `4:1,virtio-blk,${config.resourcesDiskImage}`,
-            '-s', '31,lpc',
-            '-l', 'com1,stdio'
-        ];
-    }
-}
-exports.Vm = Vm;
-Vm.sshPort = 22;
-function extractIpAddress(arpOutput, macAddress) {
-    var _a;
-    core.debug('Extracing IP address');
-    const matchResult = (_a = arpOutput
-        .split('\n')
-        .find(e => e.includes(macAddress))) === null || _a === void 0 ? void 0 : _a.match(/\((.+)\)/);
-    const ipAddress = matchResult ? matchResult[1] : undefined;
-    if (ipAddress !== undefined)
-        core.info(`Found IP address: '${ipAddress}'`);
-    return ipAddress;
-}
-exports.extractIpAddress = extractIpAddress;
-function getIpAddressFromArp(macAddress) {
-    return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Getting IP address for MAC address: ${macAddress}`);
-        for (let i = 0; i < 500; i++) {
-            core.info('Waiting for IP to become available...');
-            const arpOutput = yield (0, utility_1.execWithOutput)('arp', ['-a', '-n'], { silent: true });
-            const ipAddress = extractIpAddress(arpOutput, macAddress);
-            if (ipAddress !== undefined)
-                return ipAddress;
-            yield (0, wait_1.wait)(1000);
-        }
-        throw Error(`Failed to get IP address for MAC address: ${macAddress}`);
-    });
-}
-//# sourceMappingURL=xhyve_vm.js.map
 
 /***/ }),
 

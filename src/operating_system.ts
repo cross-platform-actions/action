@@ -7,7 +7,6 @@ import * as exec from '@actions/exec'
 import * as architecture from './architecture'
 import * as vmModule from './vm'
 import {Input} from './action/input'
-import {host} from './host'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from './resource_disk'
 import * as hypervisor from './hypervisor'
@@ -21,7 +20,6 @@ export interface VmConfiguration extends ExternalVmConfiguration {
   cpuCount: number
   diskImage: fs.PathLike
   resourcesDiskImage: fs.PathLike
-  userboot: fs.PathLike
 }
 
 export abstract class OperatingSystem {
@@ -30,12 +28,11 @@ export abstract class OperatingSystem {
   readonly architecture: architecture.Architecture
 
   private static readonly resourceUrls = ResourceUrls.create()
-  protected readonly xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`
 
   private readonly version: string
 
   constructor(arch: architecture.Architecture, version: string) {
-    const hostString = host.toString()
+    const hostString = arch.host.toString()
     this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`
     this.version = version
     this.architecture = arch
@@ -96,10 +93,6 @@ export abstract class OperatingSystem {
       diskImage.toString(),
       path.join(resDir, targetDiskName.toString())
     ])
-  }
-
-  protected get uuid(): string {
-    return '864ED7F0-7876-4AA7-8511-816FABCFA87F'
   }
 
   private get imageName(): string {

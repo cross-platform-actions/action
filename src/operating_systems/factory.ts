@@ -30,10 +30,6 @@ export abstract class Factory {
     switch (kind) {
       case hypervisor.Kind.qemu:
         break
-      case hypervisor.Kind.xhyve:
-        throw new Error(
-          `Unsupported hypervisor for this operating system: xhyve`
-        )
       default:
         throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`)
     }

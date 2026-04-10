@@ -33,8 +33,6 @@ describe('OmniOS OperatingSystem', () => {
     override get defaultCpuCount(): number {
       return 4
     }
-
-    override validateHypervisor(_kind: hypervisor.Kind): void {}
   }
 
   let host = new Host()
@@ -50,14 +48,13 @@ describe('OmniOS OperatingSystem', () => {
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
   let firmwareDirectory = 'firmware/directory'
-  let input = new Input()
+  let input = new Input(host)
 
   let config = {
     memory: '4G',
     cpuCount: 4,
     diskImage: '',
-    resourcesDiskImage: '',
-    userboot: ''
+    resourcesDiskImage: ''
   }
 
   describe('createVirtualMachine', () => {
@@ -82,7 +79,6 @@ describe('OmniOS OperatingSystem', () => {
           ssHostPort: 2847,
           cpu: 'max',
           machineType: 'q35',
-          uuid: '864ED7F0-7876-4AA7-8511-816FABCFA87F',
           firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`
         }
       )

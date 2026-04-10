@@ -1,6 +1,6 @@
 import {Vm} from '../../../src/operating_systems/haiku/qemu_vm'
 import * as arch from '../../../src/architecture'
-import {host} from '../../../src/host'
+import {Host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
 import '../../../src/operating_systems/haiku/haiku'
 import {Input} from '../../../src/action/input'
@@ -11,6 +11,7 @@ describe('Haiku QemuVm', () => {
   let cpuCount = 10
   let ssHostPort = 1234
 
+  let host = Host.create('linux')
   let osKind = os.Kind.for('haiku')
   let architecture = arch.Architecture.for(
     arch.Kind.x86_64,
@@ -18,7 +19,7 @@ describe('Haiku QemuVm', () => {
     osKind,
     host.hypervisor
   )
-  let input = new Input()
+  let input = new Input(host)
   let config = {
     memory: memory,
     cpuCount: cpuCount,
@@ -26,9 +27,7 @@ describe('Haiku QemuVm', () => {
     ssHostPort: ssHostPort,
     cpu: '',
     machineType: '',
-    uuid: '',
     resourcesDiskImage: '',
-    userboot: '',
     firmware: ''
   }
 

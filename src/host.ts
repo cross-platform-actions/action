@@ -1,12 +1,9 @@
 import * as process from 'process'
 
-import * as core from '@actions/core'
-
 import HostQemu from './host_qemu'
 import * as hypervisor from './hypervisor'
 import * as qemu from './qemu_vm'
 import {getImplementation} from './utility'
-import * as xhyve from './xhyve_vm'
 
 class Module {
   private static host_: Module.Host | undefined
@@ -24,8 +21,6 @@ namespace Module {
   export abstract class Host {
     static create(platform: string = process.platform): Host {
       switch (platform) {
-        case 'darwin':
-          return new MacOs()
         case 'linux':
           return new Linux()
         default:
@@ -33,13 +28,12 @@ namespace Module {
       }
     }
 
-    abstract get vmModule(): typeof xhyve | typeof qemu
+    abstract get vmModule(): typeof qemu
     abstract get qemu(): HostQemu
     abstract get hypervisor(): hypervisor.Hypervisor
     abstract get efiHypervisor(): hypervisor.Hypervisor
     abstract get defaultMemory(): string
     abstract get defaultCpuCount(): number
-    abstract validateHypervisor(kind: hypervisor.Kind): void
 
     resolve<T>(implementation: Record<string, T>): T {
       return getImplementation(this, implementation)
@@ -50,54 +44,8 @@ namespace Module {
     }
   }
 
-  class MacOs extends Host {
-    constructor() {
-      super()
-
-      core.warning(
-        'Support for macOS runners has been deprecated and will be removed in' +
-          'a future update. Please use the `ubuntu-latest` runner instead.'
-      )
-    }
-
-    get vmModule(): typeof xhyve | typeof qemu {
-      return xhyve
-    }
-
-    override get qemu(): HostQemu {
-      return new HostQemu.MacosHostQemu()
-    }
-
-    override get hypervisor(): hypervisor.Hypervisor {
-      return new hypervisor.Xhyve()
-    }
-
-    override get efiHypervisor(): hypervisor.Hypervisor {
-      return this.hypervisor
-    }
-
-    override get defaultMemory(): string {
-      return '13G'
-    }
-
-    override get defaultCpuCount(): number {
-      return 3
-    }
-
-    override validateHypervisor(kind: hypervisor.Kind): void {
-      switch (kind) {
-        case hypervisor.Kind.qemu:
-          break
-        case hypervisor.Kind.xhyve:
-          break
-        default:
-          throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`)
-      }
-    }
-  }
-
   class Linux extends Host {
-    get vmModule(): typeof xhyve | typeof qemu {
+    get vmModule(): typeof qemu {
       return qemu
     }
 
@@ -119,17 +67,6 @@ namespace Module {
 
     override get defaultCpuCount(): number {
       return 2
-    }
-
-    override validateHypervisor(kind: hypervisor.Kind): void {
-      switch (kind) {
-        case hypervisor.Kind.qemu:
-          break
-        case hypervisor.Kind.xhyve:
-          throw new Error('Unsupported hypervisor on Linux hosts: xhyve')
-        default:
-          throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`)
-      }
     }
   }
 }

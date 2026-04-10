@@ -53,12 +53,8 @@ export abstract class Qemu extends os.OperatingSystem {
         this.hypervisor.firmwareFile
       ),
 
-      // qemu
       cpu: this.architecture.cpu,
-      machineType: this.architecture.machineType,
-
-      // xhyve
-      uuid: this.uuid
+      machineType: this.architecture.machineType
     }
 
     return new this.vmClass(

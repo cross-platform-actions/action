@@ -9,7 +9,6 @@ import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from '../../resource_disk'
 import versions from '../../version'
-import {XhyveVm} from './xhyve_vm'
 import {Input} from '../../action/input'
 
 @operatingSystem
@@ -52,16 +51,11 @@ export default class FreeBsd extends os.OperatingSystem {
         this.architecture.hypervisor.firmwareFile
       ),
 
-      // qemu
       cpu: this.architecture.cpu,
-      machineType: this.architecture.machineType,
-
-      // xhyve
-      uuid: this.uuid
+      machineType: this.architecture.machineType
     }
 
-    const cls = this.hypervisor.resolve({qemu: QemuVm, xhyve: XhyveVm})
-    return new cls(
+    return new QemuVm(
       hypervisorDirectory,
       resourcesDirectory,
       this.architecture,

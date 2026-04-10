@@ -7,10 +7,4 @@ export default abstract class HostQemu {
       return 'max'
     }
   }
-
-  static readonly MacosHostQemu = class extends HostQemu {
-    override get cpu(): string {
-      return 'max'
-    }
-  }
 }
