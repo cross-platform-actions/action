@@ -35,9 +35,6 @@ inputs:
   cpu_count:
     required: false
     description: The number of CPU cores for the virtual machine
-  hypervisor:
-    required: false
-    description: The hypervisor to use when starting the virtual machine
   image_url:
     required: false
     description: URL for running the action with a custom image.

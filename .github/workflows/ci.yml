@@ -319,30 +319,6 @@ jobs:
             sysctl hw.ncpu
             [ `sysctl -n hw.ncpu` = 8 ]
 
-  test-hypervisor-config:
-    timeout-minutes: 5
-    name: Test configuring hypervisor
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Test
-        uses: ./
-        with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '13.1'
-          hypervisor: qemu
-          shutdown_vm: false
-          run: sysctl hw.model
-
-      - name: Hypervisor should still be running, verify it's QEMU
-        run: ps aux | grep -v grep | grep -q qemu
-
   test-custom-vm-image:
     timeout-minutes: 5
     name: Test custom VM image
@@ -381,7 +357,6 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
-          hypervisor: qemu
           shutdown_vm: false
           run: dmesg | grep -i avx2
 
@@ -402,7 +377,6 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
-          hypervisor: qemu
           shutdown_vm: false
           run: true
 
@@ -426,7 +400,6 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
-          hypervisor: qemu
           shutdown_vm: true
           run: true
 
@@ -495,7 +468,6 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
-          hypervisor: qemu
           shutdown_vm: false
           run: touch foo.txt
 
@@ -511,6 +483,5 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
-          hypervisor: qemu
           shutdown_vm: true
           run: test -f foo.txt

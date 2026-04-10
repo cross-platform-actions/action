@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - **Breaking**: Remove support for running on macOS runners. Only Linux runners
     (e.g. `ubuntu-latest`) are now supported. This was deprecated in v0.25.0.
-- **Breaking**: Remove the Xhyve hypervisor. QEMU is now the only supported
-    hypervisor, making the `hypervisor` input parameter redundant. This was
-    deprecated in v0.25.0.
+- **Breaking**: Remove the Xhyve hypervisor and the `hypervisor` input
+    parameter. QEMU is now the only supported hypervisor. These were deprecated
+    in v0.25.0.
 
 ## [0.32.0] - 2025-12-21
 ### Added

@@ -115,17 +115,7 @@ export class Input {
   get hypervisor(): hypervisor.Hypervisor {
     if (this.hypervisor_ !== undefined) return this.hypervisor_
 
-    const input = core.getInput('hypervisor')
-    core.debug(`hypervisor input: '${input}'`)
-    if (input === undefined || input === '')
-      return (this.hypervisor_ = this.host.hypervisor)
-
-    const kind = hypervisor.toKind(input)
-    if (kind === undefined) throw Error(`Invalid hypervisor: ${input}`)
-    core.debug(`hypervisor kind: '${hypervisor.Kind[kind]}'`)
-
-    const hypervisorClass = hypervisor.toHypervisor(kind)
-    return (this.hypervisor_ = new hypervisorClass())
+    return (this.hypervisor_ = this.host.hypervisor)
   }
 
   get syncFiles(): SyncDirection {
@@ -168,8 +158,7 @@ export class Input {
       this.environmentVariables,
       this.architecture,
       this.memory,
-      this.cpuCount,
-      this.hypervisor
+      this.cpuCount
     ]
 
     const hash = createHash('sha256')

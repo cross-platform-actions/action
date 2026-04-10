@@ -432,7 +432,6 @@ const architecture = __importStar(__nccwpck_require__(4019));
 const shell_1 = __nccwpck_require__(9044);
 const os = __importStar(__nccwpck_require__(6713));
 const host_1 = __nccwpck_require__(8215);
-const hypervisor = __importStar(__nccwpck_require__(4288));
 const sync_direction_1 = __nccwpck_require__(3377);
 const crypto_1 = __nccwpck_require__(6113);
 class Input {
@@ -514,16 +513,7 @@ class Input {
     get hypervisor() {
         if (this.hypervisor_ !== undefined)
             return this.hypervisor_;
-        const input = core.getInput('hypervisor');
-        core.debug(`hypervisor input: '${input}'`);
-        if (input === undefined || input === '')
-            return (this.hypervisor_ = this.host.hypervisor);
-        const kind = hypervisor.toKind(input);
-        if (kind === undefined)
-            throw Error(`Invalid hypervisor: ${input}`);
-        core.debug(`hypervisor kind: '${hypervisor.Kind[kind]}'`);
-        const hypervisorClass = hypervisor.toHypervisor(kind);
-        return (this.hypervisor_ = new hypervisorClass());
+        return (this.hypervisor_ = this.host.hypervisor);
     }
     get syncFiles() {
         if (this.syncDirection_ !== undefined)
@@ -556,8 +546,7 @@ class Input {
             this.environmentVariables,
             this.architecture,
             this.memory,
-            this.cpuCount,
-            this.hypervisor
+            this.cpuCount
         ];
         const hash = (0, crypto_1.createHash)('sha256');
         for (const component of components)
@@ -914,20 +903,13 @@ HostQemu.LinuxHostQemu = class extends HostQemu {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toHypervisor = exports.QemuEfi = exports.Qemu = exports.toKind = exports.Kind = void 0;
+exports.QemuEfi = exports.Qemu = exports.Kind = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
 const utility_1 = __nccwpck_require__(2857);
 var Kind;
 (function (Kind) {
     Kind[Kind["qemu"] = 0] = "qemu";
 })(Kind = exports.Kind || (exports.Kind = {}));
-function toKind(value) {
-    return kindMap[value.toLocaleLowerCase()];
-}
-exports.toKind = toKind;
-const kindMap = {
-    qemu: Kind.qemu
-};
 class Qemu {
     constructor() {
         this.firmwareDirectory = 'share/qemu';
@@ -961,13 +943,6 @@ class QemuEfi extends Qemu {
     }
 }
 exports.QemuEfi = QemuEfi;
-function toHypervisor(kind) {
-    return hypervisorMap[kind];
-}
-exports.toHypervisor = toHypervisor;
-const hypervisorMap = {
-    [Kind.qemu]: Qemu
-};
 //# sourceMappingURL=hypervisor.js.map
 
 /***/ }),

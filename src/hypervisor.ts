@@ -6,14 +6,6 @@ export enum Kind {
   qemu
 }
 
-export function toKind(value: string): Kind | undefined {
-  return kindMap[value.toLocaleLowerCase()]
-}
-
-const kindMap: Record<string, Kind> = {
-  qemu: Kind.qemu
-} as const
-
 export interface Hypervisor {
   get kind(): Kind
   get sshPort(): number
@@ -61,11 +53,3 @@ export class QemuEfi extends Qemu {
     return `${this.firmwareDirectory}/uefi.fd`
   }
 }
-
-export function toHypervisor(kind: Kind): typeof Qemu {
-  return hypervisorMap[kind]
-}
-
-const hypervisorMap: Record<Kind, typeof Qemu> = {
-  [Kind.qemu]: Qemu
-} as const
