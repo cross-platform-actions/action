@@ -227,8 +227,12 @@ export abstract class Vm {
 
   protected abstract get command(): string[]
 
-  protected get user(): string {
+  get user(): string {
     return 'runner'
+  }
+
+  get postSyncToVmCommand(): string {
+    return ''
   }
 
   private get sshTarget(): string {

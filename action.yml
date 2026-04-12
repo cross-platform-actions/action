@@ -3,10 +3,15 @@ description: Provides cross platform runner
 author: Jacob Carlborg
 inputs:
   run:
-    required: true
+    required: false
     description: |
       Runs command-line programs using the operating system's shell.
       This will be executed inside the virtual machine.
+    default: ''
+    deprecationMessage: >
+      The "run" parameter is deprecated. Use the custom shell
+      (`shell: cpa.sh {0}`) on subsequent steps to run commands in the
+      virtual machine instead.
   operating_system:
     required: true
     description: The type of operating system to run the job on

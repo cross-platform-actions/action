@@ -14,4 +14,8 @@ export default class Haiku extends Qemu {
   get vmClass(): Class<QemuVm> {
     return qemu_vm.Vm
   }
+
+  override get rebootCommand(): string {
+    return 'shutdown -r -q'
+  }
 }

@@ -564,3 +564,218 @@ jobs:
           version: '13.2'
           shutdown_vm: true
           run: test -f foo.txt
+
+  test-custom-shell:
+    timeout-minutes: 5
+    name: Test multiple steps using custom shell
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: cpa.sh {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - if: env.ACT
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y dosfstools rsync fdisk
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '15.0'
+
+      - name: Run command using custom shell
+        run: '[ "`uname`" = FreeBSD ]'
+
+      - name: Run command using custom shell
+        run: '[ "`uname -m`" = amd64 ]'
+
+  test-reboot-shell:
+    timeout-minutes: 10
+    name: Test reboot shell
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - if: env.ACT
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y dosfstools rsync fdisk
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '15.0'
+
+      - name: Install startup script that creates a marker file on boot
+        shell: cpa.sh {0}
+        run: |
+          echo 'touch /tmp/reboot_marker' | sudo tee /etc/rc.local
+          sudo chmod +x /etc/rc.local
+
+      - name: Verify marker file does not exist yet
+        shell: cpa.sh {0}
+        run: test ! -f /tmp/reboot_marker
+
+      - name: Reboot VM
+        run: cpa.sh --reboot
+
+      - name: Verify VM rebooted by checking the startup script created the marker file
+        shell: cpa.sh {0}
+        run: test -f /tmp/reboot_marker
+
+      # combine custom shell with --reboot flag
+      - name: Install startup script that creates a second marker file on boot
+        shell: cpa.sh {0}
+        run: |
+          echo 'touch /tmp/reboot_marker_2' | sudo tee /etc/rc.local
+          sudo chmod +x /etc/rc.local
+
+      - name: Verify second marker file does not exist yet
+        shell: cpa.sh {0} --reboot
+        run: test ! -f /tmp/reboot_marker_2
+
+      - name: Verify VM rebooted by checking the startup script created the second marker file
+        shell: cpa.sh {0}
+        run: test -f /tmp/reboot_marker_2
+
+  test-reboot-shell-haiku:
+    timeout-minutes: 15
+    name: Test reboot shell on Haiku
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - if: env.ACT
+        shell: bash
+        run: |
+          apt update
+          apt install -y dosfstools rsync fdisk
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: haiku
+          architecture: x86-64
+          version: r1beta5
+
+      - name: Verify VM is running before reboot
+        shell: cpa.sh {0}
+        run: '[ "`uname`" = Haiku ]'
+
+      - name: Reboot VM
+        run: cpa.sh --reboot
+
+      - name: Verify VM is running after reboot
+        shell: cpa.sh {0}
+        run: '[ "`uname`" = Haiku ]'
+
+      # combine custom shell with --reboot flag
+      - name: Reboot via post-flag
+        shell: cpa.sh {0} --reboot
+        run: '[ "`uname`" = Haiku ]'
+
+      - name: Verify VM is running after second reboot
+        shell: cpa.sh {0}
+        run: '[ "`uname`" = Haiku ]'
+
+  test-sync-shell:
+    timeout-minutes: 10
+    name: Test sync shell
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - if: env.ACT
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y dosfstools rsync fdisk
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '15.0'
+
+      # Test runner-to-vm
+      - name: Create file on runner
+        run: echo 'from runner' > runner_file.txt
+
+      - name: Sync runner-to-vm
+        run: cpa.sh --sync-files runner-to-vm
+
+      - name: Verify file reached VM
+        shell: cpa.sh {0}
+        run: grep -q 'from runner' runner_file.txt
+
+      # Test vm-to-runner
+      - name: Create file in VM
+        shell: cpa.sh {0}
+        run: echo 'from vm' > vm_file.txt
+
+      - name: Sync vm-to-runner
+        run: cpa.sh --sync-files vm-to-runner
+
+      - name: Verify file reached runner
+        run: grep -q 'from vm' vm_file.txt
+
+      # Test both
+      - name: Create new file on runner
+        run: echo 'runner both' > runner_both.txt
+
+      - name: Create new file in VM
+        shell: cpa.sh {0}
+        run: echo 'vm both' > vm_both.txt
+
+      - name: Sync both
+        run: cpa.sh --sync-files both
+
+      - name: Verify VM file reached runner
+        run: grep -q 'vm both' vm_both.txt
+
+      - name: Verify runner file reached VM
+        shell: cpa.sh {0}
+        run: grep -q 'runner both' runner_both.txt
+
+      # Test default (no argument, same as both)
+      - name: Create new file on runner for default test
+        run: echo 'runner default' > runner_default.txt
+
+      - name: Create new file in VM for default test
+        shell: cpa.sh {0}
+        run: echo 'vm default' > vm_default.txt
+
+      - name: Sync default (no argument)
+        run: cpa.sh --sync-files
+
+      - name: Verify VM file reached runner (default)
+        run: grep -q 'vm default' vm_default.txt
+
+      - name: Verify runner file reached VM (default)
+        shell: cpa.sh {0}
+        run: grep -q 'runner default' runner_default.txt

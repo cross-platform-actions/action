@@ -7,7 +7,23 @@ import {Input} from './action/input'
 import {SyncDirection} from './action/sync_direction'
 import * as vm from './vm'
 
+export interface Command {
+  program: string
+  args: string[]
+}
+
+export function commandToShellString(command: Command): string {
+  return [command.program, ...command.args].map(a => shellQuote(a)).join(' ')
+}
+
+function shellQuote(value: string): string {
+  if (/^[a-zA-Z0-9_./:@=-]+$/.test(value)) return value
+  return `'${value.split("'").join("'\\''")}'`
+}
+
 export interface VmFileSystemSynchronizer {
+  synchronizePathsCommand(...excludePaths: string[]): Command
+  synchronizeBackCommand(): Command
   synchronizePaths(...excludePaths: string[]): Promise<void>
   synchronizeBack(): Promise<void>
 }
@@ -46,32 +62,47 @@ export class DefaultVmFileSystemSynchronizer
     this.isDebug = isDebug
   }
 
+  synchronizePathsCommand(...excludePaths: string[]): Command {
+    return {
+      program: 'rsync',
+      // prettier-ignore
+      args: [
+        this.rsyncFlags,
+        '--exclude', '_actions/cross-platform-actions/action',
+        ...flatMap(excludePaths, p => ['--exclude', p]),
+        toDirectoryPath(this.hostHomeDirectory),
+        stripDirectoryPath(this.rsyncTarget)
+      ]
+    }
+  }
+
+  synchronizeBackCommand(): Command {
+    return {
+      program: 'rsync',
+      args: [
+        this.rsyncFlags,
+        toDirectoryPath(this.rsyncTarget),
+        stripDirectoryPath(this.hostHomeDirectory)
+      ]
+    }
+  }
+
   async synchronizePaths(...excludePaths: string[]): Promise<void> {
     if (!this.shouldSyncFiles) {
       return
     }
 
     core.debug(`Syncing files to VM, excluding: ${excludePaths}`)
-    // prettier-ignore
-    await this.executor.execute('rsync', [
-      this.rsyncFlags,
-      '--exclude', '_actions/cross-platform-actions/action',
-      ...flatMap(excludePaths, p => ['--exclude', p]),
-      toDirectoryPath(this.hostHomeDirectory),
-      stripDirectoryPath(this.rsyncTarget)
-    ])
+    const cmd = this.synchronizePathsCommand(...excludePaths)
+    await this.executor.execute(cmd.program, cmd.args)
   }
 
   async synchronizeBack(): Promise<void> {
     if (!this.shouldSyncBack) return
 
     core.info('Syncing back files')
-    // prettier-ignore
-    await this.executor.execute('rsync', [
-      this.rsyncFlags,
-      toDirectoryPath(this.rsyncTarget),
-      stripDirectoryPath(this.hostHomeDirectory)
-    ])
+    const cmd = this.synchronizeBackCommand()
+    await this.executor.execute(cmd.program, cmd.args)
   }
 
   private get shouldSyncFiles(): boolean {

@@ -12,7 +12,11 @@ export class Vm extends QemuVm {
 
   override async synchronizePaths(...excludePaths: string[]): Promise<void> {
     await super.synchronizePaths(...excludePaths)
-    await this.execute(`chown -R $(id -u):$(id -g) '${this.workDirectory}'`)
+    await this.execute(this.postSyncToVmCommand)
+  }
+
+  override get postSyncToVmCommand(): string {
+    return `chown -R $(id -u):$(id -g) '${this.workDirectory}'`
   }
 
   override get workDirectory(): string {
@@ -31,7 +35,7 @@ export class Vm extends QemuVm {
     return 'e1000'
   }
 
-  protected override get user(): string {
+  override get user(): string {
     return 'user'
   }
 }

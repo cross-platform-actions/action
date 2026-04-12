@@ -29,21 +29,27 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: cpa.sh {0}
+
     steps:
       - uses: actions/checkout@v6
 
-      - name: Test
+      - name: Start VM
         uses: cross-platform-actions/action@v1.0.0
         with:
           operating_system: freebsd
           version: '15.0'
-          run: |
-            uname -a
-            echo $SHELL
-            pwd
-            ls -lah
-            whoami
-            env | sort
+
+      - name: Test
+        run: |
+          uname -a
+          echo $SHELL
+          pwd
+          ls -lah
+          whoami
+          env | sort
 ```
 
 ### Full Example
@@ -62,6 +68,9 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: cpa.sh {0}
     strategy:
       matrix:
         os:
@@ -104,7 +113,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Test on ${{ matrix.os.name }}
+      - name: Start VM on ${{ matrix.os.name }}
         uses: cross-platform-actions/action@v1.0.0
         env:
           MY_ENV1: MY_ENV1
@@ -117,17 +126,73 @@ jobs:
           shell: bash
           memory: 5G
           cpu_count: 4
-          run: |
-            uname -a
-            echo $SHELL
-            pwd
-            ls -lah
-            whoami
-            env | sort
+          run: true
+
+      - name: Test 1 on ${{ matrix.os.name }}
+        run: |
+          uname -a
+          echo $SHELL
+          pwd
+
+      - name: Test 2 on ${{ matrix.os.name }}
+        run: |
+          ls -lah
+          whoami
+          env | sort
 ```
 
 Different platforms need to run on different runners, so see the
 [Runners](#runners) section below.
+
+### Helper Script
+
+When the action starts the VM, the `cpa.sh` helper is added to the runner's
+`PATH` and can be used in subsequent steps. It runs commands inside the VM
+and can also synchronize files or reboot the VM:
+
+```
+cpa.sh FILE [POST_FLAGS...]       # Run FILE inside the VM
+cpa.sh --sync-files [DIRECTION]   # Synchronize files between the runner and the VM
+cpa.sh --reboot                   # Reboot the VM and wait until it's reachable again
+```
+
+When `FILE` is given (typically via `shell: cpa.sh {0}`), files are
+synchronized automatically: runner-to-vm before the file is executed and
+vm-to-runner after. Pass `--sync-files DIRECTION` as a `POST_FLAG` to change
+this. `DIRECTION` accepts:
+
+- `both` (default) — sync runner-to-vm before and vm-to-runner after
+- `none` — skip syncing entirely
+- `runner-to-vm` — only sync runner-to-vm before the file runs
+- `vm-to-runner` — only sync vm-to-runner after the file runs
+
+`--reboot` may also be given as a `POST_FLAG` to reboot the VM after the file
+has run (and after the post-sync, if any).
+
+```yaml
+- name: Run a command inside the VM
+  shell: cpa.sh {0}
+  run: uname -a
+
+- name: Run a command without syncing files
+  shell: cpa.sh {0} --sync-files none
+  run: uname -a
+
+- name: Run a command and reboot afterwards
+  shell: cpa.sh {0} --reboot
+  run: sysctl -w some.setting=1
+```
+
+Use the standalone forms when you don't need to run a command. In standalone
+mode `--sync-files` defaults to `both` and runs the sync as a one-shot:
+
+```yaml
+- name: Sync files from the runner to the VM
+  run: cpa.sh --sync-files runner-to-vm
+
+- name: Reboot the VM
+  run: cpa.sh --reboot
+```
 
 ### Inputs
 
@@ -135,7 +200,7 @@ This section lists the available inputs for the action.
 
 | Input                   | Required | Default Value     | Type    | Description                                                                                                                                                                                                                                                  |
 |-------------------------|----------|-------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `run`                   | ✅       | ❌                | string  | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                                                                                                                             |
+| `run`                   | ❌       | `""`              | string  | **Deprecated.** Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine. Prefer the `cpa.sh` custom shell (`shell: cpa.sh {0}`) in subsequent steps instead.                                         |
 | `operating_system`      | ✅       | ❌                | string  | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                                                                                                                             |
 | `architecture`          | ❌       | `x86-64`          | string  | The architecture of the operating system. See [Supported Platforms](#supported-platforms).                                                                                                                                                                   |
 | `version`               | ✅       | ❌                | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                                                                                                                                 |

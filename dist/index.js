@@ -50,6 +50,7 @@ const hostModule = __importStar(__nccwpck_require__(8215));
 const os_factory = __importStar(__nccwpck_require__(133));
 const resource_disk_1 = __importDefault(__nccwpck_require__(7102));
 const vmModule = __importStar(__nccwpck_require__(2772));
+const vm_file_system_synchronizer_1 = __nccwpck_require__(8544);
 const input = __importStar(__nccwpck_require__(1099));
 const shell = __importStar(__nccwpck_require__(9044));
 const utility = __importStar(__nccwpck_require__(2857));
@@ -100,7 +101,13 @@ class Action {
                 implementation.configSSH(vm.ipAddress);
                 yield implementation.wait(240);
                 yield implementation.setupWorkDirectory(vm.homeDirectory, vm.workDirectory);
-                yield vm.synchronizePaths(this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
+                const syncExcludes = [
+                    this.targetDiskName,
+                    this.resourceDisk.diskPath,
+                    ...excludes
+                ];
+                yield vm.synchronizePaths(...syncExcludes);
+                implementation.setupCustomShell(syncExcludes);
                 core.info('VM is ready');
                 try {
                     core.endGroup();
@@ -185,6 +192,8 @@ class Action {
     }
     runCommand(vm) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (this.input.run === '')
+                return;
             utility.group('Running command', () => core.info(this.input.run));
             const sh = this.input.shell === shell.Shell.default
                 ? '$SHELL'
@@ -204,7 +213,7 @@ class Action {
     getImplementation(vm) {
         const cls = implementationFor({ isRunning: vmModule.Vm.isRunning });
         core.debug(`Using action implementation: ${cls.name}`);
-        return new cls(this, vm);
+        return new cls(this, vm, this.homeDirectory);
     }
     createRunPreparer() {
         const cls = runPreparerFor({ isRunning: vmModule.Vm.isRunning });
@@ -314,9 +323,14 @@ class LiveImplementation {
     configSSH(_ipAddress) {
         // noop
     }
+    setupCustomShell(_syncExcludes // eslint-disable-line @typescript-eslint/no-unused-vars
+    ) {
+        // noop
+    }
 }
 class InitialImplementation {
-    constructor(action, vm) {
+    constructor(action, vm, _homeDirectory // eslint-disable-line @typescript-eslint/no-unused-vars
+    ) {
         this.action = action;
         this.vm = vm;
     }
@@ -353,6 +367,204 @@ class InitialImplementation {
         this.createSSHConfig();
         this.setupAuthorizedKeys();
         this.setupHostname(ipAddress);
+    }
+    setupCustomShell(syncExcludes) {
+        const cpaShellDirectory = fs.mkdtempSync('/tmp/cpa-shell-');
+        const cpaShellPath = path.join(cpaShellDirectory, 'cpa.sh');
+        const sh = this.action.input.shell === shell.Shell.default
+            ? '\\$SHELL'
+            : shell.toString(this.action.input.shell);
+        const sshTarget = `${this.vm.user}@${vmModule.Vm.cpaHost}`;
+        const workDir = escapeForSh(this.vm.workDirectory);
+        const rebootCommand = this.operatingSystem.rebootCommand;
+        const synchronizer = new vm_file_system_synchronizer_1.DefaultVmFileSystemSynchronizer({
+            input: this.action.input,
+            user: this.vm.user,
+            guestHomeDirectory: this.vm.homeDirectory,
+            hostHomeDirectory: this.vm.hostHomeDirectory
+        });
+        const toVm = (0, vm_file_system_synchronizer_1.commandToShellString)(synchronizer.synchronizePathsCommand(...syncExcludes));
+        const toRunner = (0, vm_file_system_synchronizer_1.commandToShellString)(synchronizer.synchronizeBackCommand());
+        const postSyncToVm = this.vm.postSyncToVmCommand;
+        const postSyncToVmLine = postSyncToVm
+            ? `ssh -t ${sshTarget} ${escapeForSh(postSyncToVm)}`
+            : '';
+        const script = `#!/usr/bin/env sh
+set -eu
+
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  cpa.sh FILE [POST_FLAGS]          Run FILE inside the VM (used as the custom shell)
+  cpa.sh --sync-files [DIRECTION]   Synchronize files between the runner and the VM
+                                    (both [default], none, runner-to-vm, vm-to-runner)
+  cpa.sh --reboot                   Reboot the VM and wait until it's reachable again
+
+When FILE is given, files are synchronized automatically: runner-to-vm before
+the file is executed, and vm-to-runner after. Pass --sync-files DIRECTION as a
+POST_FLAG to change this (use 'none' to skip syncing entirely). --reboot can
+also be used as a POST_FLAG to reboot after the file has run.
+EOF
+  exit 2
+}
+
+sync_to_vm() {
+  ${toVm}
+  ${postSyncToVmLine}
+}
+
+sync_to_runner() {
+  ${toRunner}
+}
+
+do_sync() {
+  direction="\${1:-both}"
+  case "$direction" in
+    both)
+      sync_to_vm
+      sync_to_runner
+      ;;
+    none)
+      echo "Sync skipped."
+      return 0
+      ;;
+    runner-to-vm)
+      sync_to_vm
+      ;;
+    vm-to-runner)
+      sync_to_runner
+      ;;
+    *)
+      echo "Invalid sync direction: $direction" >&2
+      echo "Valid values are: both, none, runner-to-vm, vm-to-runner" >&2
+      exit 1
+      ;;
+  esac
+  echo "Sync complete."
+}
+
+do_reboot() {
+  echo "Rebooting VM..."
+  ssh -t ${sshTarget} '${rebootCommand}' || true
+
+  echo "Waiting for VM to come back up..."
+  deadline=$(($(date +%s) + 240))
+  consecutive=0
+  while [ "$consecutive" -lt 3 ]; do
+    if ssh -t -o ConnectTimeout=2 ${sshTarget} true 2>/dev/null; then
+      consecutive=$((consecutive + 1))
+    else
+      consecutive=0
+      if [ "$(date +%s)" -ge "$deadline" ]; then
+        echo "Timed out waiting for VM to come back up after 240s" >&2
+        exit 1
+      fi
+    fi
+    sleep 1
+  done
+  echo "VM is ready."
+}
+
+run_file_in_vm() {
+  ssh -t ${sshTarget} "mkdir -p '${workDir}' && cd '${workDir}' && exec "${sh}" -e" < "$1"
+}
+
+if [ $# -eq 0 ]; then
+  usage
+fi
+
+run_file=""
+case "$1" in
+  --*) ;;
+  *)
+    run_file="$1"
+    shift
+    ;;
+esac
+
+if [ -z "$run_file" ]; then
+  # Standalone mode: each flag is a discrete operation, applied in order.
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --reboot)
+        do_reboot
+        shift
+        ;;
+      --sync-files)
+        shift
+        case "\${1-}" in
+          --*|"")
+            do_sync ""
+            ;;
+          *)
+            do_sync "$1"
+            shift
+            ;;
+        esac
+        ;;
+      *)
+        echo "Unknown argument: $1" >&2
+        usage
+        ;;
+    esac
+  done
+else
+  # File mode: --sync-files DIRECTION wraps the file run (default both),
+  # --reboot runs after the post-sync.
+  sync_dir="both"
+  reboot_after=false
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --reboot)
+        reboot_after=true
+        shift
+        ;;
+      --sync-files)
+        shift
+        case "\${1-}" in
+          --*|"")
+            sync_dir="both"
+            ;;
+          *)
+            sync_dir="$1"
+            shift
+            ;;
+        esac
+        ;;
+      *)
+        echo "Unknown argument: $1" >&2
+        usage
+        ;;
+    esac
+  done
+
+  case "$sync_dir" in
+    both|none|runner-to-vm|vm-to-runner) ;;
+    *)
+      echo "Invalid sync direction: $sync_dir" >&2
+      echo "Valid values are: both, none, runner-to-vm, vm-to-runner" >&2
+      exit 1
+      ;;
+  esac
+
+  case "$sync_dir" in
+    both|runner-to-vm) sync_to_vm ;;
+  esac
+
+  run_file_in_vm "$run_file"
+
+  case "$sync_dir" in
+    both|vm-to-runner) sync_to_runner ;;
+  esac
+
+  if [ "$reboot_after" = true ]; then
+    do_reboot
+  fi
+fi
+`;
+        fs.writeFileSync(cpaShellPath, script, { mode: 0o755 });
+        core.debug(`Custom shell created at: ${cpaShellPath}`);
+        core.addPath(cpaShellDirectory);
     }
     createSSHConfig() {
         if (!fs.existsSync(this.sshDirectory))
@@ -396,6 +608,9 @@ class InitialImplementation {
             ipAddress = '127.0.0.1';
         (0, child_process_1.execSync)(`sudo bash -c 'printf "${ipAddress} ${this.cpaHost}\n" >> /etc/hosts'`);
     }
+}
+function escapeForSh(value) {
+    return `'${value.split("'").join("'\\''")}'`;
 }
 //# sourceMappingURL=action.js.map
 
@@ -460,7 +675,7 @@ class Input {
     get run() {
         if (this.run_ !== undefined)
             return this.run_;
-        return (this.run_ = core.getInput('run', { required: true }));
+        return (this.run_ = core.getInput('run'));
     }
     get shell() {
         if (this.shell_ !== undefined)
@@ -1080,6 +1295,9 @@ class OperatingSystem {
     get name() {
         return this.constructor.name.toLocaleLowerCase();
     }
+    get rebootCommand() {
+        return 'sudo reboot';
+    }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Converting qcow2 image to raw');
@@ -1514,6 +1732,9 @@ let Haiku = class Haiku extends qemu_1.Qemu {
     get vmClass() {
         return qemu_vm.Vm;
     }
+    get rebootCommand() {
+        return 'shutdown -r -q';
+    }
 };
 Haiku = __decorate([
     factory_1.operatingSystem
@@ -1572,8 +1793,11 @@ class Vm extends qemu_vm_1.Vm {
         });
         return __awaiter(this, void 0, void 0, function* () {
             yield _super.synchronizePaths.call(this, ...excludePaths);
-            yield this.execute(`chown -R $(id -u):$(id -g) '${this.workDirectory}'`);
+            yield this.execute(this.postSyncToVmCommand);
         });
+    }
+    get postSyncToVmCommand() {
+        return `chown -R $(id -u):$(id -g) '${this.workDirectory}'`;
     }
     get workDirectory() {
         return path.join('/boot/home', super.workDirectory);
@@ -2816,6 +3040,9 @@ class Vm {
     get user() {
         return 'runner';
     }
+    get postSyncToVmCommand() {
+        return '';
+    }
     get sshTarget() {
         return `${this.user}@${Vm.cpaHost}`;
     }
@@ -2869,12 +3096,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DefaultVmFileSystemSynchronizer = void 0;
+exports.DefaultVmFileSystemSynchronizer = exports.commandToShellString = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const array_prototype_flatmap_1 = __importDefault(__nccwpck_require__(9092));
 const utility_1 = __nccwpck_require__(2857);
 const sync_direction_1 = __nccwpck_require__(3377);
 const vm = __importStar(__nccwpck_require__(2772));
+function commandToShellString(command) {
+    return [command.program, ...command.args].map(a => shellQuote(a)).join(' ');
+}
+exports.commandToShellString = commandToShellString;
+function shellQuote(value) {
+    if (/^[a-zA-Z0-9_./:@=-]+$/.test(value))
+        return value;
+    return `'${value.split("'").join("'\\''")}'`;
+}
 class DefaultVmFileSystemSynchronizer {
     constructor({ input, user, guestHomeDirectory, hostHomeDirectory, executor = new utility_1.ExecExecutor(), isDebug = core.isDebug() }) {
         this.cpaHost = vm.Vm.cpaHost;
@@ -2885,20 +3121,37 @@ class DefaultVmFileSystemSynchronizer {
         this.hostHomeDirectory = hostHomeDirectory;
         this.isDebug = isDebug;
     }
+    synchronizePathsCommand(...excludePaths) {
+        return {
+            program: 'rsync',
+            // prettier-ignore
+            args: [
+                this.rsyncFlags,
+                '--exclude', '_actions/cross-platform-actions/action',
+                ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
+                toDirectoryPath(this.hostHomeDirectory),
+                stripDirectoryPath(this.rsyncTarget)
+            ]
+        };
+    }
+    synchronizeBackCommand() {
+        return {
+            program: 'rsync',
+            args: [
+                this.rsyncFlags,
+                toDirectoryPath(this.rsyncTarget),
+                stripDirectoryPath(this.hostHomeDirectory)
+            ]
+        };
+    }
     synchronizePaths(...excludePaths) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.shouldSyncFiles) {
                 return;
             }
             core.debug(`Syncing files to VM, excluding: ${excludePaths}`);
-            // prettier-ignore
-            yield this.executor.execute('rsync', [
-                this.rsyncFlags,
-                '--exclude', '_actions/cross-platform-actions/action',
-                ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
-                toDirectoryPath(this.hostHomeDirectory),
-                stripDirectoryPath(this.rsyncTarget)
-            ]);
+            const cmd = this.synchronizePathsCommand(...excludePaths);
+            yield this.executor.execute(cmd.program, cmd.args);
         });
     }
     synchronizeBack() {
@@ -2906,12 +3159,8 @@ class DefaultVmFileSystemSynchronizer {
             if (!this.shouldSyncBack)
                 return;
             core.info('Syncing back files');
-            // prettier-ignore
-            yield this.executor.execute('rsync', [
-                this.rsyncFlags,
-                toDirectoryPath(this.rsyncTarget),
-                stripDirectoryPath(this.hostHomeDirectory)
-            ]);
+            const cmd = this.synchronizeBackCommand();
+            yield this.executor.execute(cmd.program, cmd.args);
         });
     }
     get shouldSyncFiles() {

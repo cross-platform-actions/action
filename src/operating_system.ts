@@ -69,6 +69,10 @@ export abstract class OperatingSystem {
     return this.constructor.name.toLocaleLowerCase()
   }
 
+  get rebootCommand(): string {
+    return 'sudo reboot'
+  }
+
   abstract createVirtualMachine(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,

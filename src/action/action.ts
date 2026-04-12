@@ -12,6 +12,10 @@ import * as os from '../operating_system'
 import * as os_factory from '../operating_systems/factory'
 import ResourceDisk from '../resource_disk'
 import * as vmModule from '../vm'
+import {
+  DefaultVmFileSystemSynchronizer,
+  commandToShellString
+} from '../vm_file_system_synchronizer'
 import * as input from './input'
 import * as shell from './shell'
 import * as utility from '../utility'
@@ -98,11 +102,13 @@ export class Action {
         vm.homeDirectory,
         vm.workDirectory
       )
-      await vm.synchronizePaths(
+      const syncExcludes = [
         this.targetDiskName,
         this.resourceDisk.diskPath,
         ...excludes
-      )
+      ]
+      await vm.synchronizePaths(...syncExcludes)
+      implementation.setupCustomShell(syncExcludes)
       core.info('VM is ready')
       try {
         core.endGroup()
@@ -199,6 +205,8 @@ export class Action {
   }
 
   private async runCommand(vm: vmModule.Vm): Promise<void> {
+    if (this.input.run === '') return
+
     utility.group('Running command', () => core.info(this.input.run))
 
     const sh =
@@ -232,7 +240,7 @@ export class Action {
   private getImplementation(vm: vmModule.Vm): Implementation {
     const cls = implementationFor({isRunning: vmModule.Vm.isRunning})
     core.debug(`Using action implementation: ${cls.name}`)
-    return new cls(this, vm)
+    return new cls(this, vm, this.homeDirectory)
   }
 
   private createRunPreparer(): RunPreparer {
@@ -358,6 +366,7 @@ interface Implementation {
   ): Promise<void>
 
   configSSH(ipAddress: string): void
+  setupCustomShell(syncExcludes: string[]): void
 }
 
 class LiveImplementation implements Implementation {
@@ -392,13 +401,23 @@ class LiveImplementation implements Implementation {
   configSSH(_ipAddress: string): void {
     // noop
   }
+
+  setupCustomShell(
+    _syncExcludes: string[] // eslint-disable-line @typescript-eslint/no-unused-vars
+  ): void {
+    // noop
+  }
 }
 
 class InitialImplementation implements Implementation {
   private readonly action: Action
   private readonly vm: vmModule.Vm
 
-  constructor(action: Action, vm: vmModule.Vm) {
+  constructor(
+    action: Action,
+    vm: vmModule.Vm,
+    _homeDirectory: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  ) {
     this.action = action
     this.vm = vm
   }
@@ -443,6 +462,215 @@ class InitialImplementation implements Implementation {
     this.createSSHConfig()
     this.setupAuthorizedKeys()
     this.setupHostname(ipAddress)
+  }
+
+  setupCustomShell(syncExcludes: string[]): void {
+    const cpaShellDirectory = fs.mkdtempSync('/tmp/cpa-shell-')
+    const cpaShellPath = path.join(cpaShellDirectory, 'cpa.sh')
+
+    const sh =
+      this.action.input.shell === shell.Shell.default
+        ? '\\$SHELL'
+        : shell.toString(this.action.input.shell)
+
+    const sshTarget = `${this.vm.user}@${vmModule.Vm.cpaHost}`
+    const workDir = escapeForSh(this.vm.workDirectory)
+    const rebootCommand = this.operatingSystem.rebootCommand
+
+    const synchronizer = new DefaultVmFileSystemSynchronizer({
+      input: this.action.input,
+      user: this.vm.user,
+      guestHomeDirectory: this.vm.homeDirectory,
+      hostHomeDirectory: this.vm.hostHomeDirectory
+    })
+    const toVm = commandToShellString(
+      synchronizer.synchronizePathsCommand(...syncExcludes)
+    )
+    const toRunner = commandToShellString(synchronizer.synchronizeBackCommand())
+
+    const postSyncToVm = this.vm.postSyncToVmCommand
+    const postSyncToVmLine = postSyncToVm
+      ? `ssh -t ${sshTarget} ${escapeForSh(postSyncToVm)}`
+      : ''
+
+    const script = `#!/usr/bin/env sh
+set -eu
+
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  cpa.sh FILE [POST_FLAGS]          Run FILE inside the VM (used as the custom shell)
+  cpa.sh --sync-files [DIRECTION]   Synchronize files between the runner and the VM
+                                    (both [default], none, runner-to-vm, vm-to-runner)
+  cpa.sh --reboot                   Reboot the VM and wait until it's reachable again
+
+When FILE is given, files are synchronized automatically: runner-to-vm before
+the file is executed, and vm-to-runner after. Pass --sync-files DIRECTION as a
+POST_FLAG to change this (use 'none' to skip syncing entirely). --reboot can
+also be used as a POST_FLAG to reboot after the file has run.
+EOF
+  exit 2
+}
+
+sync_to_vm() {
+  ${toVm}
+  ${postSyncToVmLine}
+}
+
+sync_to_runner() {
+  ${toRunner}
+}
+
+do_sync() {
+  direction="\${1:-both}"
+  case "$direction" in
+    both)
+      sync_to_vm
+      sync_to_runner
+      ;;
+    none)
+      echo "Sync skipped."
+      return 0
+      ;;
+    runner-to-vm)
+      sync_to_vm
+      ;;
+    vm-to-runner)
+      sync_to_runner
+      ;;
+    *)
+      echo "Invalid sync direction: $direction" >&2
+      echo "Valid values are: both, none, runner-to-vm, vm-to-runner" >&2
+      exit 1
+      ;;
+  esac
+  echo "Sync complete."
+}
+
+do_reboot() {
+  echo "Rebooting VM..."
+  ssh -t ${sshTarget} '${rebootCommand}' || true
+
+  echo "Waiting for VM to come back up..."
+  deadline=$(($(date +%s) + 240))
+  consecutive=0
+  while [ "$consecutive" -lt 3 ]; do
+    if ssh -t -o ConnectTimeout=2 ${sshTarget} true 2>/dev/null; then
+      consecutive=$((consecutive + 1))
+    else
+      consecutive=0
+      if [ "$(date +%s)" -ge "$deadline" ]; then
+        echo "Timed out waiting for VM to come back up after 240s" >&2
+        exit 1
+      fi
+    fi
+    sleep 1
+  done
+  echo "VM is ready."
+}
+
+run_file_in_vm() {
+  ssh -t ${sshTarget} "mkdir -p '${workDir}' && cd '${workDir}' && exec "${sh}" -e" < "$1"
+}
+
+if [ $# -eq 0 ]; then
+  usage
+fi
+
+run_file=""
+case "$1" in
+  --*) ;;
+  *)
+    run_file="$1"
+    shift
+    ;;
+esac
+
+if [ -z "$run_file" ]; then
+  # Standalone mode: each flag is a discrete operation, applied in order.
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --reboot)
+        do_reboot
+        shift
+        ;;
+      --sync-files)
+        shift
+        case "\${1-}" in
+          --*|"")
+            do_sync ""
+            ;;
+          *)
+            do_sync "$1"
+            shift
+            ;;
+        esac
+        ;;
+      *)
+        echo "Unknown argument: $1" >&2
+        usage
+        ;;
+    esac
+  done
+else
+  # File mode: --sync-files DIRECTION wraps the file run (default both),
+  # --reboot runs after the post-sync.
+  sync_dir="both"
+  reboot_after=false
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --reboot)
+        reboot_after=true
+        shift
+        ;;
+      --sync-files)
+        shift
+        case "\${1-}" in
+          --*|"")
+            sync_dir="both"
+            ;;
+          *)
+            sync_dir="$1"
+            shift
+            ;;
+        esac
+        ;;
+      *)
+        echo "Unknown argument: $1" >&2
+        usage
+        ;;
+    esac
+  done
+
+  case "$sync_dir" in
+    both|none|runner-to-vm|vm-to-runner) ;;
+    *)
+      echo "Invalid sync direction: $sync_dir" >&2
+      echo "Valid values are: both, none, runner-to-vm, vm-to-runner" >&2
+      exit 1
+      ;;
+  esac
+
+  case "$sync_dir" in
+    both|runner-to-vm) sync_to_vm ;;
+  esac
+
+  run_file_in_vm "$run_file"
+
+  case "$sync_dir" in
+    both|vm-to-runner) sync_to_runner ;;
+  esac
+
+  if [ "$reboot_after" = true ]; then
+    do_reboot
+  fi
+fi
+`
+
+    fs.writeFileSync(cpaShellPath, script, {mode: 0o755})
+    core.debug(`Custom shell created at: ${cpaShellPath}`)
+
+    core.addPath(cpaShellDirectory)
   }
 
   private createSSHConfig(): void {
@@ -499,4 +727,8 @@ class InitialImplementation implements Implementation {
       `sudo bash -c 'printf "${ipAddress} ${this.cpaHost}\n" >> /etc/hosts'`
     )
   }
+}
+
+function escapeForSh(value: string): string {
+  return `'${value.split("'").join("'\\''")}'`
 }

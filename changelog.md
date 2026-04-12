@@ -16,6 +16,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     integrity verification for downloaded artifacts
     ([#140](https://github.com/cross-platform-actions/action/issues/140))
 
+- New syntax for multiple steps ([#83](https://github.com/cross-platform-actions/action/issues/83)).
+    Instead of invoking the action multiple times it's now possible to use a
+    custom shell when running commands:
+
+    ```yaml
+    jobs:
+      custom-shell:
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            shell: cpa.sh {0}
+
+        steps:
+          - name: Start VM
+            uses: cross-platform-actions/action@master
+            with:
+              operating_system: freebsd
+              architecture: x86-64
+              version: '15.0'
+
+          - name: Run command using custom shell
+            run: '[ "`uname`" = FreeBSD ]'
+    ```
+
+    Each custom-shell step automatically synchronizes files in both
+    directions: runner-to-vm before the step runs and vm-to-runner after.
+    Pass `--sync-files DIRECTION` after the file argument to change this
+    (`both` (default), `none` (skip sync), `runner-to-vm`, or
+    `vm-to-runner`), or use `cpa.sh --sync-files` standalone to sync on
+    demand without running a command:
+
+    ```yaml
+    - name: Sync files from runner to VM
+      run: cpa.sh --sync-files runner-to-vm
+    ```
+
+- Reboot mode for rebooting the VM and waiting for it to come back up
+    ([#103](https://github.com/cross-platform-actions/action/issues/103),
+    [#118](https://github.com/cross-platform-actions/action/issues/118)).
+    `cpa.sh --reboot` issues the reboot and blocks until the VM is reachable
+    again:
+
+    ```yaml
+    - name: Reboot VM
+      run: cpa.sh --reboot
+    ```
+
+### Deprecated
+- The `run` input parameter has been deprecated and is now optional. Use the
+    custom shell (`shell: cpa.sh {0}`) in subsequent steps to run commands in
+    the virtual machine instead.
+
 ## [1.0.0] - 2026-04-12
 ### Fixed
 - Fix #108: Fix file ownership on Haiku after rsync, resolving git

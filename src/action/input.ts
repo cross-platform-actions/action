@@ -52,7 +52,7 @@ export class Input {
 
   get run(): string {
     if (this.run_ !== undefined) return this.run_
-    return (this.run_ = core.getInput('run', {required: true}))
+    return (this.run_ = core.getInput('run'))
   }
 
   get shell(): Shell {
