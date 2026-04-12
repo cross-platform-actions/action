@@ -1,6 +1,8 @@
 inputs:
   name:
     description: 'The name of the operating system'
+  operating_system:
+    description: 'The operating system'
   architecture:
     description: 'The architecture of the operating system'
   version:
@@ -38,7 +40,7 @@ runs:
         BAR: B
       with:
         environment_variables: FOO BAR
-        operating_system: ${{ inputs.name }}
+        operating_system: ${{ inputs.operating_system || inputs.name }}
         architecture: ${{ inputs.architecture }}
         version: '${{ inputs.version }}'
         shutdown_vm: false

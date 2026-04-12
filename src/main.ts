@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import {Action} from './action/action'
 
+import './operating_systems/dragonflybsd/factory'
 import './operating_systems/freebsd/factory'
 import './operating_systems/haiku/factory'
 import './operating_systems/netbsd/factory'
