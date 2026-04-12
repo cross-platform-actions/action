@@ -125,7 +125,12 @@ if $dry_run; then
   exit 0
 fi
 
-# --- Check for clean working tree -----------------------------------------
+# --- Check branch and working tree -----------------------------------------
+
+current_branch="$(git branch --show-current)"
+if [[ "$current_branch" != "master" ]]; then
+  die "must be on the master branch to release (currently on ${current_branch})"
+fi
 
 if ! git diff --quiet || ! git diff --cached --quiet; then
   die "working tree is not clean -- commit or stash your changes first"
@@ -157,10 +162,13 @@ git tag -a "$tag" -m "Release ${version}"
 echo
 echo "Release ${version} committed and tagged."
 echo
-read -rp "Push tag ${tag} to origin? [y/N] " answer
+read -rp "Push master and tag ${tag} to origin? [y/N] " answer
 if [[ "$answer" =~ ^[Yy]$ ]]; then
+  git push origin master
   git push origin "$tag"
-  echo "Tag ${tag} pushed. The CI workflow will create a draft release."
+  echo "Pushed master and tag ${tag}. The CI workflow will create a draft release."
 else
-  echo "Tag not pushed. When ready, run: git push origin ${tag}"
+  echo "Not pushed. When ready, run:"
+  echo "  git push origin master"
+  echo "  git push origin ${tag}"
 fi
