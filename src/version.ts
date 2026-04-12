@@ -1,5 +1,6 @@
 const version = {
   operating_system: {
+    dragonflybsd: 'v0.0.1',
     freebsd: 'v0.13.1',
     haiku: 'v0.0.2',
     netbsd: 'v0.5.1',
