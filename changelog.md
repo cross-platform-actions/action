@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-04-12
 ### Fixed
 - Fix #108: Fix file ownership on Haiku after rsync, resolving git
     `safe.directory` errors
@@ -269,7 +271,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v1.0.0...HEAD
+
+[1.0.0]: https://github.com/cross-platform-actions/action/compare/v0.32.0...v1.0.0
 
 [0.32.0]: https://github.com/cross-platform-actions/action/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/cross-platform-actions/action/compare/v0.30.0...v0.31.0
