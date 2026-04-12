@@ -121,7 +121,8 @@ if $dry_run; then
   echo "  - Replace action@v${prev_version} with action@v${version}"
   echo "[dry-run] Would commit: Release ${version}"
   echo "[dry-run] Would create annotated tag: ${tag}"
-  echo "[dry-run] Would push tag: ${tag}"
+  echo "[dry-run] Would update major tag: v${version%%.*}"
+  echo "[dry-run] Would push master and tags: ${tag}, v${version%%.*}"
   exit 0
 fi
 
@@ -155,20 +156,26 @@ sed -i '' "s|cross-platform-actions/action@v${prev_version}|cross-platform-actio
 
 # --- Commit, tag, push -----------------------------------------------------
 
+major_version="${version%%.*}"
+major_tag="v${major_version}"
+
 git add "$CHANGELOG" "$README"
 git commit -m "Release ${version}"
 git tag -a "$tag" -m "Release ${version}"
+git tag -f -a "$major_tag" -m "Release ${version}"
 
 echo
-echo "Release ${version} committed and tagged."
+echo "Release ${version} committed and tagged (${tag}, ${major_tag})."
 echo
-read -rp "Push master and tag ${tag} to origin? [y/N] " answer
+read -rp "Push master and tags to origin? [y/N] " answer
 if [[ "$answer" =~ ^[Yy]$ ]]; then
   git push origin master
   git push origin "$tag"
-  echo "Pushed master and tag ${tag}. The CI workflow will create a draft release."
+  git push -f origin "$major_tag"
+  echo "Pushed master and tags ${tag}, ${major_tag}. The CI workflow will create a draft release."
 else
   echo "Not pushed. When ready, run:"
   echo "  git push origin master"
   echo "  git push origin ${tag}"
+  echo "  git push -f origin ${major_tag}"
 fi
