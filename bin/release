@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+readonly CHANGELOG="changelog.md"
+readonly README="readme.md"
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [--dry-run] [VERSION]
+
+Create a new release. If VERSION is omitted, it is determined automatically
+from the changelog's [Unreleased] section:
+
+  - Only "Fixed" entries       -> patch bump
+  - "Added"/"Changed"/"Deprecated" -> minor bump
+  - "Removed" entries          -> major bump
+
+Options:
+  --dry-run   Show what would happen without making changes
+  -h, --help  Show this help message
+EOF
+}
+
+dry_run=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run) dry_run=true; shift ;;
+    -h|--help) usage; exit 0 ;;
+    -*) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
+    *) version="$1"; shift ;;
+  esac
+done
+
+# --- Helpers ---------------------------------------------------------------
+
+die() { echo "error: $*" >&2; exit 1; }
+
+# Extract the [Unreleased] section (between the Unreleased header and the next
+# version header).
+unreleased_section() {
+  sed -n '/^## \[Unreleased\]/,/^## \[/{ /^## \[Unreleased\]/d; /^## \[/d; p; }' "$CHANGELOG"
+}
+
+current_version() {
+  grep -E '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' "$CHANGELOG" | head -1 | sed 's/^## \[\([0-9.]*\)\].*/\1/'
+}
+
+# Determine bump type from the Unreleased sub-headers.
+detect_bump() {
+  local section
+  section="$(unreleased_section)"
+
+  if echo "$section" | grep -q '^### Removed'; then
+    echo major
+  elif echo "$section" | grep -qi 'Breaking'; then
+    echo major
+  elif echo "$section" | grep -qE '^### (Added|Changed|Deprecated)'; then
+    echo minor
+  elif echo "$section" | grep -q '^### Fixed'; then
+    echo patch
+  else
+    echo none
+  fi
+}
+
+bump_version() {
+  local cur="$1" bump="$2"
+  local major minor patch
+  IFS='.' read -r major minor patch <<< "$cur"
+
+  case "$bump" in
+    major) echo "$(( major + 1 )).0.0" ;;
+    minor) echo "${major}.$(( minor + 1 )).0" ;;
+    patch) echo "${major}.${minor}.$(( patch + 1 ))" ;;
+    *) die "nothing to release -- the [Unreleased] section is empty" ;;
+  esac
+}
+
+# --- Validation ------------------------------------------------------------
+
+[[ -f "$CHANGELOG" ]] || die "$CHANGELOG not found"
+[[ -f "$README" ]]    || die "$README not found"
+
+section="$(unreleased_section)"
+if [[ -z "${section// /}" ]]; then
+  die "the [Unreleased] section in $CHANGELOG is empty -- nothing to release"
+fi
+
+prev_version="$(current_version)"
+[[ -n "$prev_version" ]] || die "could not determine the current version from $CHANGELOG"
+
+if [[ -z "${version:-}" ]]; then
+  bump="$(detect_bump)"
+  version="$(bump_version "$prev_version" "$bump")"
+fi
+
+# Validate version format.
+if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  die "invalid version format: $version (expected X.Y.Z)"
+fi
+
+tag="v${version}"
+today="$(date +%Y-%m-%d)"
+
+echo "Releasing ${version} (previous: ${prev_version})"
+echo "  tag:  ${tag}"
+echo "  date: ${today}"
+echo
+
+# --- Dry run ---------------------------------------------------------------
+
+if $dry_run; then
+  echo "[dry-run] Would update $CHANGELOG:"
+  echo "  - Add header: ## [${version}] - ${today}"
+  echo "  - Add reference link for ${version}"
+  echo "  - Update [Unreleased] reference link"
+  echo "[dry-run] Would update $README:"
+  echo "  - Replace action@v${prev_version} with action@v${version}"
+  echo "[dry-run] Would commit: Release ${version}"
+  echo "[dry-run] Would create annotated tag: ${tag}"
+  echo "[dry-run] Would push tag: ${tag}"
+  exit 0
+fi
+
+# --- Check for clean working tree -----------------------------------------
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  die "working tree is not clean -- commit or stash your changes first"
+fi
+
+# --- Update changelog ------------------------------------------------------
+
+# 1. Insert version header after [Unreleased].
+sed -i '' "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [${version}] - ${today}/" "$CHANGELOG"
+
+# 2. Update the [Unreleased] reference link.
+sed -i '' "s|\[Unreleased\]: \(.*\)/v${prev_version}\.\.\.HEAD|[Unreleased]: \1/v${version}...HEAD|" "$CHANGELOG"
+
+# 3. Add the new version reference link (right after the [Unreleased] link).
+sed -i '' "/^\[Unreleased\]:.*\.\.\.HEAD$/a\\
+\\
+[${version}]: https://github.com/cross-platform-actions/action/compare/v${prev_version}...v${version}" "$CHANGELOG"
+
+# --- Update readme ---------------------------------------------------------
+
+sed -i '' "s|cross-platform-actions/action@v${prev_version}|cross-platform-actions/action@v${version}|g" "$README"
+
+# --- Commit, tag, push -----------------------------------------------------
+
+git add "$CHANGELOG" "$README"
+git commit -m "Release ${version}"
+git tag -a "$tag" -m "Release ${version}"
+
+echo
+echo "Release ${version} committed and tagged."
+echo
+read -rp "Push tag ${tag} to origin? [y/N] " answer
+if [[ "$answer" =~ ^[Yy]$ ]]; then
+  git push origin "$tag"
+  echo "Tag ${tag} pushed. The CI workflow will create a draft release."
+else
+  echo "Tag not pushed. When ready, run: git push origin ${tag}"
+fi
