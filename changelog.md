@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for DragonFly BSD ([#19](https://github.com/cross-platform-actions/action/issues/19))
+- Add support for MidnightBSD ([#102](https://github.com/cross-platform-actions/action/issues/102))
 
 ## [1.0.0] - 2026-04-12
 ### Fixed

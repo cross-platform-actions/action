@@ -986,6 +986,7 @@ const action_1 = __nccwpck_require__(6072);
 __nccwpck_require__(8016);
 __nccwpck_require__(9122);
 __nccwpck_require__(2078);
+__nccwpck_require__(3924);
 __nccwpck_require__(2146);
 __nccwpck_require__(6627);
 __nccwpck_require__(6653);
@@ -1622,6 +1623,120 @@ class Kind {
 }
 exports.Kind = Kind;
 //# sourceMappingURL=kind.js.map
+
+/***/ }),
+
+/***/ 3924:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const factory_1 = __nccwpck_require__(133);
+const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
+const midnightbsd_1 = __importDefault(__nccwpck_require__(6775));
+let MidnightBsdFactory = 
+//@ts-ignore
+class MidnightBsdFactory extends qemu_factory_1.default {
+    createImpl(version) {
+        return new midnightbsd_1.default(this.architecture, version);
+    }
+};
+MidnightBsdFactory = __decorate([
+    factory_1.factory
+    //@ts-ignore
+], MidnightBsdFactory);
+//# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 6775:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const factory_1 = __nccwpck_require__(133);
+const version_1 = __importDefault(__nccwpck_require__(8217));
+const qemu_1 = __nccwpck_require__(1526);
+const qemu_vm = __importStar(__nccwpck_require__(9126));
+let MidnightBsd = class MidnightBsd extends qemu_1.Qemu {
+    get virtualMachineImageReleaseVersion() {
+        return version_1.default.operating_system.midnightbsd;
+    }
+    get vmClass() {
+        return qemu_vm.Vm;
+    }
+};
+MidnightBsd = __decorate([
+    factory_1.operatingSystem
+], MidnightBsd);
+exports["default"] = MidnightBsd;
+//# sourceMappingURL=midnightbsd.js.map
+
+/***/ }),
+
+/***/ 9126:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Vm = void 0;
+const qemu_vm_1 = __nccwpck_require__(1106);
+class Vm extends qemu_vm_1.Vm {
+    get hardDriverFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=unsafe,discard=ignore,format=raw`,
+            '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=unsafe,discard=ignore,format=raw`,
+        ];
+    }
+    get ipv6() {
+        return 'ipv6=off';
+    }
+}
+exports.Vm = Vm;
+//# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
 
@@ -2503,6 +2618,7 @@ const version = {
         dragonflybsd: 'v0.0.1',
         freebsd: 'v0.13.1',
         haiku: 'v0.0.2',
+        midnightbsd: 'v0.0.1',
         netbsd: 'v0.5.1',
         openbsd: 'v0.11.1',
         omnios: 'v0.0.1'

@@ -48,11 +48,11 @@ jobs:
 
 ### Full Example
 
-Here's a sample workflow file which will set up a matrix resulting in eight
+Here's a sample workflow file which will set up a matrix resulting in nine
 jobs. One which will run on FreeBSD 15.0, one which runs OpenBSD 7.8, one which
 runs NetBSD 10.0, one which runs OpenBSD 7.8 on ARM64, one which runs NetBSD
-10.1 on ARM64, one which runs DragonFly BSD 6.4.2, one which runs Haiku
-R1/beta5 and one which runs OmniOS r151056.
+10.1 on ARM64, one which runs DragonFly BSD 6.4.2, one which runs MidnightBSD
+4.0.4, one which runs Haiku R1/beta5 and one which runs OmniOS r151056.
 
 ```yaml
 name: CI
@@ -88,6 +88,10 @@ jobs:
           - name: dragonflybsd
             architecture: x86-64
             version: '6.4.2'
+
+          - name: midnightbsd
+            architecture: x86-64
+            version: '4.0.4'
 
           - name: haiku
             architecture: x86-64
@@ -230,6 +234,12 @@ operating system will list which versions are supported.
 |---------|--------|
 | 6.4.2   | ✅     |
 
+### [MidnightBSD][midnightbsd_builder] (`midnightbsd`)
+
+| Version | x86-64 |
+|---------|--------|
+| 4.0.4   | ✅     |
+
 ### [Haiku][haiku_builder] (`haiku`)
 
 Note, Haiku is a single user system. That means the user that runs the the job
@@ -272,9 +282,9 @@ which runners they can run on.
 This section lists the different combinations of platforms and on which runners
 they can run.
 
-| Runner                                        | OpenBSD | FreeBSD | NetBSD | DragonFly BSD | ARM64 |
-| ----------------------------------------------| ------- | ------- | ------ | ------------- | ----- |
-| **Linux**                                     | ✅      | ✅      | ✅     | ✅            | ✅   |
+| Runner                                        | OpenBSD | FreeBSD | NetBSD | DragonFly BSD | MidnightBSD | ARM64 |
+| ----------------------------------------------| ------- | ------- | ------ | ------------- | ----------- | ----- |
+| **Linux**                                     | ✅      | ✅      | ✅     | ✅            | ✅          | ✅   |
 
 ## `Linux on Non-x86 Architectures`
 
@@ -658,6 +668,7 @@ files within the [`test/http`](test/http) are ignore by Git.
 [netbsd_builder]: https://github.com/cross-platform-actions/netbsd-builder
 [haiku_builder]: https://github.com/cross-platform-actions/haiku-builder
 [dragonflybsd_builder]: https://github.com/cross-platform-actions/dragonflybsd-builder
+[midnightbsd_builder]: https://github.com/cross-platform-actions/midnightbsd-builder
 [omnios_builder]: https://github.com/cross-platform-actions/omnios-builder
 [act]: https://github.com/nektos/act
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
