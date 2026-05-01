@@ -126,7 +126,6 @@ jobs:
           shell: bash
           memory: 5G
           cpu_count: 4
-          run: true
 
       - name: Test 1 on ${{ matrix.os.name }}
         run: |

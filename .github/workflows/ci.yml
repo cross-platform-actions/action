@@ -346,14 +346,17 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test
+      - name: Start VM
         uses: ./
         with:
           operating_system: freebsd
           architecture: x86-64
           version: '13.0'
           shutdown_vm: false
-          run: env | sort
+
+      - name: Test
+        shell: cpa.sh {0}
+        run: env | sort
 
   test-haiku-file-ownership:
     timeout-minutes: 5
@@ -366,14 +369,17 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test
+      - name: Start VM
         uses: ./
         with:
           operating_system: haiku
           architecture: x86-64
           version: r1beta5
           shutdown_vm: false
-          run: '! find . -nouser | grep -q .'
+
+      - name: Test
+        shell: cpa.sh {0}
+        run: '! find . -nouser | grep -q .'
 
   test-cpu-count-config:
     timeout-minutes: 5
@@ -386,7 +392,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test
+      - name: Start VM
         uses: ./
         with:
           operating_system: freebsd
@@ -394,9 +400,12 @@ jobs:
           version: '13.1'
           cpu_count: 8
           shutdown_vm: false
-          run: |
-            sysctl hw.ncpu
-            [ `sysctl -n hw.ncpu` = 8 ]
+
+      - name: Test
+        shell: cpa.sh {0}
+        run: |
+          sysctl hw.ncpu
+          [ `sysctl -n hw.ncpu` = 8 ]
 
   test-custom-vm-image:
     timeout-minutes: 5
@@ -409,7 +418,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test
+      - name: Start VM
         uses: ./
         with:
           operating_system: openbsd
@@ -417,7 +426,10 @@ jobs:
           version: '7.3'
           image_url: https://github.com/cross-platform-actions/test-custom-image-builder/releases/download/v1.0.0/openbsd-7.3-x86-64.qcow2
           shutdown_vm: false
-          run: test -f /foo
+
+      - name: Test
+        shell: cpa.sh {0}
+        run: test -f /foo
 
   test-cpu-features:
     timeout-minutes: 5
@@ -430,14 +442,17 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test
+      - name: Start VM
         uses: ./
         with:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
           shutdown_vm: false
-          run: dmesg | grep -i avx2
+
+      - name: Test
+        shell: cpa.sh {0}
+        run: dmesg | grep -i avx2
 
   test-no-vm-shutdown:
     timeout-minutes: 5
@@ -450,14 +465,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test
+      - name: Start VM
         uses: ./
         with:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
           shutdown_vm: false
-          run: true
 
       - name: Verify VM is still running
         run: ps aux | grep -v grep | grep -q qemu
@@ -473,14 +487,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test
+      - name: Start VM
         uses: ./
         with:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
           shutdown_vm: true
-          run: true
 
       - name: Verify VM is not running
         run: ps aux | grep -v grep | grep -q -v qemu
@@ -529,6 +542,33 @@ jobs:
 
       - name: Run after
         run: ${{ matrix.data.run_after }}
+
+  test-run-parameter:
+    timeout-minutes: 5
+    name: Test the deprecated run parameter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - run: touch foo.txt
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          run: |
+            test -f foo.txt
+            touch bar.txt
+            [ "`uname`" = FreeBSD ]
+
+      - name: Verify file synced back
+        run: test -f bar.txt
 
   multiple-steps:
     timeout-minutes: 5
