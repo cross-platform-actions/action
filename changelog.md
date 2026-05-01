@@ -68,6 +68,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     custom shell (`shell: cpa.sh {0}`) in subsequent steps to run commands in
     the virtual machine instead.
 
+- The `shutdown_vm` input parameter has been deprecated and will be removed
+    in a future release. There is no replacement. When unset, it now defaults
+    to `true` if the `run` parameter is provided (preserving the legacy
+    behavior) and `false` otherwise (so the VM stays alive across subsequent
+    custom-shell steps without needing to specify it).
+
 ## [1.0.0] - 2026-04-12
 ### Fixed
 - Fix #108: Fix file ownership on Haiku after rsync, resolving git

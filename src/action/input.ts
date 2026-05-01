@@ -143,10 +143,18 @@ export class Input {
   get shutdownVm(): boolean {
     if (this.shutdownVm_ !== undefined) return this.shutdownVm_
 
-    const input = core.getBooleanInput('shutdown_vm')
-    core.debug(`shutdown_vm input: '${input}'`)
+    const raw = core.getInput('shutdown_vm')
+    core.debug(`shutdown_vm input: '${raw}'`)
 
-    return (this.shutdownVm_ = input)
+    if (raw === '') return (this.shutdownVm_ = this.run !== '')
+
+    const value = raw.toLowerCase()
+    if (value === 'true') return (this.shutdownVm_ = true)
+    if (value === 'false') return (this.shutdownVm_ = false)
+
+    throw Error(
+      `Invalid value for shutdown_vm: ${raw}. Valid values are: true, false`
+    )
   }
 
   toHash(): string {

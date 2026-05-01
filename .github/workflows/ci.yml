@@ -352,7 +352,6 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.0'
-          shutdown_vm: false
 
       - name: Test
         shell: cpa.sh {0}
@@ -375,7 +374,6 @@ jobs:
           operating_system: haiku
           architecture: x86-64
           version: r1beta5
-          shutdown_vm: false
 
       - name: Test
         shell: cpa.sh {0}
@@ -399,7 +397,6 @@ jobs:
           architecture: x86-64
           version: '13.1'
           cpu_count: 8
-          shutdown_vm: false
 
       - name: Test
         shell: cpa.sh {0}
@@ -425,7 +422,6 @@ jobs:
           architecture: x86-64
           version: '7.3'
           image_url: https://github.com/cross-platform-actions/test-custom-image-builder/releases/download/v1.0.0/openbsd-7.3-x86-64.qcow2
-          shutdown_vm: false
 
       - name: Test
         shell: cpa.sh {0}
@@ -448,16 +444,24 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
-          shutdown_vm: false
 
       - name: Test
         shell: cpa.sh {0}
         run: dmesg | grep -i avx2
 
-  test-no-vm-shutdown:
+  test-shutdown-vm-parameter:
     timeout-minutes: 5
-    name: Test not shutting down the VM
+    name: 'Test the deprecated shutdown_vm parameter: ${{ matrix.data.value }}'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        data:
+          - value: false
+            verify: ps aux | grep -v grep | grep -q qemu # VM should still be running
+
+          - value: true
+            verify: ps aux | grep -v grep | grep -q -v qemu # VM should not be running
 
     steps:
       - name: Checkout
@@ -471,32 +475,10 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.2'
-          shutdown_vm: false
+          shutdown_vm: ${{ matrix.data.value }}
 
-      - name: Verify VM is still running
-        run: ps aux | grep -v grep | grep -q qemu
-
-  test-vm-shutdown:
-    timeout-minutes: 5
-    name: Test shutting down the VM
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Start VM
-        uses: ./
-        with:
-          operating_system: freebsd
-          architecture: x86-64
-          version: '13.2'
-          shutdown_vm: true
-
-      - name: Verify VM is not running
-        run: ps aux | grep -v grep | grep -q -v qemu
+      - name: Verify VM state
+        run: ${{ matrix.data.verify }}
 
   test-sync-files:
     timeout-minutes: 5

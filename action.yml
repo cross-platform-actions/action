@@ -55,7 +55,11 @@ inputs:
     required: false
     description: |
       Specifies if the VM should be shutdown after the action has been run.
-    default: true
+      If unset, defaults to `true` when the `run` parameter is provided and
+      `false` otherwise.
+    deprecationMessage: >
+      The "shutdown_vm" parameter is deprecated and will be removed in a
+      future release. There is no replacement.
 
 runs:
   using: node24
