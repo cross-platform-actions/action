@@ -368,6 +368,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - if: env.ACT
+        run: |
+          sudo apt update
+          sudo apt install -y dosfstools rsync fdisk
+
       - name: Start VM
         uses: ./
         with:
