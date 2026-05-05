@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for DragonFly BSD ([#19](https://github.com/cross-platform-actions/action/issues/19))
 - Add support for MidnightBSD ([#102](https://github.com/cross-platform-actions/action/issues/102))
+- Add support for FreeBSD 14.4 ([#122](https://github.com/cross-platform-actions/action/issues/122))
+- Add support for OmniOS r151058
+
+### Security
+- Bump builders to releases that use immutable releases, providing
+    integrity verification for downloaded artifacts
+    ([#140](https://github.com/cross-platform-actions/action/issues/140))
 
 ## [1.0.0] - 2026-04-12
 ### Fixed

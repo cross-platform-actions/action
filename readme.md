@@ -205,6 +205,7 @@ operating system will list which versions are supported.
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
 | 15.0    | ✅     | ✅     |
+| 14.4    | ✅     | ✅     |
 | 14.3    | ✅     | ✅     |
 | 14.2    | ✅     | ✅     |
 | 14.1    | ✅     | ✅     |
@@ -254,6 +255,7 @@ operating systems.
 
 | Version | x86-64 |
 |---------|--------|
+| r151058 | ✅     |
 | r151056 | ✅     |
 
 ### Architectures
