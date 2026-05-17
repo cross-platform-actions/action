@@ -592,55 +592,35 @@ seamlessly into the project.
 
 ### Creating a Release
 
-For creating a new release, follow the steps below.
+Releases are cut with [relog][relog], driven by the `[Unreleased]` section of
+`changelog.md`. The repo ships a `release.conf` that configures relog for this
+project (master branch, `origin` remote, and a pre-commit hook that bumps the
+`cross-platform-actions/action@vX.Y.Z` reference in this readme).
 
-#### Decide Version Number
+These steps need to be performed by a maintainer:
 
-Decide what the next version number should be. Cross-Platform Action follows
-the [semantic versioning scheme][semver]. In a version number like: `2.1.1`, the
-digits are divided as follows:
+1. Make sure the `[Unreleased]` section in `changelog.md` describes everything
+    going into the release. Cross-Platform Action follows the
+    [semantic versioning scheme][semver]; relog derives the next version from
+    the sub-headers under `[Unreleased]`:
 
-```
-  2.    1.    1
-  ^     ^     ^
-  |     |     |
-  |     |     |
-major minor patch
-```
+    * `### Fixed` only → patch bump
+    * `### Added`, `### Changed`, `### Deprecated` → minor bump
+    * `### Removed` (or "Breaking" anywhere in the section) → major bump
 
-To decide what the next version should be, this is fairly straightforward. Look
-at current version number, then look at the [Unreleased] section of the
-changelog:
+1. From a clean `master` working tree, run `relog` (optionally pass an explicit
+    version like `relog 2.0.0`, or `--dry-run` to preview). It rewrites the
+    changelog, updates this readme, commits, creates an annotated `vX.Y.Z` tag,
+    and prompts before pushing.
 
-1. If the section only contains a `Fixed` sub header, then increment the patch
-    digit
+1. Pushing the tag triggers the `Release` workflow, which creates a draft
+    release on GitHub with the newly added changelog section as release notes.
 
-1. If the section contains an `Added`, `Changed` or `Deprecated` sub headers,
-    then increment the minor digit
+1. Review the draft release on GitHub and publish it. Publishing fires the
+    `Update Major Tag` workflow, which force-updates the matching major tag
+    (e.g. `v2`) to point at the published release.
 
-1. If the section contains a `Removed` sub header, increment the major digit
-
-#### Update the Changelog
-
-1. Rename the [Unreleased] section to match the version that is being released
-1. Add the current date in the section from previous step. See existing entries
-1. Add a new section for the `Unreleased` section at the top
-1. Add a new reference link for the new section at the bottom of the changelog
-1. Update the `Unreleased` reference link at the bottom of the changelog
-
-#### Creating the Release
-
-These steps need to be performed by a maintainer.
-
-1. Create a new annotated Git tag with the version of the release, prefixed with `v`,
-    i.e. `v2.0.0`. See existing tags, i.e. `git show v0.29.0`.
-
-1. Push the tag. Pushing the tag will automatically trigger a CI workflow that
-    creates a new draft release. It will copy the content of the newly added
-    section in the changelog and use that as the release notes.
-
-1. Check the release at GitHub to make sure everything looks good. Publish the
-    relese.
+[relog]: https://github.com/jacob-carlborg/relog
 
 ## `Local Development`
 
