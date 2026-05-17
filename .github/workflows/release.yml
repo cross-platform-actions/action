@@ -28,21 +28,16 @@ jobs:
             echo version="$(echo "$tag" | sed 's/^v//')" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Extract changelog
-        if: steps.version.outputs.valid
-        uses: sean0x42/markdown-extract@7b185cbe85263116bbf741e739e7198ba86465dc  # v2.1.0
-        id: extract_changelog
-        with:
-         file: changelog.md
-         pattern: '\[${{ steps.version.outputs.version }}\].+'
-         no-print-matched-heading: true
-
       - name: Create release
         if: steps.version.outputs.valid
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe  # v2.6.1
-        with:
-          name: Cross Platform Action ${{ steps.version.outputs.version }}
-          draft: true
-          body: ${{ steps.extract_changelog.outputs.markdown }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.event.workflow_run.head_branch }}
+          version: ${{ steps.version.outputs.version }}
+        run: |
+          sed -n "/^## \[${version}\]/,/^## \[/{/^## \[${version}\]/d;/^## \[/d;p;}" changelog.md \
+            | gh release create \
+              "$tag" \
+              --title "Cross Platform Action ${version}" \
+              --draft \
+              --notes-file -
