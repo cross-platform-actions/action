@@ -11,11 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for FreeBSD 14.4 ([#122](https://github.com/cross-platform-actions/action/issues/122))
 - Add support for OmniOS r151058
 
-### Security
-- Bump builders to releases that use immutable releases, providing
-    integrity verification for downloaded artifacts
-    ([#140](https://github.com/cross-platform-actions/action/issues/140))
-
 - New syntax for multiple steps ([#83](https://github.com/cross-platform-actions/action/issues/83)).
     Instead of invoking the action multiple times it's now possible to use a
     custom shell when running commands:
@@ -62,6 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - name: Reboot VM
       run: cpa.sh --reboot
     ```
+
+### Security
+- Bump builders to releases that use immutable releases, providing
+    integrity verification for downloaded artifacts
+    ([#140](https://github.com/cross-platform-actions/action/issues/140))
 
 ### Deprecated
 - The `run` input parameter has been deprecated and is now optional. Use the
