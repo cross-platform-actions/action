@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Add support for OpenBSD 7.9 ([#144](https://github.com/cross-platform-actions/action/issues/144))
 
 ## [1.1.0] - 2026-05-17
 ### Added
