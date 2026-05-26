@@ -570,14 +570,14 @@ do_reboot() {
 }
 
 run_file_in_vm() {
-  local env_exports
-  env_exports=$(python3 -c '
-import os, shlex
-for k, v in os.environ.items():
-    print(f"export {k}={shlex.quote(v)}")
-')
-
-  (echo "$env_exports"; cat "$1") | ssh -t "${sshTarget}" "mkdir -p '${workDir}' && cd '${workDir}' && exec "${sh}" -e"
+  {
+    python3 -c '
+      import os, shlex
+      for k, v in os.environ.items():
+        print(f"export {k}={shlex.quote(v)}")
+      '
+    cat "$1"
+  } | ssh -t "${sshTarget}" "mkdir -p '${workDir}' && cd '${workDir}' && exec "${sh}" -e"
 }
 
 if [ $# -eq 0 ]; then
