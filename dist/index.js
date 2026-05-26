@@ -468,10 +468,10 @@ do_reboot() {
 run_file_in_vm() {
   {
     python3 -c '
-      import os, shlex
-      for k, v in os.environ.items():
-        print(f"export {k}={shlex.quote(v)}")
-      '
+import os, shlex
+for k, v in os.environ.items():
+    print(f"export {k}={shlex.quote(v)}")
+'
     cat "$1"
   } | ssh -t "${sshTarget}" "mkdir -p '${workDir}' && cd '${workDir}' && exec "${sh}" -e"
 }
