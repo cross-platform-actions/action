@@ -80,7 +80,7 @@ export class Action {
       diskImagePath
     ].map(p => p.slice(this.homeDirectory.length + 1))
 
-    const vm = this.creareVm(
+    const vm = this.createVm(
       hypervisorDirectory,
       firmwareDirectory,
       resourcesDirectory,
@@ -148,7 +148,7 @@ export class Action {
     return result
   }
 
-  creareVm(
+  createVm(
     hypervisorDirectory: string,
     firmwareDirectory: string,
     resourcesDirectory: string,
@@ -508,6 +508,11 @@ When FILE is given, files are synchronized automatically: runner-to-vm before
 the file is executed, and vm-to-runner after. Pass --sync-files DIRECTION as a
 POST_FLAG to change this (use 'none' to skip syncing entirely). --reboot can
 also be used as a POST_FLAG to reboot after the file has run.
+
+Available POST_FLAGS for FILE mode:
+  --env-vars "VAR1 VAR2 CYPRESS_*"  Space-separated environment variables to pass into the VM
+  --sync-files DIRECTION            Control file synchronization behavior
+  --reboot                          Reboot the VM after file execution
 EOF
   exit 2
 }
@@ -570,13 +575,18 @@ do_reboot() {
 }
 
 run_file_in_vm() {
+  step_script_path="$1"
+  env_vars="$2"
   {
     python3 -c '
-import os, shlex
+import sys, os, shlex, fnmatch
+patterns = sys.argv[1].split() if sys.argv[1] else []
 for k, v in os.environ.items():
-    print(f"export {k}={shlex.quote(v)}")
-'
-    cat "$1"
+    matched = any(fnmatch.fnmatchcase(k, pat) for pat in patterns)
+    if matched:
+        print(f"export {k}={shlex.quote(v)}")
+' "$env_vars"
+    cat "$step_script_path"
   } | ssh -t "${sshTarget}" "mkdir -p '${workDir}' && cd '${workDir}' && exec "${sh}" -e"
 }
 
@@ -621,13 +631,23 @@ if [ -z "$run_file" ]; then
   done
 else
   # File mode: --sync-files DIRECTION wraps the file run (default both),
-  # --reboot runs after the post-sync.
+  # --reboot runs after the post-sync, and --env-vars passes environments variables.
   sync_dir="both"
   reboot_after=false
+  env_vars=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --reboot)
         reboot_after=true
+        shift
+        ;;
+      --env-vars)
+        shift
+        if [ $# -eq 0 ] || case "$1" in --*) true;; *) false;; esac; then
+          echo "Error: --env-vars requires a space-separated list of variable names" >&2
+          exit 1
+        fi
+        env_vars="$1"
         shift
         ;;
       --sync-files)
@@ -662,7 +682,7 @@ else
     both|runner-to-vm) sync_to_vm ;;
   esac
 
-  run_file_in_vm "$run_file"
+  run_file_in_vm "$run_file" "$env_vars"
 
   case "$sync_dir" in
     both|vm-to-runner) sync_to_runner ;;
