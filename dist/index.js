@@ -2854,7 +2854,7 @@ const version = {
         openbsd: 'v0.13.0',
         omnios: 'v0.2.0'
     },
-    resources: 'v0.11.0'
+    resources: 'v1.0.0'
 };
 exports["default"] = version;
 //# sourceMappingURL=version.js.map

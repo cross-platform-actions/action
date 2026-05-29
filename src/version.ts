@@ -9,7 +9,7 @@ const version = {
     omnios: 'v0.2.0'
   },
 
-  resources: 'v0.11.0'
+  resources: 'v1.0.0'
 }
 
 export default version

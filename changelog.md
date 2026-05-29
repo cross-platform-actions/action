@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for OpenBSD 7.9 ([#144](https://github.com/cross-platform-actions/action/issues/144))
 
+### Changed
+- Updated QEMU to 10.2.3
+
+### Security
+- Bump builders to releases that use immutable releases, providing
+    integrity verification for downloaded artifacts
+    ([#147](https://github.com/cross-platform-actions/action/issues/147))
+
 ## [1.1.0] - 2026-05-17
 ### Added
 - Add support for DragonFly BSD ([#19](https://github.com/cross-platform-actions/action/issues/19))
