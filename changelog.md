@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated QEMU to 10.2.3
 
 ### Security
-- Bump builders to releases that use immutable releases, providing
+- Bump resources to a release that use immutable releases, providing
     integrity verification for downloaded artifacts
     ([#147](https://github.com/cross-platform-actions/action/issues/147))
 
