@@ -168,6 +168,14 @@ this. `DIRECTION` accepts:
 `--reboot` may also be given as a `POST_FLAG` to reboot the VM after the file
 has run (and after the post-sync, if any).
 
+`--environment-variables NAME1 NAME2 ...` may be given as a `POST_FLAG` to
+forward additional environment variables to the VM for that step, on top of the
+ones declared via the action's [`environment_variables`](#inputs) input. List
+the names separated by spaces and do not quote them (GitHub Actions splits the
+`shell` line on spaces without honoring quotes). The named variables are read
+from the step's environment (set them with `env:`), so they don't need to be
+listed on the `Start VM` step.
+
 ```yaml
 - name: Run a command inside the VM
   shell: cpa.sh {0}
@@ -180,6 +188,13 @@ has run (and after the post-sync, if any).
 - name: Run a command and reboot afterwards
   shell: cpa.sh {0} --reboot
   run: sysctl -w some.setting=1
+
+- name: Run a command with extra environment variables
+  shell: cpa.sh {0} --environment-variables MY_ENV1 MY_ENV2
+  env:
+    MY_ENV1: value1
+    MY_ENV2: value2
+  run: echo "$MY_ENV1 $MY_ENV2"
 ```
 
 Use the standalone forms when you don't need to run a command. In standalone

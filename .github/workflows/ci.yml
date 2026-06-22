@@ -808,3 +808,57 @@ jobs:
       - name: Verify runner file reached VM (default)
         shell: cpa.sh {0}
         run: grep -q 'runner default' runner_default.txt
+
+  test-custom-shell-environment-variables:
+    timeout-minutes: 5
+    name: Test environment variables with custom shell
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+
+      - if: env.ACT
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y dosfstools rsync fdisk
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '15.0'
+          environment_variables: FROM_INPUT
+
+      # Variables declared via the action's `environment_variables` input are
+      # forwarded automatically by the custom shell.
+      - name: Forward variable from the environment_variables input
+        shell: cpa.sh {0}
+        env:
+          FROM_INPUT: input_value
+        run: '[ "$FROM_INPUT" = input_value ]'
+
+      # Variables can also be declared per-step via the --environment-variables
+      # flag, without listing them on the Start VM step.
+      - name: Forward variable using the --environment-variables flag
+        shell: cpa.sh {0} --environment-variables FROM_FLAG
+        env:
+          FROM_FLAG: flag_value
+        run: '[ "$FROM_FLAG" = flag_value ]'
+
+      # The input-based and flag-based variables can be combined, and the flag
+      # accepts multiple space-separated names.
+      - name: Forward variables from both the input and the flag
+        shell: cpa.sh {0} --environment-variables FROM_FLAG1 FROM_FLAG2
+        env:
+          FROM_INPUT: input_value
+          FROM_FLAG1: flag_value1
+          FROM_FLAG2: flag_value2
+        run: |
+          [ "$FROM_INPUT" = input_value ]
+          [ "$FROM_FLAG1" = flag_value1 ]
+          [ "$FROM_FLAG2" = flag_value2 ]

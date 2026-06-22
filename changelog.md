@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for FreeBSD 15.1 ([#153](https://github.com/cross-platform-actions/action/issues/153))
+- Add a `--environment-variables` post-flag to the `cpa.sh` custom shell for
+    forwarding additional environment variables to the VM on a per-step basis,
+    without having to declare them on the `Start VM` step via the
+    `environment_variables` input
+    ([#145](https://github.com/cross-platform-actions/action/issues/145)):
+
+    ```yaml
+    - name: Run a command with extra environment variables
+      shell: cpa.sh {0} --environment-variables MY_ENV1 MY_ENV2
+      env:
+        MY_ENV1: value1
+        MY_ENV2: value2
+      run: echo "$MY_ENV1 $MY_ENV2"
+    ```
 
 ## [1.2.0] - 2026-05-30
 ### Added

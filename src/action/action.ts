@@ -496,6 +496,12 @@ class InitialImplementation implements Implementation {
     const script = `#!/usr/bin/env sh
 set -eu
 
+# Extra environment variables to forward to the VM, populated by the
+# --environment-variables flag. Variables declared via the action's
+# "environment_variables" input are forwarded automatically through the SSH
+# config (SendEnv) and don't need to be listed here.
+env_var_names=""
+
 usage() {
   cat >&2 <<'EOF'
 Usage:
@@ -508,6 +514,12 @@ When FILE is given, files are synchronized automatically: runner-to-vm before
 the file is executed, and vm-to-runner after. Pass --sync-files DIRECTION as a
 POST_FLAG to change this (use 'none' to skip syncing entirely). --reboot can
 also be used as a POST_FLAG to reboot after the file has run.
+
+Pass --environment-variables NAME1 NAME2 ... as a POST_FLAG to forward
+additional environment variables to the VM (in addition to those configured via
+the action's "environment_variables" input). List the names separated by spaces
+and do not quote them. The named variables are read from the current
+environment when the file runs.
 EOF
   exit 2
 }
@@ -570,7 +582,11 @@ do_reboot() {
 }
 
 run_file_in_vm() {
-  ssh -t ${sshTarget} "mkdir -p '${workDir}' && cd '${workDir}' && exec "${sh}" -e" < "$1"
+  send_env_opts=""
+  for name in $env_var_names; do
+    send_env_opts="$send_env_opts -o SendEnv=$name"
+  done
+  ssh -t $send_env_opts ${sshTarget} "mkdir -p '${workDir}' && cd '${workDir}' && exec "${sh}" -e" < "$1"
 }
 
 if [ $# -eq 0 ]; then
@@ -634,6 +650,28 @@ else
             shift
             ;;
         esac
+        ;;
+      --environment-variables)
+        shift
+        consumed=false
+        while [ $# -gt 0 ]; do
+          case "$1" in
+            --*)
+              break
+              ;;
+            *)
+              if [ -n "$1" ]; then
+                env_var_names="$env_var_names $1"
+                consumed=true
+              fi
+              shift
+              ;;
+          esac
+        done
+        if [ "$consumed" = false ]; then
+          echo "Missing argument for --environment-variables" >&2
+          usage
+        fi
         ;;
       *)
         echo "Unknown argument: $1" >&2
