@@ -2,8 +2,9 @@ import * as architecture from '../src/architectures/kind'
 import * as factory from '../src/architectures/factory'
 import {Host} from '../src/host'
 import * as os from '../src/operating_systems/kind'
-import {Qemu, QemuEfi} from '../src/hypervisor'
+import {Qemu, QemuEfi, Simh} from '../src/hypervisor'
 import '../src/operating_systems/freebsd/freebsd'
+import '../src/operating_systems/netbsd/netbsd'
 
 let context = describe
 
@@ -32,6 +33,43 @@ describe('Architecture', () => {
   })
 
   describe('hypervisor', () => {
+    context('vax', () => {
+      let kind = architecture.Kind.vax
+
+      context('Linux host', () => {
+        let host = Host.create('linux')
+
+        context('NetBSD', () => {
+          let osKind = os.Kind.for('netbsd')
+          let arch = factory.create(kind, host, osKind, host.hypervisor)
+
+          it('returns the SIMH hypervisor', () => {
+            expect(arch.hypervisor).toBeInstanceOf(Simh)
+          })
+
+          it('uses "vax" as the architecture name', () => {
+            expect(arch.name).toEqual('vax')
+          })
+
+          it('downloads the simulator from the simh-builder releases', () => {
+            expect(arch.resourceUrl).toMatch(
+              /^https:\/\/github.com\/cross-platform-actions\/simh-builder\/releases\/download\/v[^/]+\/vax-linux-(x86-64|arm64).tar$/
+            )
+          })
+        })
+
+        context('operating systems other than NetBSD', () => {
+          let osKind = os.Kind.for('openbsd')
+
+          it('throws an error', () => {
+            expect(() =>
+              factory.create(kind, host, osKind, host.hypervisor)
+            ).toThrowError(/^The vax architecture is only supported on NetBSD/)
+          })
+        })
+      })
+    })
+
     context('x86_64', () => {
       let kind = architecture.Kind.x86_64
 
@@ -65,6 +103,18 @@ describe('toKind', () => {
   describe('ARM64', () => {
     it('returns the arm64 architecture', () => {
       expect(architecture.toKind('ARM64')).toBe(architecture.Kind.arm64)
+    })
+  })
+
+  describe('vax', () => {
+    it('returns the vax architecture', () => {
+      expect(architecture.toKind('vax')).toBe(architecture.Kind.vax)
+    })
+  })
+
+  describe('VAX', () => {
+    it('returns the vax architecture', () => {
+      expect(architecture.toKind('VAX')).toBe(architecture.Kind.vax)
     })
   })
 

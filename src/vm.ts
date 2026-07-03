@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import {spawn} from 'child_process'
+import type {StdioOptions} from 'child_process'
 
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
@@ -130,7 +131,7 @@ export abstract class Vm {
     core.debug(this.command.join(' '))
     this.vmProcess = spawn('sudo', this.command, {
       detached: false,
-      stdio: ['ignore', 'inherit', 'inherit']
+      stdio: this.stdio
     })
 
     if (this.vmProcess.exitCode) {
@@ -224,6 +225,10 @@ export abstract class Vm {
 
   protected async getIpAddress(): Promise<string> {
     throw Error('Not implemented')
+  }
+
+  protected get stdio(): StdioOptions {
+    return ['ignore', 'inherit', 'inherit']
   }
 
   protected abstract get command(): string[]

@@ -1,4 +1,5 @@
 import NetBsd from '../../../src/operating_systems/netbsd/netbsd'
+import NetBsdVax from '../../../src/operating_systems/netbsd/vax'
 import * as hostModule from '../../../src/host'
 import * as arch from '../../../src/architectures/factory'
 import * as archKind from '../../../src/architectures/kind'
@@ -7,6 +8,7 @@ import HostQemu from '../../../src/host_qemu'
 import * as hypervisor from '../../../src/hypervisor'
 import * as qemu from '../../../src/qemu_vm'
 import * as netbsdQemuVm from '../../../src/operating_systems/netbsd/qemu_vm'
+import * as netbsdSimhVm from '../../../src/operating_systems/netbsd/simh_vm'
 import {Input} from '../../../src/action/input'
 
 describe('NetBSD OperatingSystem', () => {
@@ -82,6 +84,56 @@ describe('NetBSD OperatingSystem', () => {
           firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`
         }
       )
+    })
+
+    describe('VAX architecture', () => {
+      let vaxArchitecture = arch.create(
+        archKind.Kind.vax,
+        host,
+        osKind,
+        host.hypervisor
+      )
+      let netbsdVax = new NetBsdVax(vaxArchitecture, '0.0.0')
+
+      it('does not require an SSH key', () => {
+        expect(netbsdVax.requiresSshKey).toBe(false)
+      })
+
+      // The base class derives the name from the class name, which would send
+      // the download to a `netbsdvax-builder` repository that doesn't exist.
+      it('downloads its image from the NetBSD builder', () => {
+        expect(netbsdVax.virtualMachineImageUrl).toEqual(
+          'https://github.com/cross-platform-actions/netbsd-builder/releases/' +
+            `download/${netbsdVax.virtualMachineImageReleaseVersion}/` +
+            'netbsd-0.0.0-vax.img.zst'
+        )
+      })
+
+      it('creates a SIMH virtual machine', () => {
+        let simhVmSpy = spyOn(netbsdSimhVm, 'Vm')
+
+        netbsdVax.createVirtualMachine(
+          hypervisorDirectory,
+          resourcesDirectory,
+          firmwareDirectory,
+          input,
+          config
+        )
+
+        expect(simhVmSpy).toHaveBeenCalledOnceWith(
+          hypervisorDirectory,
+          resourcesDirectory,
+          vaxArchitecture,
+          input,
+          {
+            ...config,
+            ssHostPort: 2847,
+            cpu: 'ka655x',
+            machineType: 'microvax3900',
+            firmware: firmwareDirectory
+          }
+        )
+      })
     })
   })
 })

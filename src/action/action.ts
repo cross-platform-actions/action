@@ -73,7 +73,10 @@ export class Action {
       runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath)
     )
 
-    const hypervisorDirectory = path.join(firmwareDirectory, 'bin')
+    const hypervisorDirectory = path.join(
+      firmwareDirectory,
+      this.operatingSystem.hypervisor.binaryDirectory
+    )
     const excludes = [
       resourcesArchivePath,
       resourcesDirectory,
@@ -100,7 +103,7 @@ export class Action {
     try {
       await implementation.run()
       implementation.configSSH(vm.ipAddress)
-      await implementation.wait(240)
+      await implementation.wait(this.operatingSystem.sshReadyTimeout)
       await implementation.setupWorkDirectory(
         vm.homeDirectory,
         vm.workDirectory
@@ -190,6 +193,8 @@ export class Action {
   }
 
   private async setupSSHKey(): Promise<void> {
+    if (!this.operatingSystem.requiresSshKey) return
+
     const mountPath = this.resourceDisk.create()
     await exec.exec('ssh-keygen', [
       '-t',
@@ -465,7 +470,7 @@ class InitialImplementation implements Implementation {
     core.debug('Configuring SSH')
 
     this.createSSHConfig()
-    this.setupAuthorizedKeys()
+    if (this.operatingSystem.requiresSshKey) this.setupAuthorizedKeys()
     this.setupHostname(ipAddress)
   }
 
@@ -494,6 +499,9 @@ class InitialImplementation implements Implementation {
       synchronizer.synchronizePathsCommand(...syncExcludes)
     )
     const toRunner = commandToShellString(synchronizer.synchronizeBackCommand())
+    const rebootGuard = this.operatingSystem.supportsReboot
+      ? ''
+      : '  echo "Rebooting the VM is not supported for this VM" >&2\n  exit 1\n'
 
     const postSyncToVm = this.vm.postSyncToVmCommand
     const postSyncToVmLine = postSyncToVm
@@ -575,7 +583,7 @@ guest_crashed() {
 }
 
 do_reboot() {
-  # Only console output produced from here on describes this reboot. Anything
+${rebootGuard}  # Only console output produced from here on describes this reboot. Anything
   # before it belongs to a boot the VM already recovered from.
   console_log_offset=$(sudo wc -c '${consoleLog}' 2>/dev/null | awk '{print $1; exit}')
   : "\${console_log_offset:=0}"
@@ -743,14 +751,20 @@ fi
     if (!fs.existsSync(this.sshDirectory))
       fs.mkdirSync(this.sshDirectory, {recursive: true, mode: 0o700})
 
+    // The images that don't use a generated key (NetBSD VAX) give the user an
+    // empty password instead, which sshd's keyboard-interactive method accepts
+    // without sending a prompt. That needs no configuration of its own: the
+    // key is simply never offered, since IdentityFile then names a file that
+    // was never generated, and PasswordAuthentication doesn't cover
+    // keyboard-interactive.
     const lines = [
       'StrictHostKeyChecking=accept-new',
       `Host ${this.cpaHost}`,
       `Port ${this.operatingSystem.ssHostPort}`,
       `IdentityFile ${this.privateSshKey}`,
+      'PasswordAuthentication no',
       'SendEnv CI GITHUB_*',
       this.customSendEnv,
-      'PasswordAuthentication no',
       // Bounds how long a single SSH connection attempt can block. The
       // remaining budget also covers the exchange of the identification
       // strings, which is where a connection to a VM that failed to boot

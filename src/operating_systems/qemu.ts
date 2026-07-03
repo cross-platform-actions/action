@@ -7,7 +7,6 @@ import * as vmModule from '../vm'
 import * as os from '../operating_system'
 import {Input} from '../action/input'
 import {Class} from '../utility'
-import {Vm as QemuVm} from '../qemu_vm'
 
 import {
   Hypervisor,
@@ -16,7 +15,7 @@ import {
 } from '../hypervisor'
 
 export abstract class Qemu extends os.OperatingSystem {
-  abstract get vmClass(): Class<QemuVm>
+  abstract get vmClass(): Class<vmModule.Vm>
 
   get hypervisorUrl(): string {
     return this.architecture.resourceUrl

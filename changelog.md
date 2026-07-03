@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for FreeBSD on RISC-V 64 (`riscv64`)
+- Add support for NetBSD on VAX, running on the SIMH simulator
 
 ### Changed
 - OpenBSD on ARM64 now boots with the same EDK II UEFI firmware (`uefi.fd`) as

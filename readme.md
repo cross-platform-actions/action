@@ -308,13 +308,26 @@ operating system will list which versions are supported.
 
 ### [NetBSD][netbsd_builder] (`netbsd`)
 
-| Version | x86-64 | arm64 |
-|---------|--------|-------|
-| 10.1    | ✅     | ✅    |
-| 10.0    | ✅     | ✅    |
-| 9.4     | ✅     | ❌    |
-| 9.3     | ✅     | ❌    |
-| 9.2     | ✅     | ❌    |
+| Version | x86-64 | arm64 | vax   |
+|---------|--------|-------|-------|
+| 10.1    | ✅     | ✅    | ✅    |
+| 10.0    | ✅     | ✅    | ❌    |
+| 9.4     | ✅     | ❌    | ❌    |
+| 9.3     | ✅     | ❌    | ❌    |
+| 9.2     | ✅     | ❌    | ❌    |
+
+Note, the VAX architecture runs on the [SIMH][simh_builder] simulator
+(MicroVAX 3900) instead of QEMU and comes with a couple of limitations:
+
+* The MicroVAX 3900 supports at most 512 MB of memory and a single CPU. The
+    `memory` input is rounded down to the largest supported size
+    (16M, 32M, 64M, 128M, 256M or 512M) and the `cpu_count` input is ignored.
+* The emulated VAX is slow; it takes several minutes to boot before the VM
+    becomes reachable.
+* Rebooting the VM (`cpa.sh --reboot`) is not supported: the emulated KA655
+    firmware self-test is unreliable when the machine is restarted inside the
+    same simulator process.
+* The X11 sets are not installed on VAX due to the lack of a display.
 
 ### [DragonFly BSD][dragonflybsd_builder] (`dragonflybsd`)
 
@@ -354,6 +367,7 @@ operating systems, see the sections for each operating system above.
 | Architecture | Aliases         |
 |--------------|-----------------|
 | `arm64`      | `aarch64`       |
+| `vax`        |                 |
 | `x86-64`     | `x86_64`, `x64` |
 | `riscv64`    | `riscv`, `rv64` |
 
@@ -365,6 +379,8 @@ which runners they can run on.
 | Hypervisor | Linux Runner | FreeBSD | OpenBSD | Other Platforms |
 |------------|--------------|---------|---------|-----------------|
 | `qemu`     | ✅           | ✅      | ✅      | ✅             |
+
+The VAX architecture always runs on the [SIMH][simh_builder] simulator.
 
 ### Runners
 
@@ -735,6 +751,7 @@ files within the [`test/http`](test/http) are ignore by Git.
 [openbsd_builder]: https://github.com/cross-platform-actions/openbsd-builder
 [freebsd_builder]: https://github.com/cross-platform-actions/freebsd-builder
 [netbsd_builder]: https://github.com/cross-platform-actions/netbsd-builder
+[simh_builder]: https://github.com/cross-platform-actions/simh-builder
 [haiku_builder]: https://github.com/cross-platform-actions/haiku-builder
 [dragonflybsd_builder]: https://github.com/cross-platform-actions/dragonflybsd-builder
 [midnightbsd_builder]: https://github.com/cross-platform-actions/midnightbsd-builder

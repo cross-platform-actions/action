@@ -69,6 +69,18 @@ export abstract class OperatingSystem {
     return this.constructor.name.toLocaleLowerCase()
   }
 
+  // The number of seconds to wait for the VM to become reachable via SSH.
+  get sshReadyTimeout(): number {
+    return 240
+  }
+
+  // Whether the action generates an SSH key and installs it via the resources
+  // disk. When false neither is created, and the image is expected to let its
+  // user in without a credential.
+  get requiresSshKey(): boolean {
+    return true
+  }
+
   get rebootCommand(): string {
     return 'sudo reboot'
   }
@@ -79,6 +91,11 @@ export abstract class OperatingSystem {
   // on illumos, by the CPU that panicked.
   get consoleCrashPattern(): string {
     return '^[[:space:]]*(PANIC|panic)(:|\\[)'
+  }
+
+  // Whether the VM can be rebooted from within (`cpa.sh --reboot`).
+  get supportsReboot(): boolean {
+    return true
   }
 
   abstract createVirtualMachine(
@@ -107,9 +124,14 @@ export abstract class OperatingSystem {
     ])
   }
 
+  protected get imageFileExtension(): string {
+    return 'qcow2'
+  }
+
   private get imageName(): string {
     const encodedVersion = encodeURIComponent(this.version)
-    return `${this.name}-${encodedVersion}-${this.architecture.name}.qcow2`
+    const components = [this.name, encodedVersion, this.architecture.name]
+    return `${components.join('-')}.${this.imageFileExtension}`
   }
 }
 

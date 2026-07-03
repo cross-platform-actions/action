@@ -15,3 +15,9 @@ else if (statSync(logFile).size === 0)
       'The guest might not have its console attached to the serial port.'
   )
 else spawnSync('sudo', ['cat', logFile], {stdio: 'inherit'})
+
+// The SIMH simulator (used by the VAX guest) writes its own console log.
+const simhLogFile = '/tmp/cross-platform-actions-simh.log'
+
+if (existsSync(simhLogFile))
+  spawnSync('sudo', ['cat', simhLogFile], {stdio: 'inherit'})
