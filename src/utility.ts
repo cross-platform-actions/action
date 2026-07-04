@@ -1,6 +1,11 @@
 import * as exec from '@actions/exec'
 import * as core from '@actions/core'
 
+// `any[]` is required here: this generic constructor type backs a
+// heterogeneous class registry whose implementations have differing
+// constructor parameters, and both `unknown[]` and `never[]` break either
+// the registry assignments or the `new cls(...)` call sites.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Class<T> = new (...args: any[]) => T
 
 export interface ExecuteOptions {

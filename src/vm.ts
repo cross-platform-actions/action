@@ -73,14 +73,14 @@ export abstract class Vm {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     hypervisorBinary: fs.PathLike,
-    architecture: architecture.Architecture,
+    arch: architecture.Architecture,
     input: Input,
     configuration: vm.Configuration,
     executor: Executor = new ExecExecutor()
   ) {
     this.hypervisorDirectory = hypervisorDirectory
     this.resourcesDirectory = resourcesDirectory
-    this.architecture = architecture
+    this.architecture = arch
     this.input = input
     this.configuration = configuration
     this.hypervisorPath = path.join(
@@ -120,7 +120,7 @@ export abstract class Vm {
   }
 
   async run(): Promise<void> {
-    core.info('Booting VM of type: ' + this.constructor.name)
+    core.info(`Booting VM of type: ${this.constructor.name}`)
     core.debug(this.command.join(' '))
     this.vmProcess = spawn('sudo', this.command, {
       detached: false,

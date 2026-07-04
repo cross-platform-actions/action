@@ -1,4 +1,5 @@
 {
+    "root": true,
     "plugins": ["jasmine", "@typescript-eslint"],
     "extends": ["plugin:github/recommended", "plugin:jasmine/recommended"],
     "parser": "@typescript-eslint/parser",

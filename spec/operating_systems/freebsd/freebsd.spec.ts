@@ -1,7 +1,6 @@
 import {basename} from 'path'
 
 import FreeBsd from '../../../src/operating_systems/freebsd/freebsd'
-import hostModule from '../../../src/host'
 import * as arch from '../../../src/architecture'
 import * as os from '../../../src/operating_systems/kind'
 import {Input} from '../../../src/action/input'
@@ -26,10 +25,6 @@ describe('FreeBSD OperatingSystem', () => {
   }
 
   describe('createVirtualMachine', () => {
-    beforeEach(() => {
-      spyOnProperty(hostModule, 'host').and.returnValue(host)
-    })
-
     it('creates a virtual machine with the correct configuration', () => {
       const vm = freebsd.createVirtualMachine(
         hypervisorDirectory,

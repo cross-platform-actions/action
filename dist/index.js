@@ -688,7 +688,7 @@ const host_1 = __nccwpck_require__(8215);
 const sync_direction_1 = __nccwpck_require__(3377);
 const crypto_1 = __nccwpck_require__(6113);
 class Input {
-    constructor(host = host_1.host) {
+    constructor(host = (0, host_1.host)()) {
         this.host = host;
     }
     get version() {
@@ -924,20 +924,20 @@ var Kind;
     Kind[Kind["x86_64"] = 1] = "x86_64";
 })(Kind = exports.Kind || (exports.Kind = {}));
 class Architecture {
-    constructor(kind, host, hypervisor) {
+    constructor(kind, host, selectedHypervisor) {
         this.resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
         this.kind = kind;
         this.host = host;
-        this.selectedHypervisor = hypervisor;
+        this.selectedHypervisor = selectedHypervisor;
     }
-    static for(kind, host, operating_system, hypervisor) {
+    static for(kind, host, operating_system, selectedHypervisor) {
         if (operating_system.is(openbsd_1.default)) {
-            if (kind == Kind.x86_64)
-                return new Architecture.X86_64OpenBsd(kind, host, hypervisor);
-            else if (kind == Kind.arm64)
-                return new Architecture.Arm64OpenBsd(kind, host, hypervisor);
+            if (kind === Kind.x86_64)
+                return new Architecture.X86_64OpenBsd(kind, host, selectedHypervisor);
+            else if (kind === Kind.arm64)
+                return new Architecture.Arm64OpenBsd(kind, host, selectedHypervisor);
         }
-        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host, hypervisor);
+        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host, selectedHypervisor);
     }
     get networkDevice() {
         return 'virtio-net';
@@ -1056,7 +1056,7 @@ const architectureMap = {
 /***/ }),
 
 /***/ 8215:
-/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -1082,58 +1082,57 @@ var __importStar = (this && this.__importStar) || function (mod) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.host = exports.Host = void 0;
 const process = __importStar(__nccwpck_require__(7282));
 const host_qemu_1 = __importDefault(__nccwpck_require__(9097));
 const hypervisor = __importStar(__nccwpck_require__(4288));
 const qemu = __importStar(__nccwpck_require__(1106));
 const utility_1 = __nccwpck_require__(2857);
-class Module {
-    static get host() {
-        return this.host_ ? this.host_ : (this.host_ = Module.Host.create());
+class Host {
+    static create(platform = process.platform) {
+        switch (platform) {
+            case 'linux':
+                return new Linux();
+            default:
+                throw Error(`Unhandled host platform: ${platform}`);
+        }
+    }
+    resolve(implementation) {
+        return (0, utility_1.getImplementation)(this, implementation);
+    }
+    toString() {
+        return this.constructor.name.toLocaleLowerCase();
     }
 }
-// The reason for this namesapce is to allow a global getter (`host`, see above).
-// See https://stackoverflow.com/questions/28834873/getter-setter-on-a-module-in-typescript
-(function (Module) {
-    class Host {
-        static create(platform = process.platform) {
-            switch (platform) {
-                case 'linux':
-                    return new Linux();
-                default:
-                    throw Error(`Unhandled host platform: ${platform}`);
-            }
-        }
-        resolve(implementation) {
-            return (0, utility_1.getImplementation)(this, implementation);
-        }
-        toString() {
-            return this.constructor.name.toLocaleLowerCase();
-        }
+exports.Host = Host;
+class Linux extends Host {
+    get vmModule() {
+        return qemu;
     }
-    Module.Host = Host;
-    class Linux extends Host {
-        get vmModule() {
-            return qemu;
-        }
-        get qemu() {
-            return new host_qemu_1.default.LinuxHostQemu();
-        }
-        get hypervisor() {
-            return new hypervisor.Qemu();
-        }
-        get efiHypervisor() {
-            return new hypervisor.QemuEfi();
-        }
-        get defaultMemory() {
-            return '6G';
-        }
-        get defaultCpuCount() {
-            return 2;
-        }
+    get qemu() {
+        return new host_qemu_1.default.LinuxHostQemu();
     }
-})(Module || (Module = {}));
-module.exports = Module;
+    get hypervisor() {
+        return new hypervisor.Qemu();
+    }
+    get efiHypervisor() {
+        return new hypervisor.QemuEfi();
+    }
+    get defaultMemory() {
+        return '6G';
+    }
+    get defaultCpuCount() {
+        return 2;
+    }
+}
+// Lazily created so that the host platform is only resolved on demand,
+// which keeps merely importing this module side-effect free.
+let host_;
+function host() {
+    return (host_ !== null && host_ !== void 0 ? host_ : (host_ = Host.create()));
+}
+exports.host = host;
 //# sourceMappingURL=host.js.map
 
 /***/ }),
@@ -1444,12 +1443,6 @@ exports["default"] = DragonFlyBsd;
 
 "use strict";
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -1457,17 +1450,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const factory_1 = __nccwpck_require__(133);
 const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
 const dragonflybsd_1 = __importDefault(__nccwpck_require__(9966));
-let DragonFlyBsdFactory = 
-//@ts-ignore
-class DragonFlyBsdFactory extends qemu_factory_1.default {
+(0, factory_1.factory)(class DragonFlyBsdFactory extends qemu_factory_1.default {
     createImpl(version) {
         return new dragonflybsd_1.default(this.architecture, version);
     }
-};
-DragonFlyBsdFactory = __decorate([
-    factory_1.factory
-    //@ts-ignore
-], DragonFlyBsdFactory);
+});
 //# sourceMappingURL=factory.js.map
 
 /***/ }),
@@ -1574,32 +1561,20 @@ const factories = new Map();
 
 "use strict";
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const factory_1 = __nccwpck_require__(133);
 const freebsd_1 = __importDefault(__nccwpck_require__(791));
-let FreeBsdFactory = 
-//@ts-ignore
-class FreeBsdFactory extends factory_1.Factory {
+(0, factory_1.factory)(class FreeBsdFactory extends factory_1.Factory {
     createImpl(version) {
         return new freebsd_1.default(this.architecture, version);
     }
     validateHypervisor(kind) {
         this.architecture.validateHypervisor(kind);
     }
-};
-FreeBsdFactory = __decorate([
-    factory_1.factory
-    //@ts-ignore
-], FreeBsdFactory);
+});
 //# sourceMappingURL=factory.js.map
 
 /***/ }),
@@ -1704,12 +1679,6 @@ exports.QemuVm = QemuVm;
 
 "use strict";
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -1717,17 +1686,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const factory_1 = __nccwpck_require__(133);
 const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
 const haiku_1 = __importDefault(__nccwpck_require__(70));
-let HaikuFactory = 
-//@ts-ignore
-class HaikuFactory extends qemu_factory_1.default {
+(0, factory_1.factory)(class HaikuFactory extends qemu_factory_1.default {
     createImpl(version) {
         return new haiku_1.default(this.architecture, version);
     }
-};
-HaikuFactory = __decorate([
-    factory_1.factory
-    //@ts-ignore
-], HaikuFactory);
+});
 //# sourceMappingURL=factory.js.map
 
 /***/ }),
@@ -1900,12 +1863,6 @@ exports.Kind = Kind;
 
 "use strict";
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -1913,17 +1870,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const factory_1 = __nccwpck_require__(133);
 const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
 const midnightbsd_1 = __importDefault(__nccwpck_require__(6775));
-let MidnightBsdFactory = 
-//@ts-ignore
-class MidnightBsdFactory extends qemu_factory_1.default {
+(0, factory_1.factory)(class MidnightBsdFactory extends qemu_factory_1.default {
     createImpl(version) {
         return new midnightbsd_1.default(this.architecture, version);
     }
-};
-MidnightBsdFactory = __decorate([
-    factory_1.factory
-    //@ts-ignore
-], MidnightBsdFactory);
+});
 //# sourceMappingURL=factory.js.map
 
 /***/ }),
@@ -2014,12 +1965,6 @@ exports.Vm = Vm;
 
 "use strict";
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -2027,17 +1972,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const factory_1 = __nccwpck_require__(133);
 const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
 const netbsd_1 = __importDefault(__nccwpck_require__(7372));
-let NetBsdFactory = 
-//@ts-ignore
-class NetBsdFactory extends qemu_factory_1.default {
+(0, factory_1.factory)(class NetBsdFactory extends qemu_factory_1.default {
     createImpl(version) {
         return new netbsd_1.default(this.architecture, version);
     }
-};
-NetBsdFactory = __decorate([
-    factory_1.factory
-    //@ts-ignore
-], NetBsdFactory);
+});
 //# sourceMappingURL=factory.js.map
 
 /***/ }),
@@ -2122,12 +2061,6 @@ exports.Vm = Vm;
 
 "use strict";
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -2135,17 +2068,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const factory_1 = __nccwpck_require__(133);
 const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
 const omnios_1 = __importDefault(__nccwpck_require__(6090));
-let OmniOsFactory = 
-//@ts-ignore
-class OmniOsFactory extends qemu_factory_1.default {
+(0, factory_1.factory)(class OmniOsFactory extends qemu_factory_1.default {
     createImpl(version) {
         return new omnios_1.default(this.architecture, version);
     }
-};
-OmniOsFactory = __decorate([
-    factory_1.factory
-    //@ts-ignore
-], OmniOsFactory);
+});
 //# sourceMappingURL=factory.js.map
 
 /***/ }),
@@ -2231,32 +2158,20 @@ exports.Vm = Vm;
 
 "use strict";
 
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const factory_1 = __nccwpck_require__(133);
 const openbsd_1 = __importDefault(__nccwpck_require__(9243));
-let OpenBsdFactory = 
-//@ts-ignore
-class OpenBsdFactory extends factory_1.Factory {
-    createImpl(version, _hypervisor) {
+(0, factory_1.factory)(class OpenBsdFactory extends factory_1.Factory {
+    createImpl(version) {
         return new openbsd_1.default(this.architecture, version);
     }
     validateHypervisor(kind) {
         this.architecture.validateHypervisor(kind);
     }
-};
-OpenBsdFactory = __decorate([
-    factory_1.factory
-    //@ts-ignore
-], OpenBsdFactory);
+});
 //# sourceMappingURL=factory.js.map
 
 /***/ }),
@@ -2512,8 +2427,8 @@ exports.resolve = exports.Vm = void 0;
 const utility_1 = __nccwpck_require__(2857);
 const vm = __importStar(__nccwpck_require__(2772));
 class Vm extends vm.Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, architecture, input, configuration, executor = new utility_1.ExecExecutor()) {
-        super(hypervisorDirectory, resourcesDirectory, 'qemu', architecture, input, configuration, executor);
+    constructor(hypervisorDirectory, resourcesDirectory, arch, input, configuration, executor = new utility_1.ExecExecutor()) {
+        super(hypervisorDirectory, resourcesDirectory, 'qemu', arch, input, configuration, executor);
     }
     getIpAddress() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -2956,12 +2871,12 @@ class LiveProcess {
     }
 }
 class Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, architecture, input, configuration, executor = new utility_1.ExecExecutor()) {
+    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, arch, input, configuration, executor = new utility_1.ExecExecutor()) {
         this.logFile = '/tmp/cross-platform-actions.log';
         this.vmProcess = new LiveProcess();
         this.hypervisorDirectory = hypervisorDirectory;
         this.resourcesDirectory = resourcesDirectory;
-        this.architecture = architecture;
+        this.architecture = arch;
         this.input = input;
         this.configuration = configuration;
         this.hypervisorPath = path.join(hypervisorDirectory.toString(), hypervisorBinary.toString());
@@ -2997,7 +2912,7 @@ class Vm {
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
-            core.info('Booting VM of type: ' + this.constructor.name);
+            core.info(`Booting VM of type: ${this.constructor.name}`);
             core.debug(this.command.join(' '));
             this.vmProcess = (0, child_process_1.spawn)('sudo', this.command, {
                 detached: false,

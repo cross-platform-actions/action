@@ -26,7 +26,7 @@ export class Input {
   private syncDirection_?: SyncDirection
   private shutdownVm_?: boolean
 
-  constructor(host: Host = defaultHost) {
+  constructor(host: Host = defaultHost()) {
     this.host = host
   }
 

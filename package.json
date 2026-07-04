@@ -8,7 +8,7 @@
     "build": "tsc",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint 'src/**/*.ts'",
     "package": "npm run package:main && npm run package:post",
     "package:main": "ncc build --source-map --license licenses.txt",
     "package:post": "cp post/main.mjs dist/post.mjs",

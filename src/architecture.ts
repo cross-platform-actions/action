@@ -19,29 +19,33 @@ export abstract class Architecture {
 
   private selectedHypervisor: hypervisor.Hypervisor
 
-  constructor(kind: Kind, host: Host, hypervisor: hypervisor.Hypervisor) {
+  constructor(
+    kind: Kind,
+    host: Host,
+    selectedHypervisor: hypervisor.Hypervisor
+  ) {
     this.kind = kind
     this.host = host
-    this.selectedHypervisor = hypervisor
+    this.selectedHypervisor = selectedHypervisor
   }
 
   static for(
     kind: Kind,
     host: Host,
     operating_system: os.Kind,
-    hypervisor: hypervisor.Hypervisor
+    selectedHypervisor: hypervisor.Hypervisor
   ): Architecture {
     if (operating_system.is(OpenBsd)) {
-      if (kind == Kind.x86_64)
-        return new Architecture.X86_64OpenBsd(kind, host, hypervisor)
-      else if (kind == Kind.arm64)
-        return new Architecture.Arm64OpenBsd(kind, host, hypervisor)
+      if (kind === Kind.x86_64)
+        return new Architecture.X86_64OpenBsd(kind, host, selectedHypervisor)
+      else if (kind === Kind.arm64)
+        return new Architecture.Arm64OpenBsd(kind, host, selectedHypervisor)
     }
 
     return new (getOrThrow(Architecture.architectureMap, kind))(
       kind,
       host,
-      hypervisor
+      selectedHypervisor
     )
   }
 
