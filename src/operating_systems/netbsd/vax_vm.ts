@@ -1,4 +1,5 @@
 import * as fs from 'fs'
+import * as path from 'path'
 
 import * as core from '@actions/core'
 
@@ -40,6 +41,10 @@ export class Vm extends simh_vm.Vm {
   }
 
   protected get machineCommands(): string[] {
+    const resources = this.resourcesDirectory.toString()
+    const scratch1 = path.join(resources, 'scratch1.img')
+    const scratch2 = path.join(resources, 'scratch2.img')
+
     // The disk image is a raw SIMH disk (RA92), which is SIMH's default
     // format, so no `set rq0 format` command is needed.
     return [
@@ -48,11 +53,19 @@ export class Vm extends simh_vm.Vm {
       'set cpu idle=NETBSD',
       'set rq0 ra92',
       `attach rq0 ${this.configuration.diskImage}`,
-      // No resources disk: NetBSD VAX has no working msdosfs to mount it, and
-      // password authentication means no key needs to be delivered. Disable
-      // the unused disk units so NetBSD doesn't register phantom devices.
-      'set rq1 disable',
-      'set rq2 disable',
+      // Two scratch disks (RQ1/RQ2) at the MSCP RAUSER maximum of 2047 MB
+      // each — the largest a single VAX disk can be. The 1.5 GB root image
+      // is far too small to fetch pkgsrc and build packages, so consumers
+      // that need to (e.g. building binary packages) can newfs and mount
+      // these for the tree and the build work directory. They're created
+      // fresh — SIMH zero-fills them on attach — and cost nothing when
+      // unused (sparse, never written). No resources disk is attached:
+      // NetBSD VAX has no working msdosfs to mount it, and password
+      // authentication means no key needs to be delivered.
+      'set rq1 rauser=2047',
+      `attach rq1 ${scratch1}`,
+      'set rq2 rauser=2047',
+      `attach rq2 ${scratch2}`,
       'set rq3 disable',
       `attach xq nat:tcp=${this.configuration.ssHostPort}:10.0.2.15:22`
     ]

@@ -5,7 +5,7 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
 import NetBsd from './netbsd'
-import * as simh_vm from './simh_vm'
+import * as vax_vm from './vax_vm'
 import {Class} from '../../utility'
 import * as vm from '../../vm'
 import {Hypervisor, Simh as SimhHypervisor} from '../../hypervisor'
@@ -14,7 +14,7 @@ import {Hypervisor, Simh as SimhHypervisor} from '../../hypervisor'
 // the SIMH simulator instead of QEMU, which drives every difference below.
 export default class NetBsdVax extends NetBsd {
   override get vmClass(): Class<vm.Vm> {
-    return simh_vm.Vm
+    return vax_vm.Vm
   }
 
   override get hypervisor(): Hypervisor {

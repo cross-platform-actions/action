@@ -1,19 +1,20 @@
-import {Vm} from '../../../src/operating_systems/netbsd/simh_vm'
-import * as arch from '../../../src/architecture'
+import {Vm} from '../../../src/operating_systems/netbsd/vax_vm'
+import * as arch from '../../../src/architectures/factory'
+import * as archKind from '../../../src/architectures/kind'
 import {Host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
 import '../../../src/operating_systems/netbsd/netbsd'
 import {Input} from '../../../src/action/input'
 
-describe('NetBSD SimhVm', () => {
+describe('NetBSD VaxVm', () => {
   let memory = '5G'
   let cpuCount = 10
   let ssHostPort = 1234
 
   let host = Host.create('linux')
   let osKind = os.Kind.for('netbsd')
-  let architecture = arch.Architecture.for(
-    arch.Kind.vax,
+  let architecture = arch.create(
+    archKind.Kind.vax,
     host,
     osKind,
     host.hypervisor
@@ -75,9 +76,15 @@ describe('NetBSD SimhVm', () => {
       expect(vm.configurationFile).not.toContain('attach nvr')
     })
 
-    it('disables the unused disk units', () => {
-      expect(configurationLines()).toContain('set rq1 disable')
-      expect(configurationLines()).toContain('set rq2 disable')
+    it('attaches two scratch disks and disables the remaining unit', () => {
+      expect(configurationLines()).toContain('set rq1 rauser=2047')
+      expect(configurationLines()).toContain(
+        'attach rq1 /resources/scratch1.img'
+      )
+      expect(configurationLines()).toContain('set rq2 rauser=2047')
+      expect(configurationLines()).toContain(
+        'attach rq2 /resources/scratch2.img'
+      )
       expect(configurationLines()).toContain('set rq3 disable')
     })
 

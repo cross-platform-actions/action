@@ -8,7 +8,7 @@ import HostQemu from '../../../src/host_qemu'
 import * as hypervisor from '../../../src/hypervisor'
 import * as qemu from '../../../src/qemu_vm'
 import * as netbsdQemuVm from '../../../src/operating_systems/netbsd/qemu_vm'
-import * as netbsdSimhVm from '../../../src/operating_systems/netbsd/simh_vm'
+import * as netbsdVaxVm from '../../../src/operating_systems/netbsd/vax_vm'
 import {Input} from '../../../src/action/input'
 
 describe('NetBSD OperatingSystem', () => {
@@ -110,7 +110,7 @@ describe('NetBSD OperatingSystem', () => {
       })
 
       it('creates a SIMH virtual machine', () => {
-        let simhVmSpy = spyOn(netbsdSimhVm, 'Vm')
+        let vaxVmSpy = spyOn(netbsdVaxVm, 'Vm')
 
         netbsdVax.createVirtualMachine(
           hypervisorDirectory,
@@ -120,7 +120,7 @@ describe('NetBSD OperatingSystem', () => {
           config
         )
 
-        expect(simhVmSpy).toHaveBeenCalledOnceWith(
+        expect(vaxVmSpy).toHaveBeenCalledOnceWith(
           hypervisorDirectory,
           resourcesDirectory,
           vaxArchitecture,

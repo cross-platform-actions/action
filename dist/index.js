@@ -2597,102 +2597,6 @@ exports.Vm = Vm;
 
 /***/ }),
 
-/***/ 1285:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Vm = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const simh_vm = __importStar(__nccwpck_require__(4055));
-const utility_1 = __nccwpck_require__(2857);
-// The memory sizes, in megabytes, supported by the emulated
-// MicroVAX 3900 (KA655/KA655X), largest first.
-const supportedMemorySizes = [512, 256, 128, 64, 32, 16];
-class Vm extends simh_vm.Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, arch, input, configuration, executor = new utility_1.ExecExecutor()) {
-        super(hypervisorDirectory, resourcesDirectory, 'vax', arch, input, configuration, executor);
-    }
-    // The KA655 firmware doesn't auto boot, it stops at the `>>>` console
-    // prompt after the self-test. Drive it with a boot command for the
-    // system disk (RQ0, which the firmware calls DUA0).
-    get bootCommands() {
-        return ['expect ">>>" send "BOOT DUA0\\r"; continue', ...super.bootCommands];
-    }
-    get machineCommands() {
-        // The disk image is a raw SIMH disk (RA92), which is SIMH's default
-        // format, so no `set rq0 format` command is needed.
-        return [
-            `set cpu ${this.memory}`,
-            'set cpu simhalt',
-            'set cpu idle=NETBSD',
-            'set rq0 ra92',
-            `attach rq0 ${this.configuration.diskImage}`,
-            // No resources disk: NetBSD VAX has no working msdosfs to mount it, and
-            // password authentication means no key needs to be delivered. Disable
-            // the unused disk units so NetBSD doesn't register phantom devices.
-            'set rq1 disable',
-            'set rq2 disable',
-            'set rq3 disable',
-            `attach xq nat:tcp=${this.configuration.ssHostPort}:10.0.2.15:22`
-        ];
-    }
-    get memory() {
-        const requested = this.memoryInMegaBytes;
-        const size = supportedMemorySizes.find(e => e <= requested);
-        if (size === undefined) {
-            throw Error(`Invalid memory: ${this.configuration.memory}. ` +
-                'NetBSD VAX requires at least 16M of memory');
-        }
-        if (size !== requested) {
-            core.info(`Using ${size}M of memory, the largest size supported by the ` +
-                `MicroVAX 3900 that fits within ${this.configuration.memory}`);
-        }
-        return `${size}M`;
-    }
-    // Accepts the same shapes as QEMU's `-m` (used by the other
-    // architectures): an integer or fractional number with an optional
-    // k/m/g/t suffix, defaulting to megabytes.
-    get memoryInMegaBytes() {
-        const memory = this.configuration.memory.trim();
-        const match = /^(\d+(?:\.\d+)?)([kmgt]?)$/i.exec(memory);
-        if (!match)
-            throw Error(`Invalid memory: ${this.configuration.memory}`);
-        const multipliers = {
-            k: 1 / 1024,
-            '': 1,
-            m: 1,
-            g: 1024,
-            t: 1024 * 1024
-        };
-        return parseFloat(match[1]) * multipliers[match[2].toLowerCase()];
-    }
-}
-exports.Vm = Vm;
-//# sourceMappingURL=simh_vm.js.map
-
-/***/ }),
-
 /***/ 9349:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -2734,13 +2638,13 @@ const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const netbsd_1 = __importDefault(__nccwpck_require__(7372));
-const simh_vm = __importStar(__nccwpck_require__(1285));
+const vax_vm = __importStar(__nccwpck_require__(2402));
 const hypervisor_1 = __nccwpck_require__(4288);
 // NetBSD on the VAX architecture. Unlike the other architectures it runs on
 // the SIMH simulator instead of QEMU, which drives every difference below.
 class NetBsdVax extends netbsd_1.default {
     get vmClass() {
-        return simh_vm.Vm;
+        return vax_vm.Vm;
     }
     get hypervisor() {
         return new hypervisor_1.Simh();
@@ -2783,6 +2687,114 @@ class NetBsdVax extends netbsd_1.default {
 }
 exports["default"] = NetBsdVax;
 //# sourceMappingURL=vax.js.map
+
+/***/ }),
+
+/***/ 2402:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Vm = void 0;
+const path = __importStar(__nccwpck_require__(1017));
+const core = __importStar(__nccwpck_require__(2186));
+const simh_vm = __importStar(__nccwpck_require__(4055));
+const utility_1 = __nccwpck_require__(2857);
+// The memory sizes, in megabytes, supported by the emulated
+// MicroVAX 3900 (KA655/KA655X), largest first.
+const supportedMemorySizes = [512, 256, 128, 64, 32, 16];
+class Vm extends simh_vm.Vm {
+    constructor(hypervisorDirectory, resourcesDirectory, arch, input, configuration, executor = new utility_1.ExecExecutor()) {
+        super(hypervisorDirectory, resourcesDirectory, 'vax', arch, input, configuration, executor);
+    }
+    // The KA655 firmware doesn't auto boot, it stops at the `>>>` console
+    // prompt after the self-test. Drive it with a boot command for the
+    // system disk (RQ0, which the firmware calls DUA0).
+    get bootCommands() {
+        return ['expect ">>>" send "BOOT DUA0\\r"; continue', ...super.bootCommands];
+    }
+    get machineCommands() {
+        const resources = this.resourcesDirectory.toString();
+        const scratch1 = path.join(resources, 'scratch1.img');
+        const scratch2 = path.join(resources, 'scratch2.img');
+        // The disk image is a raw SIMH disk (RA92), which is SIMH's default
+        // format, so no `set rq0 format` command is needed.
+        return [
+            `set cpu ${this.memory}`,
+            'set cpu simhalt',
+            'set cpu idle=NETBSD',
+            'set rq0 ra92',
+            `attach rq0 ${this.configuration.diskImage}`,
+            // Two scratch disks (RQ1/RQ2) at the MSCP RAUSER maximum of 2047 MB
+            // each — the largest a single VAX disk can be. The 1.5 GB root image
+            // is far too small to fetch pkgsrc and build packages, so consumers
+            // that need to (e.g. building binary packages) can newfs and mount
+            // these for the tree and the build work directory. They're created
+            // fresh — SIMH zero-fills them on attach — and cost nothing when
+            // unused (sparse, never written). No resources disk is attached:
+            // NetBSD VAX has no working msdosfs to mount it, and password
+            // authentication means no key needs to be delivered.
+            'set rq1 rauser=2047',
+            `attach rq1 ${scratch1}`,
+            'set rq2 rauser=2047',
+            `attach rq2 ${scratch2}`,
+            'set rq3 disable',
+            `attach xq nat:tcp=${this.configuration.ssHostPort}:10.0.2.15:22`
+        ];
+    }
+    get memory() {
+        const requested = this.memoryInMegaBytes;
+        const size = supportedMemorySizes.find(e => e <= requested);
+        if (size === undefined) {
+            throw Error(`Invalid memory: ${this.configuration.memory}. ` +
+                'NetBSD VAX requires at least 16M of memory');
+        }
+        if (size !== requested) {
+            core.info(`Using ${size}M of memory, the largest size supported by the ` +
+                `MicroVAX 3900 that fits within ${this.configuration.memory}`);
+        }
+        return `${size}M`;
+    }
+    // Accepts the same shapes as QEMU's `-m` (used by the other
+    // architectures): an integer or fractional number with an optional
+    // k/m/g/t suffix, defaulting to megabytes.
+    get memoryInMegaBytes() {
+        const memory = this.configuration.memory.trim();
+        const match = /^(\d+(?:\.\d+)?)([kmgt]?)$/i.exec(memory);
+        if (!match)
+            throw Error(`Invalid memory: ${this.configuration.memory}`);
+        const multipliers = {
+            k: 1 / 1024,
+            '': 1,
+            m: 1,
+            g: 1024,
+            t: 1024 * 1024
+        };
+        return parseFloat(match[1]) * multipliers[match[2].toLowerCase()];
+    }
+}
+exports.Vm = Vm;
+//# sourceMappingURL=vax_vm.js.map
 
 /***/ }),
 
@@ -3640,7 +3652,7 @@ const version = {
         freebsd: 'v0.16.0',
         haiku: 'v0.1.0',
         midnightbsd: 'v0.0.1',
-        netbsd: 'v0.7.0-rc4',
+        netbsd: 'v0.7.0',
         openbsd: 'v0.13.0',
         omnios: 'v0.2.0'
     },
