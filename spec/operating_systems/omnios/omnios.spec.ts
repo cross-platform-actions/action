@@ -1,6 +1,7 @@
 import OmniOs from '../../../src/operating_systems/omnios/omnios'
 import * as hostModule from '../../../src/host'
-import * as arch from '../../../src/architecture'
+import * as arch from '../../../src/architectures/factory'
+import * as archKind from '../../../src/architectures/kind'
 import * as os from '../../../src/operating_systems/kind'
 import HostQemu from '../../../src/host_qemu'
 import * as hypervisor from '../../../src/hypervisor'
@@ -37,8 +38,8 @@ describe('OmniOS OperatingSystem', () => {
 
   let host = new Host()
   let osKind = os.Kind.for('omnios')
-  let architecture = arch.Architecture.for(
-    arch.Kind.x86_64,
+  let architecture = arch.create(
+    archKind.Kind.x86_64,
     host,
     osKind,
     host.hypervisor

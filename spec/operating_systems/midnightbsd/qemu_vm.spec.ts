@@ -1,5 +1,6 @@
 import {Vm} from '../../../src/operating_systems/midnightbsd/qemu_vm'
-import * as arch from '../../../src/architecture'
+import * as arch from '../../../src/architectures/factory'
+import * as archKind from '../../../src/architectures/kind'
 import {Host} from '../../../src/host'
 import * as os from '../../../src/operating_systems/kind'
 import '../../../src/operating_systems/midnightbsd/midnightbsd'
@@ -12,8 +13,8 @@ describe('MidnightBSD QemuVm', () => {
 
   let host = Host.create('linux')
   let osKind = os.Kind.for('midnightbsd')
-  let architecture = arch.Architecture.for(
-    arch.Kind.x86_64,
+  let architecture = arch.create(
+    archKind.Kind.x86_64,
     host,
     osKind,
     host.hypervisor

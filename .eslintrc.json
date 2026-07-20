@@ -50,7 +50,7 @@
       "@typescript-eslint/no-shadow": "error",
       "i18n-text/no-en": "off",
       "sort-imports": "off",
-      "filenames/match-regex": [2, "^[a-z_]+$", true]
+      "filenames/match-regex": [2, "^[a-z0-9_]+$", true]
     },
     "env": {
       "node": true,

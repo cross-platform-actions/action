@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import * as architecture from '../architecture'
+import * as architecture from '../architectures/kind'
 import {Shell, toShell} from './shell'
 import * as os from '../operating_systems/kind'
 import {Host, host as defaultHost} from '../host'

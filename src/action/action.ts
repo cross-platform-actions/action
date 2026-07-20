@@ -6,7 +6,8 @@ import * as cache from '@actions/tool-cache'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
-import * as architecture from '../architecture'
+import {Architecture} from '../architecture'
+import * as architecture_factory from '../architectures/factory'
 import * as hostModule from '../host'
 import * as os from '../operating_system'
 import * as os_factory from '../operating_systems/factory'
@@ -41,7 +42,7 @@ export class Action {
     this.cpaHost = vmModule.Vm.cpaHost
     this.host = hostModule.Host.create()
     this.tempPath = fs.mkdtempSync('/tmp/resources')
-    const arch = architecture.Architecture.for(
+    const arch = architecture_factory.create(
       this.input.architecture,
       this.host,
       this.input.operatingSystem,
@@ -228,9 +229,7 @@ export class Action {
     return homeDirectory
   }
 
-  private createOperatingSystem(
-    arch: architecture.Architecture
-  ): os.OperatingSystem {
+  private createOperatingSystem(arch: Architecture): os.OperatingSystem {
     return os_factory.Factory.for(this.input.operatingSystem, arch).create(
       this.input.version,
       this.input.hypervisor

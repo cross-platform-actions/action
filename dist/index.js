@@ -45,7 +45,7 @@ const process = __importStar(__nccwpck_require__(7282));
 const cache = __importStar(__nccwpck_require__(7784));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
-const architecture = __importStar(__nccwpck_require__(4019));
+const architecture_factory = __importStar(__nccwpck_require__(6412));
 const hostModule = __importStar(__nccwpck_require__(8215));
 const os_factory = __importStar(__nccwpck_require__(133));
 const resource_disk_1 = __importDefault(__nccwpck_require__(7102));
@@ -64,7 +64,7 @@ class Action {
         this.cpaHost = vmModule.Vm.cpaHost;
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
-        const arch = architecture.Architecture.for(this.input.architecture, this.host, this.input.operatingSystem, this.input.hypervisor);
+        const arch = architecture_factory.create(this.input.architecture, this.host, this.input.operatingSystem, this.input.hypervisor);
         this.operatingSystem = this.createOperatingSystem(arch);
         this.resourceDisk = resource_disk_1.default.for(this);
         this.sshDirectory = path.join(this.getHomeDirectory(), '.ssh');
@@ -681,7 +681,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Input = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const architecture = __importStar(__nccwpck_require__(4019));
+const architecture = __importStar(__nccwpck_require__(656));
 const shell_1 = __nccwpck_require__(9044);
 const os = __importStar(__nccwpck_require__(6713));
 const host_1 = __nccwpck_require__(8215);
@@ -908,36 +908,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toKind = exports.Architecture = exports.Kind = void 0;
+exports.Architecture = void 0;
 const hypervisor = __importStar(__nccwpck_require__(4288));
 const resource_urls_1 = __nccwpck_require__(3990);
-const openbsd_1 = __importDefault(__nccwpck_require__(9243));
 const utility_1 = __nccwpck_require__(2857);
-var Kind;
-(function (Kind) {
-    Kind[Kind["arm64"] = 0] = "arm64";
-    Kind[Kind["x86_64"] = 1] = "x86_64";
-})(Kind = exports.Kind || (exports.Kind = {}));
 class Architecture {
     constructor(kind, host, selectedHypervisor) {
         this.resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
         this.kind = kind;
         this.host = host;
         this.selectedHypervisor = selectedHypervisor;
-    }
-    static for(kind, host, operating_system, selectedHypervisor) {
-        if (operating_system.is(openbsd_1.default)) {
-            if (kind === Kind.x86_64)
-                return new Architecture.X86_64OpenBsd(kind, host, selectedHypervisor);
-            else if (kind === Kind.arm64)
-                return new Architecture.Arm64OpenBsd(kind, host, selectedHypervisor);
-        }
-        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host, selectedHypervisor);
     }
     get networkDevice() {
         return 'virtio-net';
@@ -963,10 +944,44 @@ class Architecture {
     get hostQemu() {
         return this.host.qemu;
     }
+    get internalHypervisor() {
+        return this.selectedHypervisor;
+    }
 }
 exports.Architecture = Architecture;
-_a = Architecture;
-Architecture.Arm64 = class extends Architecture {
+//# sourceMappingURL=architecture.js.map
+
+/***/ }),
+
+/***/ 5289:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Arm64 = void 0;
+const architecture_1 = __nccwpck_require__(4019);
+const hypervisor = __importStar(__nccwpck_require__(4288));
+class Arm64 extends architecture_1.Architecture {
     get name() {
         return 'arm64';
     }
@@ -996,8 +1011,144 @@ Architecture.Arm64 = class extends Architecture {
                 throw new Error(`Internal Error: Unhandled hypervisor kind: ${kind}`);
         }
     }
+}
+exports.Arm64 = Arm64;
+//# sourceMappingURL=arm64.js.map
+
+/***/ }),
+
+/***/ 6501:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
 };
-Architecture.X86_64 = class extends Architecture {
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Arm64OpenBsd = void 0;
+const arm64_1 = __nccwpck_require__(5289);
+const hypervisor = __importStar(__nccwpck_require__(4288));
+class Arm64OpenBsd extends arm64_1.Arm64 {
+    get efiHypervisor() {
+        return new QemuEfi();
+    }
+}
+exports.Arm64OpenBsd = Arm64OpenBsd;
+class QemuEfi extends hypervisor.QemuEfi {
+    get firmwareFile() {
+        return `${this.firmwareDirectory}/linaro_uefi.fd`;
+    }
+}
+//# sourceMappingURL=openbsd.js.map
+
+/***/ }),
+
+/***/ 6412:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.create = void 0;
+const kind_1 = __nccwpck_require__(656);
+const arm64_1 = __nccwpck_require__(5289);
+const openbsd_1 = __nccwpck_require__(6501);
+const x86_64_1 = __nccwpck_require__(7055);
+const openbsd_2 = __nccwpck_require__(367);
+const openbsd_3 = __importDefault(__nccwpck_require__(9243));
+const utility_1 = __nccwpck_require__(2857);
+function create(kind, host, operating_system, selectedHypervisor) {
+    if (operating_system.is(openbsd_3.default)) {
+        if (kind === kind_1.Kind.x86_64)
+            return new openbsd_2.X86_64OpenBsd(kind, host, selectedHypervisor);
+        else if (kind === kind_1.Kind.arm64)
+            return new openbsd_1.Arm64OpenBsd(kind, host, selectedHypervisor);
+    }
+    return new ((0, utility_1.getOrThrow)(architectureMap, kind))(kind, host, selectedHypervisor);
+}
+exports.create = create;
+const architectureMap = new Map([
+    [kind_1.Kind.arm64, arm64_1.Arm64],
+    [kind_1.Kind.x86_64, x86_64_1.X86_64]
+]);
+//# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 656:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toKind = exports.Kind = void 0;
+var Kind;
+(function (Kind) {
+    Kind[Kind["arm64"] = 0] = "arm64";
+    Kind[Kind["x86_64"] = 1] = "x86_64";
+})(Kind = exports.Kind || (exports.Kind = {}));
+function toKind(value) {
+    return architectureMap[value.toLocaleLowerCase()];
+}
+exports.toKind = toKind;
+const architectureMap = {
+    arm64: Kind.arm64,
+    aarch64: Kind.arm64,
+    'x86-64': Kind.x86_64,
+    x86_64: Kind.x86_64,
+    x64: Kind.x86_64
+};
+//# sourceMappingURL=kind.js.map
+
+/***/ }),
+
+/***/ 367:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.X86_64OpenBsd = void 0;
+const x86_64_1 = __nccwpck_require__(7055);
+class X86_64OpenBsd extends x86_64_1.X86_64 {
+    get networkDevice() {
+        return 'e1000';
+    }
+}
+exports.X86_64OpenBsd = X86_64OpenBsd;
+//# sourceMappingURL=openbsd.js.map
+
+/***/ }),
+
+/***/ 7055:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.X86_64 = void 0;
+const architecture_1 = __nccwpck_require__(4019);
+class X86_64 extends architecture_1.Architecture {
     get name() {
         return 'x86-64';
     }
@@ -1014,44 +1165,14 @@ Architecture.X86_64 = class extends Architecture {
         return 'q35';
     }
     get hypervisor() {
-        return this.selectedHypervisor;
+        return this.internalHypervisor;
     }
     get efiHypervisor() {
-        return this.selectedHypervisor.efi;
+        return this.internalHypervisor.efi;
     }
-};
-Architecture.X86_64OpenBsd = class extends _a.X86_64 {
-    get networkDevice() {
-        return 'e1000';
-    }
-};
-Architecture.Arm64OpenBsd = (_b = class extends _a.Arm64 {
-        get efiHypervisor() {
-            return new Architecture.Arm64OpenBsd.QemuEfi();
-        }
-    },
-    _b.QemuEfi = class extends hypervisor.QemuEfi {
-        get firmwareFile() {
-            return `${this.firmwareDirectory}/linaro_uefi.fd`;
-        }
-    },
-    _b);
-Architecture.architectureMap = new Map([
-    [Kind.arm64, Architecture.Arm64],
-    [Kind.x86_64, Architecture.X86_64]
-]);
-function toKind(value) {
-    return architectureMap[value.toLocaleLowerCase()];
 }
-exports.toKind = toKind;
-const architectureMap = {
-    arm64: Kind.arm64,
-    aarch64: Kind.arm64,
-    'x86-64': Kind.x86_64,
-    x86_64: Kind.x86_64,
-    x64: Kind.x86_64
-};
-//# sourceMappingURL=architecture.js.map
+exports.X86_64 = X86_64;
+//# sourceMappingURL=x86_64.js.map
 
 /***/ }),
 
