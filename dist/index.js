@@ -114,7 +114,9 @@ class Action {
                     yield this.runCommand(vm);
                 }
                 finally {
-                    core.startGroup('Tearing down VM');
+                    if (this.input.shutdownVm) {
+                        core.startGroup('Tearing down VM');
+                    }
                     yield vm.synchronizeBack();
                 }
             }
@@ -125,7 +127,9 @@ class Action {
                     }
                 }
                 finally {
-                    core.endGroup();
+                    if (this.input.shutdownVm) {
+                        core.endGroup();
+                    }
                 }
             }
         });
