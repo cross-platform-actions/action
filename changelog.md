@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Don't log the `Tearing down VM` group when `shutdown_vm` is `false`, since
+    the VM is not being torn down in that case
+    ([#109](https://github.com/cross-platform-actions/action/issues/109))
 
 ## [1.3.0] - 2026-06-22
 ### Added
