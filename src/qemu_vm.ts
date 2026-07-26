@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as architecture from './architecture'
 import {ExecExecutor, Executor, getOrDefaultOrThrow} from './utility'
+import {Clock, SystemClock} from './clock'
 import * as vm from './vm'
 import {Input} from './action/input'
 
@@ -13,7 +14,8 @@ export abstract class Vm extends vm.Vm {
     arch: architecture.Architecture,
     input: Input,
     configuration: vm.Configuration,
-    executor: Executor = new ExecExecutor()
+    executor: Executor = new ExecExecutor(),
+    clock: Clock = new SystemClock()
   ) {
     super(
       hypervisorDirectory,
@@ -22,7 +24,8 @@ export abstract class Vm extends vm.Vm {
       arch,
       input,
       configuration,
-      executor
+      executor,
+      clock
     )
   }
 

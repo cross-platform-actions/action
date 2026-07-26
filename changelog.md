@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Don't log the `Tearing down VM` group when `shutdown_vm` is `false`, since
     the VM is not being torn down in that case
     ([#109](https://github.com/cross-platform-actions/action/issues/109))
+- The "Start VM" step could keep running for hours when the VM failed to boot
+    ([#158](https://github.com/cross-platform-actions/action/issues/158)).
+    Waiting for the VM to become ready is now bounded by an actual wall clock
+    timeout, instead of by a number of connection attempts.
 
 ## [1.3.0] - 2026-06-22
 ### Added

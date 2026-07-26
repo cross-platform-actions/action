@@ -1219,6 +1219,84 @@ exports.X86_64 = X86_64;
 
 /***/ }),
 
+/***/ 9948:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SystemClock = void 0;
+const wait_1 = __nccwpck_require__(5817);
+class SystemClock {
+    now() {
+        return Date.now();
+    }
+    sleep(milliseconds) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield (0, wait_1.wait)(milliseconds);
+        });
+    }
+}
+exports.SystemClock = SystemClock;
+//# sourceMappingURL=clock.js.map
+
+/***/ }),
+
+/***/ 5383:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Deadline = void 0;
+const clock_1 = __nccwpck_require__(9948);
+// A point in time, a given number of seconds from now, that something is
+// allowed to take at most.
+class Deadline {
+    constructor(seconds, clock = new clock_1.SystemClock()) {
+        this.clock = clock;
+        this.expiresAt = clock.now() + seconds * 1000;
+    }
+    get hasPassed() {
+        return this.remaining <= 0;
+    }
+    // Sleeps for the given duration, or until the deadline expires, whichever
+    // comes first.
+    sleepAtMost(milliseconds) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const remaining = this.remaining;
+            if (remaining <= 0)
+                return;
+            yield this.clock.sleep(Math.min(milliseconds, remaining));
+        });
+    }
+    get remaining() {
+        return this.expiresAt - this.clock.now();
+    }
+}
+exports.Deadline = Deadline;
+//# sourceMappingURL=deadline.js.map
+
+/***/ }),
+
 /***/ 8215:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -2615,10 +2693,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.resolve = exports.Vm = void 0;
 const utility_1 = __nccwpck_require__(2857);
+const clock_1 = __nccwpck_require__(9948);
 const vm = __importStar(__nccwpck_require__(2772));
 class Vm extends vm.Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, arch, input, configuration, executor = new utility_1.ExecExecutor()) {
-        super(hypervisorDirectory, resourcesDirectory, 'qemu', arch, input, configuration, executor);
+    constructor(hypervisorDirectory, resourcesDirectory, arch, input, configuration, executor = new utility_1.ExecExecutor(), clock = new clock_1.SystemClock()) {
+        super(hypervisorDirectory, resourcesDirectory, 'qemu', arch, input, configuration, executor, clock);
     }
     getIpAddress() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -3045,7 +3124,8 @@ const child_process_1 = __nccwpck_require__(2081);
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const utility_1 = __nccwpck_require__(2857);
-const wait_1 = __nccwpck_require__(5817);
+const clock_1 = __nccwpck_require__(9948);
+const deadline_1 = __nccwpck_require__(5383);
 const vm_file_system_synchronizer_1 = __nccwpck_require__(8544);
 class LiveProcess {
     constructor() {
@@ -3061,7 +3141,7 @@ class LiveProcess {
     }
 }
 class Vm {
-    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, arch, input, configuration, executor = new utility_1.ExecExecutor()) {
+    constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, arch, input, configuration, executor = new utility_1.ExecExecutor(), clock = new clock_1.SystemClock()) {
         this.logFile = '/tmp/cross-platform-actions.log';
         this.vmProcess = new LiveProcess();
         this.hypervisorDirectory = hypervisorDirectory;
@@ -3071,6 +3151,7 @@ class Vm {
         this.configuration = configuration;
         this.hypervisorPath = path.join(hypervisorDirectory.toString(), hypervisorBinary.toString());
         this.executor = executor;
+        this.clock = clock;
         this.vmFileSystemSynchronizer = new vm_file_system_synchronizer_1.DefaultVmFileSystemSynchronizer({
             input,
             user: this.user,
@@ -3118,22 +3199,19 @@ class Vm {
             this.ipAddress = yield this.getIpAddress();
         });
     }
+    // Waits, at most `timeout` seconds, for the VM to become ready.
     wait(timeout) {
         return __awaiter(this, void 0, void 0, function* () {
-            for (let index = 0; index < timeout; index++) {
-                core.info('Waiting for VM to be ready...');
-                const result = yield this.execute('true', {
-                    /*log: false,
-                      silent: true,*/
-                    ignoreReturnCode: true
-                });
-                if (result === 0) {
-                    core.info('VM is ready');
+            const deadline = new deadline_1.Deadline(timeout, this.clock);
+            let attempts = 0;
+            while (!deadline.hasPassed) {
+                attempts++;
+                if (yield this.isReady())
                     return;
-                }
-                yield (0, wait_1.wait)(1000);
+                yield deadline.sleepAtMost(1000);
             }
-            throw Error(`Waiting for VM to become ready timed out after ${timeout} seconds`);
+            throw Error(`Waiting for VM to become ready timed out after ${timeout} seconds ` +
+                `and ${attempts} attempt(s)`);
         });
     }
     terminate() {
@@ -3192,6 +3270,15 @@ class Vm {
     }
     get postSyncToVmCommand() {
         return '';
+    }
+    isReady() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info('Waiting for VM to be ready...');
+            const ready = (yield this.execute('true', { ignoreReturnCode: true })) === 0;
+            if (ready)
+                core.info('VM is ready');
+            return ready;
+        });
     }
     get sshTarget() {
         return `${this.user}@${Vm.cpaHost}`;

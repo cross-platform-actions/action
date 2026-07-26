@@ -7,7 +7,8 @@ import * as exec from '@actions/exec'
 
 import * as vm from './vm'
 import {ExecuteOptions, ExecExecutor, Executor} from './utility'
-import {wait} from './wait'
+import {Clock, SystemClock} from './clock'
+import {Deadline} from './deadline'
 import * as architecture from './architecture'
 import {Input} from './action/input'
 import {
@@ -67,6 +68,7 @@ export abstract class Vm {
   protected readonly input: Input
 
   private readonly executor: Executor
+  private readonly clock: Clock
   private readonly vmFileSystemSynchronizer: VmFileSystemSynchronizer
 
   constructor(
@@ -76,7 +78,8 @@ export abstract class Vm {
     arch: architecture.Architecture,
     input: Input,
     configuration: vm.Configuration,
-    executor: Executor = new ExecExecutor()
+    executor: Executor = new ExecExecutor(),
+    clock: Clock = new SystemClock()
   ) {
     this.hypervisorDirectory = hypervisorDirectory
     this.resourcesDirectory = resourcesDirectory
@@ -88,6 +91,7 @@ export abstract class Vm {
       hypervisorBinary.toString()
     )
     this.executor = executor
+    this.clock = clock
     this.vmFileSystemSynchronizer = new DefaultVmFileSystemSynchronizer({
       input,
       user: this.user,
@@ -142,25 +146,20 @@ export abstract class Vm {
     this.ipAddress = await this.getIpAddress()
   }
 
+  // Waits, at most `timeout` seconds, for the VM to become ready.
   async wait(timeout: number): Promise<void> {
-    for (let index = 0; index < timeout; index++) {
-      core.info('Waiting for VM to be ready...')
+    const deadline = new Deadline(timeout, this.clock)
+    let attempts = 0
 
-      const result = await this.execute('true', {
-        /*log: false,
-          silent: true,*/
-        ignoreReturnCode: true
-      })
-
-      if (result === 0) {
-        core.info('VM is ready')
-        return
-      }
-      await wait(1000)
+    while (!deadline.hasPassed) {
+      attempts++
+      if (await this.isReady()) return
+      await deadline.sleepAtMost(1000)
     }
 
     throw Error(
-      `Waiting for VM to become ready timed out after ${timeout} seconds`
+      `Waiting for VM to become ready timed out after ${timeout} seconds ` +
+        `and ${attempts} attempt(s)`
     )
   }
 
@@ -233,6 +232,14 @@ export abstract class Vm {
 
   get postSyncToVmCommand(): string {
     return ''
+  }
+
+  private async isReady(): Promise<boolean> {
+    core.info('Waiting for VM to be ready...')
+    const ready = (await this.execute('true', {ignoreReturnCode: true})) === 0
+    if (ready) core.info('VM is ready')
+
+    return ready
   }
 
   private get sshTarget(): string {
