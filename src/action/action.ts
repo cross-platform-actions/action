@@ -725,7 +725,13 @@ fi
       `IdentityFile ${this.privateSshKey}`,
       'SendEnv CI GITHUB_*',
       this.customSendEnv,
-      'PasswordAuthentication no'
+      'PasswordAuthentication no',
+      // Bounds how long a single SSH connection attempt can block. The
+      // remaining budget also covers the exchange of the identification
+      // strings, which is where a connection to a VM that failed to boot
+      // hangs, because QEMU's user mode networking accepts the forwarded
+      // connection before the guest does.
+      'ConnectTimeout 10'
     ].join('\n')
 
     fs.appendFileSync(path.join(this.sshDirectory, 'config'), `${lines}\n`)
