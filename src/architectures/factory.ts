@@ -7,6 +7,7 @@ import {Arm64} from './arm64/arm64'
 import {Arm64OpenBsd} from './arm64/openbsd'
 import {X86_64} from './x86_64/x86_64'
 import {X86_64OpenBsd} from './x86_64/openbsd'
+import {Riscv64} from './riscv64/riscv64'
 import OpenBsd from '../operating_systems/openbsd/openbsd'
 import {getOrThrow} from '../utility'
 
@@ -28,5 +29,6 @@ export function create(
 
 const architectureMap: ReadonlyMap<Kind, typeof X86_64> = new Map([
   [Kind.arm64, Arm64],
-  [Kind.x86_64, X86_64]
+  [Kind.x86_64, X86_64],
+  [Kind.riscv64, Riscv64]
 ])

@@ -75,6 +75,22 @@ jobs:
               name: ubuntu-latest
               work_directory: /home/runner/work/action/action
 
+          - version: '15.1'
+            architecture:
+              name: riscv64
+            hostname: 'runnervmg1sw1.local'
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '15.0'
+            architecture:
+              name: riscv64
+            hostname: 'runnervmg1sw1.local'
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.3

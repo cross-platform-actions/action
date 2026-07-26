@@ -1,4 +1,7 @@
-import {QemuVm} from '../../../src/operating_systems/freebsd/qemu_vm'
+import {
+  QemuVm,
+  QemuVmRiscv64
+} from '../../../src/operating_systems/freebsd/qemu_vm'
 import * as arch from '../../../src/architectures/factory'
 import * as archKind from '../../../src/architectures/kind'
 import {Host} from '../../../src/host'
@@ -50,6 +53,42 @@ describe('FreeBSD QemuVm', () => {
       expect(actualNetDevice()).toEqual(
         `user,id=user.0,hostfwd=tcp::${ssHostPort}-:22`
       )
+    })
+  })
+})
+
+describe('FreeBSD QemuVm riscv64', () => {
+  let host = Host.create('linux')
+  let osKind = os.Kind.for('freebsd')
+  let architecture = arch.create(
+    archKind.Kind.riscv64,
+    host,
+    osKind,
+    host.hypervisor
+  )
+  let input = new Input(host)
+  let firmware = 'firmware/directory/share/qemu/u-boot.bin'
+  let config = {
+    memory: '5G',
+    cpuCount: 2,
+    diskImage: '',
+    ssHostPort: 1234,
+    cpu: 'rv64',
+    machineType: 'virt',
+    resourcesDiskImage: '',
+    firmware: firmware
+  }
+  let vm = new QemuVmRiscv64('', '', architecture, input, config)
+
+  describe('command', () => {
+    it('loads U-Boot as the kernel', () => {
+      let index = vm.command.indexOf('-kernel')
+      expect(index).toBeGreaterThan(-1)
+      expect(vm.command[index + 1]).toEqual(firmware)
+    })
+
+    it('does not boot via -bios', () => {
+      expect(vm.command).not.toContain('-bios')
     })
   })
 })

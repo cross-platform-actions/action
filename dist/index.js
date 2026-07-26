@@ -1079,6 +1079,7 @@ const arm64_1 = __nccwpck_require__(5289);
 const openbsd_1 = __nccwpck_require__(6501);
 const x86_64_1 = __nccwpck_require__(7055);
 const openbsd_2 = __nccwpck_require__(367);
+const riscv64_1 = __nccwpck_require__(379);
 const openbsd_3 = __importDefault(__nccwpck_require__(9243));
 const utility_1 = __nccwpck_require__(2857);
 function create(kind, host, operating_system, selectedHypervisor) {
@@ -1093,7 +1094,8 @@ function create(kind, host, operating_system, selectedHypervisor) {
 exports.create = create;
 const architectureMap = new Map([
     [kind_1.Kind.arm64, arm64_1.Arm64],
-    [kind_1.Kind.x86_64, x86_64_1.X86_64]
+    [kind_1.Kind.x86_64, x86_64_1.X86_64],
+    [kind_1.Kind.riscv64, riscv64_1.Riscv64]
 ]);
 //# sourceMappingURL=factory.js.map
 
@@ -1110,6 +1112,7 @@ var Kind;
 (function (Kind) {
     Kind[Kind["arm64"] = 0] = "arm64";
     Kind[Kind["x86_64"] = 1] = "x86_64";
+    Kind[Kind["riscv64"] = 2] = "riscv64";
 })(Kind = exports.Kind || (exports.Kind = {}));
 function toKind(value) {
     return architectureMap[value.toLocaleLowerCase()];
@@ -1120,9 +1123,68 @@ const architectureMap = {
     aarch64: Kind.arm64,
     'x86-64': Kind.x86_64,
     x86_64: Kind.x86_64,
-    x64: Kind.x86_64
+    x64: Kind.x86_64,
+    riscv64: Kind.riscv64,
+    riscv: Kind.riscv64,
+    rv64: Kind.riscv64
 };
 //# sourceMappingURL=kind.js.map
+
+/***/ }),
+
+/***/ 379:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Riscv64 = void 0;
+const architecture_1 = __nccwpck_require__(4019);
+const hypervisor = __importStar(__nccwpck_require__(4288));
+class Riscv64 extends architecture_1.Architecture {
+    get name() {
+        return 'riscv64';
+    }
+    get resolveName() {
+        return 'riscv64';
+    }
+    get resourceUrl() {
+        return `${this.resourceBaseUrl}/qemu-system-riscv64-${this.hostString}.tar`;
+    }
+    get cpu() {
+        return 'rv64';
+    }
+    get machineType() {
+        return 'virt';
+    }
+    get hypervisor() {
+        return new hypervisor.QemuRiscv();
+    }
+    get efiHypervisor() {
+        return new hypervisor.QemuRiscv();
+    }
+}
+exports.Riscv64 = Riscv64;
+//# sourceMappingURL=riscv64.js.map
 
 /***/ }),
 
@@ -1287,7 +1349,7 @@ HostQemu.LinuxHostQemu = class extends HostQemu {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.QemuEfi = exports.Qemu = exports.Kind = void 0;
+exports.QemuRiscv = exports.QemuEfi = exports.Qemu = exports.Kind = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
 const utility_1 = __nccwpck_require__(2857);
 var Kind;
@@ -1327,6 +1389,18 @@ class QemuEfi extends Qemu {
     }
 }
 exports.QemuEfi = QemuEfi;
+// RISC-V boots via QEMU's built-in OpenSBI plus U-Boot, which is loaded as the
+// kernel (see the FreeBSD QemuVmRiscv64). U-Boot then EFI-boots the disk image
+// and forwards the device tree to the FreeBSD loader.
+class QemuRiscv extends Qemu {
+    get firmwareFile() {
+        return `${this.firmwareDirectory}/u-boot.bin`;
+    }
+    get efi() {
+        return this;
+    }
+}
+exports.QemuRiscv = QemuRiscv;
 //# sourceMappingURL=hypervisor.js.map
 
 /***/ }),
@@ -1764,7 +1838,11 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug('Creating FreeBSD VM');
         const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), cpu: this.architecture.cpu, machineType: this.architecture.machineType });
-        return new qemu_vm_1.QemuVm(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
+        const qemuVmClass = this.architecture.resolve({
+            riscv64: qemu_vm_1.QemuVmRiscv64,
+            default: qemu_vm_1.QemuVm
+        });
+        return new qemuVmClass(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 };
 FreeBsd = __decorate([
@@ -1781,7 +1859,7 @@ exports["default"] = FreeBsd;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.QemuVm = void 0;
+exports.QemuVmRiscv64 = exports.QemuVm = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
 class QemuVm extends qemu_vm_1.Vm {
     get hardDriverFlags() {
@@ -1795,6 +1873,16 @@ class QemuVm extends qemu_vm_1.Vm {
     }
 }
 exports.QemuVm = QemuVm;
+// On RISC-V the firmware is U-Boot, loaded via -kernel on top of QEMU's
+// built-in OpenSBI. U-Boot then EFI-boots the disk image. Booting U-Boot via
+// -bios instead does not reliably boot the installed disk.
+class QemuVmRiscv64 extends QemuVm {
+    get firmwareFlags() {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return ['-kernel', this.configuration.firmware.toString()];
+    }
+}
+exports.QemuVmRiscv64 = QemuVmRiscv64;
 //# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
@@ -2925,14 +3013,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const version = {
     operating_system: {
         dragonflybsd: 'v0.0.1',
-        freebsd: 'v0.15.0',
+        freebsd: 'v0.16.0',
         haiku: 'v0.1.0',
         midnightbsd: 'v0.0.1',
         netbsd: 'v0.6.0',
         openbsd: 'v0.13.0',
         omnios: 'v0.2.0'
     },
-    resources: 'v1.0.0'
+    resources: 'v1.1.0'
 };
 exports["default"] = version;
 //# sourceMappingURL=version.js.map

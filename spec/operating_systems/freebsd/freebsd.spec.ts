@@ -1,6 +1,7 @@
 import {basename} from 'path'
 
 import FreeBsd from '../../../src/operating_systems/freebsd/freebsd'
+import {QemuVmRiscv64} from '../../../src/operating_systems/freebsd/qemu_vm'
 import * as arch from '../../../src/architectures/factory'
 import * as archKind from '../../../src/architectures/kind'
 import * as os from '../../../src/operating_systems/kind'
@@ -37,6 +38,21 @@ describe('FreeBSD OperatingSystem', () => {
 
       const hypervisorBinary = basename(vm.hypervisorPath.toString())
       expect(hypervisorBinary).toEqual('qemu')
+    })
+
+    it('creates a riscv64 virtual machine that boots via U-Boot', () => {
+      const riscv64 = arch.create(archKind.Kind.riscv64, host, osKind, vmm)
+      const freebsdRiscv64 = new FreeBsd(riscv64, '15.0')
+
+      const vm = freebsdRiscv64.createVirtualMachine(
+        hypervisorDirectory,
+        resourcesDirectory,
+        firmwareDirectory,
+        input,
+        config
+      )
+
+      expect(vm).toBeInstanceOf(QemuVmRiscv64)
     })
   })
 })

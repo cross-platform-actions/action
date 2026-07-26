@@ -3,6 +3,7 @@ import * as factory from '../src/architectures/factory'
 import {Host} from '../src/host'
 import * as os from '../src/operating_systems/kind'
 import {Qemu, QemuEfi} from '../src/hypervisor'
+import '../src/operating_systems/freebsd/freebsd'
 
 let context = describe
 
@@ -91,9 +92,53 @@ describe('toKind', () => {
     })
   })
 
+  describe('riscv64', () => {
+    it('returns the riscv64 architecture', () => {
+      expect(architecture.toKind('riscv64')).toBe(architecture.Kind.riscv64)
+    })
+  })
+
+  describe('riscv', () => {
+    it('returns the riscv64 architecture', () => {
+      expect(architecture.toKind('riscv')).toBe(architecture.Kind.riscv64)
+    })
+  })
+
+  describe('rv64', () => {
+    it('returns the riscv64 architecture', () => {
+      expect(architecture.toKind('rv64')).toBe(architecture.Kind.riscv64)
+    })
+  })
+
   describe('invalid architecture', () => {
     it('returns undefined', () => {
       expect(architecture.toKind('null')).toBeUndefined()
     })
+  })
+})
+
+describe('Architecture riscv64', () => {
+  let host = Host.create('linux')
+  let osKind = os.Kind.for('freebsd')
+  let arch = factory.create(architecture.Kind.riscv64, host, osKind, new Qemu())
+
+  it('has the name riscv64', () => {
+    expect(arch.name).toEqual('riscv64')
+  })
+
+  it('uses the rv64 CPU', () => {
+    expect(arch.cpu).toEqual('rv64')
+  })
+
+  it('uses the virt machine type', () => {
+    expect(arch.machineType).toEqual('virt')
+  })
+
+  it('downloads the riscv64 QEMU resource', () => {
+    expect(arch.resourceUrl).toContain('qemu-system-riscv64-linux.tar')
+  })
+
+  it('uses U-Boot as the firmware', () => {
+    expect(arch.hypervisor.firmwareFile).toContain('u-boot.bin')
   })
 })
