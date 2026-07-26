@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     Waiting for the VM to become ready is now bounded by an actual wall clock
     timeout, instead of by a number of connection attempts, and a single SSH
     connection attempt is bounded by `ConnectTimeout`.
+- The post job step now reports when the console log of the VM is missing or
+    empty, instead of silently printing nothing
+    ([#158](https://github.com/cross-platform-actions/action/issues/158))
 
 ## [1.3.0] - 2026-06-22
 ### Added
