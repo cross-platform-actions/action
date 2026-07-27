@@ -47,6 +47,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const architecture_factory = __importStar(__nccwpck_require__(6412));
 const hostModule = __importStar(__nccwpck_require__(8215));
+const host_cpu_1 = __nccwpck_require__(8007);
 const os_factory = __importStar(__nccwpck_require__(133));
 const resource_disk_1 = __importDefault(__nccwpck_require__(7102));
 const vmModule = __importStar(__nccwpck_require__(2772));
@@ -75,6 +76,7 @@ class Action {
         return __awaiter(this, void 0, void 0, function* () {
             core.startGroup('Setting up VM');
             core.debug('Running action');
+            core.info(`Host CPU: ${new host_cpu_1.HostCpu()}`);
             const runPreparer = this.createRunPreparer();
             runPreparer.createInputHash();
             runPreparer.validateInputHash();
@@ -1382,6 +1384,54 @@ function host() {
 }
 exports.host = host;
 //# sourceMappingURL=host.js.map
+
+/***/ }),
+
+/***/ 8007:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HostCpu = void 0;
+const os = __importStar(__nccwpck_require__(2037));
+// The CPU of the host the action runs on. The hypervisor passes the host CPU
+// through to the guest, so a guest that fails to boot on one runner but not on
+// another can be correlated with the CPU it ran on.
+class HostCpu {
+    constructor(source = os) {
+        this.source = source;
+    }
+    toString() {
+        const cpus = this.source.cpus();
+        return `${this.model(cpus)} (${cpus.length} vCPUs)`;
+    }
+    model(cpus) {
+        const model = cpus.length === 0 ? '' : cpus[0].model.trim();
+        return model === '' ? 'unknown' : model;
+    }
+}
+exports.HostCpu = HostCpu;
+//# sourceMappingURL=host_cpu.js.map
 
 /***/ }),
 

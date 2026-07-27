@@ -9,6 +9,7 @@ import * as exec from '@actions/exec'
 import {Architecture} from '../architecture'
 import * as architecture_factory from '../architectures/factory'
 import * as hostModule from '../host'
+import {HostCpu} from '../host_cpu'
 import * as os from '../operating_system'
 import * as os_factory from '../operating_systems/factory'
 import ResourceDisk from '../resource_disk'
@@ -60,6 +61,7 @@ export class Action {
   async run(): Promise<void> {
     core.startGroup('Setting up VM')
     core.debug('Running action')
+    core.info(`Host CPU: ${new HostCpu()}`)
     const runPreparer = this.createRunPreparer()
     runPreparer.createInputHash()
     runPreparer.validateInputHash()
