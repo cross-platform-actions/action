@@ -1022,44 +1022,21 @@ exports.Arm64 = Arm64;
 /***/ }),
 
 /***/ 6501:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Arm64OpenBsd = void 0;
 const arm64_1 = __nccwpck_require__(5289);
-const hypervisor = __importStar(__nccwpck_require__(4288));
 class Arm64OpenBsd extends arm64_1.Arm64 {
-    get efiHypervisor() {
-        return new QemuEfi();
+    // edk2 publishes ACPI tables; OpenBSD 7.x/arm64 hangs during ACPI attach.
+    // Suppressing them makes the kernel fall back to the device tree.
+    get machineType() {
+        return 'virt,acpi=off';
     }
 }
 exports.Arm64OpenBsd = Arm64OpenBsd;
-class QemuEfi extends hypervisor.QemuEfi {
-    get firmwareFile() {
-        return `${this.firmwareDirectory}/linaro_uefi.fd`;
-    }
-}
 //# sourceMappingURL=openbsd.js.map
 
 /***/ }),
