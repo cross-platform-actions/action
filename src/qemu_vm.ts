@@ -106,7 +106,11 @@ export abstract class Vm extends vm.Vm {
   }
 
   private get cpuFlagValue(): string {
-    return [this.configuration.cpu, ...this.cpuidFlags].join(',')
+    return [
+      this.configuration.cpu,
+      ...this.architecture.maskedCpuFeatures,
+      ...this.cpuidFlags
+    ].join(',')
   }
 }
 

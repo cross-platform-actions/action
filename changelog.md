@@ -34,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     full TCP retransmission time, and waiting for the VM to come back up is
     given up on as soon as the guest announces a kernel panic on its serial
     console
+- Advanced Matrix Extensions (AMX) is no longer exposed to the guests on
+    x86-64, so which runner a job happens to get no longer decides whether the
+    VM boots
+    ([#158](https://github.com/cross-platform-actions/action/issues/158)).
+    Kernels released before AMX existed fault as soon as userland starts, which
+    affected NetBSD 9.4 and 10.1 and FreeBSD 12.4 on the runners that have it
 
 ## [1.3.0] - 2026-06-22
 ### Added

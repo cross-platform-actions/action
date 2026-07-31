@@ -958,6 +958,11 @@ class Architecture {
     get networkDevice() {
         return 'virtio-net';
     }
+    // CPU features to turn off for every guest on this architecture, regardless
+    // of the operating system.
+    get maskedCpuFeatures() {
+        return [];
+    }
     get resolveName() {
         return this.constructor.name;
     }
@@ -1234,6 +1239,19 @@ class X86_64 extends architecture_1.Architecture {
     }
     get cpu() {
         return this.hostQemu.cpu;
+    }
+    // Advanced Matrix Extensions adds 8KB of tile registers to the area the
+    // kernel saves the CPU state in. Kernels released before it existed size
+    // that area from what the CPU reports, and fault as soon as userland
+    // starts: NetBSD jumps to address 0 while starting init, FreeBSD panics in
+    // vm_fault. The CPU is passed through to the guest, so which runner the job
+    // happens to get decides whether the VM boots at all.
+    //
+    // Nothing that runs in these VMs can make use of AMX, so there is nothing to
+    // weigh against turning it off.
+    // See https://github.com/cross-platform-actions/action/issues/158.
+    get maskedCpuFeatures() {
+        return ['amx-tile=off', 'amx-int8=off', 'amx-bf16=off'];
     }
     get machineType() {
         return 'q35';
@@ -2847,7 +2865,11 @@ class Vm extends vm.Vm {
             .join(',');
     }
     get cpuFlagValue() {
-        return [this.configuration.cpu, ...this.cpuidFlags].join(',');
+        return [
+            this.configuration.cpu,
+            ...this.architecture.maskedCpuFeatures,
+            ...this.cpuidFlags
+        ].join(',');
     }
 }
 exports.Vm = Vm;

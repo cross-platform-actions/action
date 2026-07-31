@@ -34,6 +34,12 @@ export abstract class Architecture {
     return 'virtio-net'
   }
 
+  // CPU features to turn off for every guest on this architecture, regardless
+  // of the operating system.
+  get maskedCpuFeatures(): string[] {
+    return []
+  }
+
   get resolveName(): string {
     return this.constructor.name
   }
