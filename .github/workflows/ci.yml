@@ -699,6 +699,49 @@ jobs:
         shell: cpa.sh {0}
         run: test -f /tmp/reboot_marker_2
 
+  # OpenBSD on ARM64 boots with ACPI disabled, so reset is handled by PSCI as
+  # advertised through the device tree. Cover that combination explicitly.
+  test-reboot-shell-openbsd-arm64:
+    timeout-minutes: 20
+    name: Test reboot shell on OpenBSD ARM64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.3
+        with:
+          persist-credentials: false
+
+      - if: env.ACT
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y dosfstools rsync fdisk
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: openbsd
+          architecture: arm64
+          version: '7.9'
+
+      # Appended rather than overwritten: the image's own rc.local mounts the
+      # resources disk and installs the SSH authorized_keys.
+      - name: Install startup script that creates a marker file on boot
+        shell: cpa.sh {0}
+        run: echo 'touch /tmp/reboot_marker' | sudo tee -a /etc/rc.local
+
+      - name: Verify marker file does not exist yet
+        shell: cpa.sh {0}
+        run: test ! -f /tmp/reboot_marker
+
+      - name: Reboot VM
+        run: cpa.sh --reboot
+
+      - name: Verify VM rebooted by checking the startup script created the marker file
+        shell: cpa.sh {0}
+        run: test -f /tmp/reboot_marker
+
   test-reboot-shell-haiku:
     timeout-minutes: 15
     name: Test reboot shell on Haiku

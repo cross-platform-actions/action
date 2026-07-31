@@ -142,3 +142,30 @@ describe('Architecture riscv64', () => {
     expect(arch.hypervisor.firmwareFile).toContain('u-boot.bin')
   })
 })
+
+describe('Architecture arm64', () => {
+  let host = Host.create('linux')
+
+  context('FreeBSD', () => {
+    let osKind = os.Kind.for('freebsd')
+    let arch = factory.create(architecture.Kind.arm64, host, osKind, new Qemu())
+
+    it('uses the virt machine type', () => {
+      expect(arch.machineType).toEqual('virt')
+    })
+  })
+
+  context('OpenBSD', () => {
+    let osKind = os.Kind.for('openbsd')
+    let arch = factory.create(architecture.Kind.arm64, host, osKind, new Qemu())
+
+    it('uses the virt machine type with ACPI disabled', () => {
+      expect(arch.machineType).toEqual('virt,acpi=off')
+    })
+
+    it('uses the default EFI firmware', () => {
+      expect(arch.efiHypervisor.firmwareFile).toContain('uefi.fd')
+      expect(arch.efiHypervisor.firmwareFile).not.toContain('linaro')
+    })
+  })
+})

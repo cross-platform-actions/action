@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for FreeBSD on RISC-V 64 (`riscv64`)
 
+### Changed
+- OpenBSD on ARM64 now boots with the same EDK II UEFI firmware (`uefi.fd`) as
+    every other ARM64 guest, instead of a separate Linaro UEFI build. The QEMU
+    machine type for OpenBSD on ARM64 is now `virt,acpi=off`, which makes the
+    kernel fall back to the device tree instead of hanging during ACPI attach.
+    This removes the dependency on the Linaro release server, which no longer
+    exists
+
 ### Fixed
 - Don't log the `Tearing down VM` group when `shutdown_vm` is `false`, since
     the VM is not being torn down in that case
