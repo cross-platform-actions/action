@@ -481,6 +481,8 @@ class InitialImplementation implements Implementation {
     const sshTarget = `${this.vm.user}@${vmModule.Vm.cpaHost}`
     const workDir = escapeForSh(this.vm.workDirectory)
     const rebootCommand = this.operatingSystem.rebootCommand
+    const consoleLog = vmModule.Vm.logFile
+    const crashPattern = this.operatingSystem.consoleCrashPattern
 
     const synchronizer = new DefaultVmFileSystemSynchronizer({
       input: this.action.input,
@@ -564,9 +566,25 @@ do_sync() {
   echo "Sync complete."
 }
 
+# Succeeds when the guest has announced a kernel crash on its serial console
+# since the byte offset given as $1. The console log is written by the
+# hypervisor, which runs as root, so reading it requires sudo.
+guest_crashed() {
+  sudo tail -c "+$(($1 + 1))" '${consoleLog}' 2>/dev/null |
+    grep -qE '${crashPattern}'
+}
+
 do_reboot() {
+  # Only console output produced from here on describes this reboot. Anything
+  # before it belongs to a boot the VM already recovered from.
+  console_log_offset=$(sudo wc -c '${consoleLog}' 2>/dev/null | awk '{print $1; exit}')
+  : "\${console_log_offset:=0}"
+
   echo "Rebooting VM..."
-  ssh -t ${sshTarget} '${rebootCommand}' || true
+  # Bound the session. A guest that dies while rebooting never closes the
+  # connection, and SSH would then block for the full TCP retransmission time.
+  # ConnectTimeout doesn't help, it only covers establishing the connection.
+  ssh -t -o ServerAliveInterval=5 -o ServerAliveCountMax=3 ${sshTarget} '${rebootCommand}' || true
 
   echo "Waiting for VM to come back up..."
   deadline=$(($(date +%s) + 240))
@@ -576,6 +594,11 @@ do_reboot() {
       consecutive=$((consecutive + 1))
     else
       consecutive=0
+      if guest_crashed "$console_log_offset"; then
+        echo "The guest kernel crashed while rebooting, it will not come back up." >&2
+        echo "The console log of the VM is printed by the post job step." >&2
+        exit 1
+      fi
       if [ "$(date +%s)" -ge "$deadline" ]; then
         echo "Timed out waiting for VM to come back up after 240s" >&2
         exit 1

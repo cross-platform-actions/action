@@ -383,6 +383,8 @@ class InitialImplementation {
         const sshTarget = `${this.vm.user}@${vmModule.Vm.cpaHost}`;
         const workDir = escapeForSh(this.vm.workDirectory);
         const rebootCommand = this.operatingSystem.rebootCommand;
+        const consoleLog = vmModule.Vm.logFile;
+        const crashPattern = this.operatingSystem.consoleCrashPattern;
         const synchronizer = new vm_file_system_synchronizer_1.DefaultVmFileSystemSynchronizer({
             input: this.action.input,
             user: this.vm.user,
@@ -461,9 +463,25 @@ do_sync() {
   echo "Sync complete."
 }
 
+# Succeeds when the guest has announced a kernel crash on its serial console
+# since the byte offset given as $1. The console log is written by the
+# hypervisor, which runs as root, so reading it requires sudo.
+guest_crashed() {
+  sudo tail -c "+$(($1 + 1))" '${consoleLog}' 2>/dev/null |
+    grep -qE '${crashPattern}'
+}
+
 do_reboot() {
+  # Only console output produced from here on describes this reboot. Anything
+  # before it belongs to a boot the VM already recovered from.
+  console_log_offset=$(sudo wc -c '${consoleLog}' 2>/dev/null | awk '{print $1; exit}')
+  : "\${console_log_offset:=0}"
+
   echo "Rebooting VM..."
-  ssh -t ${sshTarget} '${rebootCommand}' || true
+  # Bound the session. A guest that dies while rebooting never closes the
+  # connection, and SSH would then block for the full TCP retransmission time.
+  # ConnectTimeout doesn't help, it only covers establishing the connection.
+  ssh -t -o ServerAliveInterval=5 -o ServerAliveCountMax=3 ${sshTarget} '${rebootCommand}' || true
 
   echo "Waiting for VM to come back up..."
   deadline=$(($(date +%s) + 240))
@@ -473,6 +491,11 @@ do_reboot() {
       consecutive=$((consecutive + 1))
     else
       consecutive=0
+      if guest_crashed "$console_log_offset"; then
+        echo "The guest kernel crashed while rebooting, it will not come back up." >&2
+        echo "The console log of the VM is printed by the post job step." >&2
+        exit 1
+      fi
       if [ "$(date +%s)" -ge "$deadline" ]; then
         echo "Timed out waiting for VM to come back up after 240s" >&2
         exit 1
@@ -1652,6 +1675,13 @@ class OperatingSystem {
     get rebootCommand() {
         return 'sudo reboot';
     }
+    // A POSIX extended regular expression matching the console output a guest
+    // produces when its kernel crashes and stops. Haiku, the BSDs and illumos
+    // all announce this by starting a line with `panic`, followed by a colon or,
+    // on illumos, by the CPU that panicked.
+    get consoleCrashPattern() {
+        return '^[[:space:]]*(PANIC|panic)(:|\\[)';
+    }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Converting qcow2 image to raw');
@@ -2774,7 +2804,7 @@ class Vm extends vm.Vm {
             '-netdev', this.netdev,
             '-display', 'none',
             '-monitor', 'none',
-            '-serial', `file:${this.logFile}`,
+            '-serial', `file:${vm.Vm.logFile}`,
             // '-nographic',
             '-boot', 'strict=off',
             ...this.firmwareFlags,
@@ -3198,7 +3228,6 @@ class LiveProcess {
 }
 class Vm {
     constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, arch, input, configuration, executor = new utility_1.ExecExecutor(), clock = new clock_1.SystemClock()) {
-        this.logFile = '/tmp/cross-platform-actions.log';
         this.vmProcess = new LiveProcess();
         this.hypervisorDirectory = hypervisorDirectory;
         this.resourcesDirectory = resourcesDirectory;
@@ -3348,6 +3377,9 @@ exports.Vm = Vm;
 Vm.user = 'runner';
 Vm.cpaHost = 'cross_platform_actions_host';
 Vm.pidfile = '/tmp/cross-platform-actions.pid';
+// The serial console log of the VM. It's written by the hypervisor, which
+// runs as root, so reading its content requires `sudo`.
+Vm.logFile = '/tmp/cross-platform-actions.log';
 //# sourceMappingURL=vm.js.map
 
 /***/ }),

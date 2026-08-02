@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The post job step now reports when the console log of the VM is missing or
     empty, instead of silently printing nothing
     ([#158](https://github.com/cross-platform-actions/action/issues/158))
+- A reboot of a guest that dies instead of rebooting now fails after roughly
+    20 seconds, instead of after 13 minutes. The SSH session that issues the
+    reboot is bounded by `ServerAliveInterval`, so it no longer blocks for the
+    full TCP retransmission time, and waiting for the VM to come back up is
+    given up on as soon as the guest announces a kernel panic on its serial
+    console
 
 ## [1.3.0] - 2026-06-22
 ### Added

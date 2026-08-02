@@ -73,6 +73,14 @@ export abstract class OperatingSystem {
     return 'sudo reboot'
   }
 
+  // A POSIX extended regular expression matching the console output a guest
+  // produces when its kernel crashes and stops. Haiku, the BSDs and illumos
+  // all announce this by starting a line with `panic`, followed by a colon or,
+  // on illumos, by the CPU that panicked.
+  get consoleCrashPattern(): string {
+    return '^[[:space:]]*(PANIC|panic)(:|\\[)'
+  }
+
   abstract createVirtualMachine(
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,

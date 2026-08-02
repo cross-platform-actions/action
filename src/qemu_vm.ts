@@ -50,7 +50,7 @@ export abstract class Vm extends vm.Vm {
 
       '-display', 'none',
       '-monitor', 'none',
-      '-serial', `file:${this.logFile}`,
+      '-serial', `file:${vm.Vm.logFile}`,
       // '-nographic',
 
       '-boot', 'strict=off',

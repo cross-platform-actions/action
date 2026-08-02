@@ -55,10 +55,12 @@ export abstract class Vm {
   static readonly user = 'runner'
   static readonly cpaHost = 'cross_platform_actions_host'
   static readonly pidfile = '/tmp/cross-platform-actions.pid'
+  // The serial console log of the VM. It's written by the hypervisor, which
+  // runs as root, so reading its content requires `sudo`.
+  static readonly logFile = '/tmp/cross-platform-actions.log'
   private static _isRunning?: boolean
 
   readonly hypervisorPath: fs.PathLike
-  protected readonly logFile: fs.PathLike = '/tmp/cross-platform-actions.log'
   protected vmProcess: Process = new LiveProcess()
   protected readonly architecture: architecture.Architecture
   protected readonly configuration: vm.Configuration
