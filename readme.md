@@ -3,6 +3,12 @@
 This project provides a GitHub action for running GitHub Actions workflows on
 multiple platforms, including platforms that GitHub Actions doesn't currently natively support.
 
+> [!IMPORTANT]
+> This readme documents the `master` branch, which may describe features and
+> operating system versions that have not been released yet. For the
+> documentation matching the latest release, see the
+> [readme for the latest release](https://github.com/cross-platform-actions/action/blob/v1/readme.md).
+
 ## `Features`
 
 Some of the features that this action supports include:
