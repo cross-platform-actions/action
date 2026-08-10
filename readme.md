@@ -62,8 +62,8 @@ jobs:
 
 Here's a sample workflow file which will set up a matrix resulting in nine
 jobs. One which will run on FreeBSD 15.1, one which runs OpenBSD 7.9, one which
-runs NetBSD 10.0, one which runs OpenBSD 7.9 on ARM64, one which runs NetBSD
-10.1 on ARM64, one which runs DragonFly BSD 6.4.2, one which runs MidnightBSD
+runs NetBSD 11.0, one which runs OpenBSD 7.9 on ARM64, one which runs NetBSD
+11.0 on ARM64, one which runs DragonFly BSD 6.4.2, one which runs MidnightBSD
 4.0.4, one which runs Haiku R1/beta5 and one which runs OmniOS r151056.
 
 ```yaml
@@ -94,11 +94,11 @@ jobs:
 
           - name: netbsd
             architecture: x86-64
-            version: '10.1'
+            version: '11.0'
 
           - name: netbsd
             architecture: arm64
-            version: '10.1'
+            version: '11.0'
 
           - name: dragonflybsd
             architecture: x86-64
@@ -310,6 +310,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64 | vax   |
 |---------|--------|-------|-------|
+| 11.0    | ✅     | ✅    | ✅    |
 | 10.1    | ✅     | ✅    | ✅    |
 | 10.0    | ✅     | ✅    | ❌    |
 | 9.4     | ✅     | ❌    | ❌    |
