@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Add support for FreeBSD on RISC-V 64 (`riscv64`)
+- Add support for FreeBSD on RISC-V 64 (`riscv64`) ([#36](https://github.com/cross-platform-actions/action/issues/36))
 - Add support for NetBSD on VAX, running on the SIMH simulator
 - Add support for NetBSD 11.0 ([#154](https://github.com/cross-platform-actions/action/issues/154))
 
