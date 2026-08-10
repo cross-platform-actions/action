@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Log a breakdown of how long each phase of setting up the VM took, together
     with how long the VM took to become reachable over SSH
 
+### Security
+- The guest's SSH port is only forwarded to the runner's loopback address. It was
+    previously bound to every interface, making the guest reachable from anything
+    that could reach the runner
+
 ## [1.4.0] - 2026-08-10
 ### Added
 - Add support for FreeBSD on RISC-V 64 (`riscv64`) ([#36](https://github.com/cross-platform-actions/action/issues/36))

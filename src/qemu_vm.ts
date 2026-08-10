@@ -98,7 +98,10 @@ export abstract class Vm extends vm.Vm {
     return [
       'user',
       'id=user.0',
-      `hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
+      // Bound to the loopback address. An empty host address would make QEMU
+      // listen on every interface, which exposes the guest's sshd to anything
+      // that can reach the runner. The action connects to localhost.
+      `hostfwd=tcp:127.0.0.1:${this.configuration.ssHostPort}-:22`,
       this.ipv6
     ]
       .filter(e => e !== '')

@@ -48,7 +48,7 @@ describe('NetBSD QemuVm', () => {
 
     it('constucts a command with the IPv6 disabled for the net device', () => {
       expect(actualNetDevice()).toEqual(
-        `user,id=user.0,hostfwd=tcp::${ssHostPort}-:22,ipv6=off`
+        `user,id=user.0,hostfwd=tcp:127.0.0.1:${ssHostPort}-:22,ipv6=off`
       )
     })
   })
