@@ -54,10 +54,12 @@ const vmModule = __importStar(__nccwpck_require__(2772));
 const vm_file_system_synchronizer_1 = __nccwpck_require__(8544);
 const input = __importStar(__nccwpck_require__(1099));
 const shell = __importStar(__nccwpck_require__(9044));
+const timings_1 = __nccwpck_require__(7915);
 const utility = __importStar(__nccwpck_require__(2857));
 const child_process_1 = __nccwpck_require__(2081);
 class Action {
     constructor() {
+        this.timings = new timings_1.Timings();
         this.inputHashPath = '/tmp/cross-platform-actions-input-hash';
         this.input = new input.Input();
         this.privateSshKeyName = 'id_ed25519';
@@ -77,11 +79,16 @@ class Action {
             core.startGroup('Setting up VM');
             core.debug('Running action');
             core.info(`Host CPU: ${new host_cpu_1.HostCpu()}`);
+            // The phases below are all no-ops when the VM is already running, so
+            // there's nothing worth reporting for those invocations.
+            const isInitialRun = !vmModule.Vm.isRunning;
             const runPreparer = this.createRunPreparer();
             runPreparer.createInputHash();
             runPreparer.validateInputHash();
-            const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()]);
-            const [firmwareDirectory, resourcesDirectory] = yield Promise.all(runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath));
+            const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield this.timings.measure('download', () => __awaiter(this, void 0, void 0, function* () { return Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()]); }));
+            const [firmwareDirectory, resourcesDirectory] = yield this.timings.measure('unarchive', () => __awaiter(this, void 0, void 0, function* () {
+                return Promise.all(runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath));
+            }));
             const hypervisorDirectory = path.join(firmwareDirectory, this.operatingSystem.hypervisor.binaryDirectory);
             const excludes = [
                 resourcesArchivePath,
@@ -96,21 +103,23 @@ class Action {
                 cpuCount: this.input.cpuCount
             });
             const implementation = this.getImplementation(vm);
-            yield implementation.prepareDisk(diskImagePath, resourcesDirectory);
-            yield implementation.init();
+            yield this.timings.measure('prepare disk', () => __awaiter(this, void 0, void 0, function* () { return implementation.prepareDisk(diskImagePath, resourcesDirectory); }));
+            yield this.timings.measure('init', () => __awaiter(this, void 0, void 0, function* () { return implementation.init(); }));
             try {
-                yield implementation.run();
+                yield this.timings.measure('start hypervisor', () => __awaiter(this, void 0, void 0, function* () { return implementation.run(); }));
                 implementation.configSSH(vm.ipAddress);
-                yield implementation.wait(this.operatingSystem.sshReadyTimeout);
-                yield implementation.setupWorkDirectory(vm.homeDirectory, vm.workDirectory);
+                yield this.timings.measure('wait for ssh', () => __awaiter(this, void 0, void 0, function* () { return implementation.wait(this.operatingSystem.sshReadyTimeout); }));
+                yield this.timings.measure('work directory', () => __awaiter(this, void 0, void 0, function* () { return implementation.setupWorkDirectory(vm.homeDirectory, vm.workDirectory); }));
                 const syncExcludes = [
                     this.targetDiskName,
                     this.resourceDisk.diskPath,
                     ...excludes
                 ];
-                yield vm.synchronizePaths(...syncExcludes);
+                yield this.timings.measure('synchronize files', () => __awaiter(this, void 0, void 0, function* () { return vm.synchronizePaths(...syncExcludes); }));
                 implementation.setupCustomShell(syncExcludes);
                 core.info('VM is ready');
+                if (isInitialRun)
+                    this.timings.report('VM setup timings');
                 try {
                     core.endGroup();
                     yield this.runCommand(vm);
@@ -142,7 +151,7 @@ class Action {
                 ? this.input.imageURL
                 : this.operatingSystem.virtualMachineImageUrl;
             core.info(`Downloading disk image: ${imageURL}`);
-            const result = yield cache.downloadTool(imageURL);
+            const result = yield this.timings.measure('disk image', () => __awaiter(this, void 0, void 0, function* () { return cache.downloadTool(imageURL); }), { nested: true });
             core.info(`Downloaded file: ${result}`);
             return result;
         });
@@ -150,7 +159,7 @@ class Action {
     download(type, url) {
         return __awaiter(this, void 0, void 0, function* () {
             core.info(`Downloading ${type}: ${url}`);
-            const result = yield cache.downloadTool(url);
+            const result = yield this.timings.measure(type, () => __awaiter(this, void 0, void 0, function* () { return cache.downloadTool(url); }), { nested: true });
             core.info(`Downloaded file: ${result}`);
             return result;
         });
@@ -161,7 +170,7 @@ class Action {
     unarchive(type, archivePath) {
         return __awaiter(this, void 0, void 0, function* () {
             core.info(`Unarchiving ${type}: ${archivePath}`);
-            return cache.extractTar(archivePath, undefined, '-x');
+            return yield this.timings.measure(type, () => __awaiter(this, void 0, void 0, function* () { return cache.extractTar(archivePath, undefined, '-x'); }), { nested: true });
         });
     }
     unarchiveHypervisor(archivePath) {
@@ -178,6 +187,13 @@ class Action {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.operatingSystem.requiresSshKey)
                 return;
+            yield this.timings.measure('ssh key', () => __awaiter(this, void 0, void 0, function* () { return this.createSSHKey(); }), {
+                nested: true
+            });
+        });
+    }
+    createSSHKey() {
+        return __awaiter(this, void 0, void 0, function* () {
             const mountPath = this.resourceDisk.create();
             yield exec.exec('ssh-keygen', [
                 '-t',
@@ -3545,6 +3561,117 @@ Vm.consolePort = 2848;
 
 /***/ }),
 
+/***/ 7915:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Timings = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const clock_1 = __nccwpck_require__(9948);
+// Records how long the individual phases of setting up a VM take, so the setup
+// time can be broken down and compared between runs.
+class Timings {
+    constructor(clock = new clock_1.SystemClock()) {
+        this.measurements = [];
+        this.clock = clock;
+        this.startedAt = clock.now();
+    }
+    // The wall clock time, in milliseconds, that has elapsed since this instance
+    // was created.
+    get elapsed() {
+        return this.clock.now() - this.startedAt;
+    }
+    // Runs `block`, recording how long it took under `name`. Phases are reported
+    // in the order they start, so a phase always precedes the nested phases it
+    // runs.
+    measure(name, block, { nested = false } = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const startedAt = this.clock.now();
+            const measurement = { name, milliseconds: 0, nested };
+            this.measurements.push(measurement);
+            try {
+                return yield block();
+            }
+            finally {
+                measurement.milliseconds = this.clock.now() - startedAt;
+            }
+        });
+    }
+    // Logs the recorded phases, in the order they started, followed by the total
+    // wall clock time. The same numbers go to the debug log as JSON, for
+    // comparing runs mechanically.
+    report(title) {
+        const total = this.elapsed;
+        const width = Math.max(this.totalLabel.length, ...this.measurements.map(m => this.label(m).length));
+        core.info(`${title} (indented phases run concurrently, inside the phase they're ` +
+            'listed under):');
+        for (const measurement of this.measurements)
+            core.info(this.format(this.label(measurement), measurement.milliseconds, width));
+        core.info(this.format(this.totalLabel, total, width));
+        core.debug(`${title} (JSON): ${JSON.stringify(this.toJson(total))}`);
+    }
+    get totalLabel() {
+        return 'total';
+    }
+    label(measurement) {
+        return measurement.nested ? `  ${measurement.name}` : measurement.name;
+    }
+    format(label, milliseconds, width) {
+        const seconds = (milliseconds / 1000).toFixed(2);
+        return `  ${label.padEnd(width)}  ${seconds.padStart(8)} s`;
+    }
+    toJson(total) {
+        const json = {};
+        let parent = '';
+        for (const measurement of this.measurements) {
+            if (measurement.nested)
+                json[`${parent}${measurement.name}`] = measurement.milliseconds / 1000;
+            else {
+                json[measurement.name] = measurement.milliseconds / 1000;
+                // Nested phase names are only unique within the phase they belong to,
+                // so qualify them to keep the keys of the JSON object unique.
+                parent = `${measurement.name} / `;
+            }
+        }
+        json[this.totalLabel] = total / 1000;
+        return json;
+    }
+}
+exports.Timings = Timings;
+//# sourceMappingURL=timings.js.map
+
+/***/ }),
+
 /***/ 2857:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -3783,11 +3910,18 @@ class Vm {
     wait(timeout) {
         return __awaiter(this, void 0, void 0, function* () {
             const deadline = new deadline_1.Deadline(timeout, this.clock);
+            const startedAt = this.clock.now();
             let attempts = 0;
             while (!deadline.hasPassed) {
                 attempts++;
-                if (yield this.isReady())
+                if (yield this.isReady()) {
+                    // The probe interval bounds how precisely this reflects when the guest
+                    // actually became reachable, so log both numbers.
+                    const seconds = ((this.clock.now() - startedAt) / 1000).toFixed(2);
+                    core.info(`The VM became ready after ${seconds} seconds ` +
+                        `and ${attempts} attempt(s)`);
                     return;
+                }
                 yield deadline.sleepAtMost(1000);
             }
             throw Error(`Waiting for VM to become ready timed out after ${timeout} seconds ` +

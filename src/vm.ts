@@ -152,11 +152,21 @@ export abstract class Vm {
   // Waits, at most `timeout` seconds, for the VM to become ready.
   async wait(timeout: number): Promise<void> {
     const deadline = new Deadline(timeout, this.clock)
+    const startedAt = this.clock.now()
     let attempts = 0
 
     while (!deadline.hasPassed) {
       attempts++
-      if (await this.isReady()) return
+      if (await this.isReady()) {
+        // The probe interval bounds how precisely this reflects when the guest
+        // actually became reachable, so log both numbers.
+        const seconds = ((this.clock.now() - startedAt) / 1000).toFixed(2)
+        core.info(
+          `The VM became ready after ${seconds} seconds ` +
+            `and ${attempts} attempt(s)`
+        )
+        return
+      }
       await deadline.sleepAtMost(1000)
     }
 

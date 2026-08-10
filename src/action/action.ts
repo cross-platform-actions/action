@@ -20,11 +20,13 @@ import {
 } from '../vm_file_system_synchronizer'
 import * as input from './input'
 import * as shell from './shell'
+import {Timings} from '../timings'
 import * as utility from '../utility'
 
 import {execSync} from 'child_process'
 
 export class Action {
+  readonly timings = new Timings()
   readonly tempPath: string
   readonly host: hostModule.Host
   readonly operatingSystem: os.OperatingSystem
@@ -62,15 +64,24 @@ export class Action {
     core.startGroup('Setting up VM')
     core.debug('Running action')
     core.info(`Host CPU: ${new HostCpu()}`)
+    // The phases below are all no-ops when the VM is already running, so
+    // there's nothing worth reporting for those invocations.
+    const isInitialRun = !vmModule.Vm.isRunning
     const runPreparer = this.createRunPreparer()
     runPreparer.createInputHash()
     runPreparer.validateInputHash()
 
     const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] =
-      await Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()])
+      await this.timings.measure('download', async () =>
+        Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()])
+      )
 
-    const [firmwareDirectory, resourcesDirectory] = await Promise.all(
-      runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath)
+    const [firmwareDirectory, resourcesDirectory] = await this.timings.measure(
+      'unarchive',
+      async () =>
+        Promise.all(
+          runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath)
+        )
     )
 
     const hypervisorDirectory = path.join(
@@ -97,25 +108,33 @@ export class Action {
     )
 
     const implementation = this.getImplementation(vm)
-    await implementation.prepareDisk(diskImagePath, resourcesDirectory)
+    await this.timings.measure('prepare disk', async () =>
+      implementation.prepareDisk(diskImagePath, resourcesDirectory)
+    )
 
-    await implementation.init()
+    await this.timings.measure('init', async () => implementation.init())
     try {
-      await implementation.run()
+      await this.timings.measure('start hypervisor', async () =>
+        implementation.run()
+      )
       implementation.configSSH(vm.ipAddress)
-      await implementation.wait(this.operatingSystem.sshReadyTimeout)
-      await implementation.setupWorkDirectory(
-        vm.homeDirectory,
-        vm.workDirectory
+      await this.timings.measure('wait for ssh', async () =>
+        implementation.wait(this.operatingSystem.sshReadyTimeout)
+      )
+      await this.timings.measure('work directory', async () =>
+        implementation.setupWorkDirectory(vm.homeDirectory, vm.workDirectory)
       )
       const syncExcludes = [
         this.targetDiskName,
         this.resourceDisk.diskPath,
         ...excludes
       ]
-      await vm.synchronizePaths(...syncExcludes)
+      await this.timings.measure('synchronize files', async () =>
+        vm.synchronizePaths(...syncExcludes)
+      )
       implementation.setupCustomShell(syncExcludes)
       core.info('VM is ready')
+      if (isInitialRun) this.timings.report('VM setup timings')
       try {
         core.endGroup()
         await this.runCommand(vm)
@@ -144,7 +163,11 @@ export class Action {
         ? this.input.imageURL
         : this.operatingSystem.virtualMachineImageUrl
     core.info(`Downloading disk image: ${imageURL}`)
-    const result = await cache.downloadTool(imageURL)
+    const result = await this.timings.measure(
+      'disk image',
+      async () => cache.downloadTool(imageURL),
+      {nested: true}
+    )
     core.info(`Downloaded file: ${result}`)
 
     return result
@@ -152,7 +175,11 @@ export class Action {
 
   async download(type: string, url: string): Promise<string> {
     core.info(`Downloading ${type}: ${url}`)
-    const result = await cache.downloadTool(url)
+    const result = await this.timings.measure(
+      type,
+      async () => cache.downloadTool(url),
+      {nested: true}
+    )
     core.info(`Downloaded file: ${result}`)
 
     return result
@@ -179,7 +206,11 @@ export class Action {
 
   async unarchive(type: string, archivePath: string): Promise<string> {
     core.info(`Unarchiving ${type}: ${archivePath}`)
-    return cache.extractTar(archivePath, undefined, '-x')
+    return await this.timings.measure(
+      type,
+      async () => cache.extractTar(archivePath, undefined, '-x'),
+      {nested: true}
+    )
   }
 
   async unarchiveHypervisor(archivePath: string): Promise<string> {
@@ -195,6 +226,12 @@ export class Action {
   private async setupSSHKey(): Promise<void> {
     if (!this.operatingSystem.requiresSshKey) return
 
+    await this.timings.measure('ssh key', async () => this.createSSHKey(), {
+      nested: true
+    })
+  }
+
+  private async createSSHKey(): Promise<void> {
     const mountPath = this.resourceDisk.create()
     await exec.exec('ssh-keygen', [
       '-t',
