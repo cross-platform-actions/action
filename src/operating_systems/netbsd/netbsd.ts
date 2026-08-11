@@ -21,6 +21,20 @@ export default class NetBsd extends Qemu {
   }
 
   get vmClass(): Class<vm.Vm> {
-    return qemu_vm.Vm
+    return this.architecture.resolve({
+      riscv64: qemu_vm.VmRiscv64,
+      default: qemu_vm.Vm
+    })
+  }
+
+  // The FAT resources disk that carries the generated SSH key can be attached
+  // on riscv64, but the image cannot find it: its rc.local takes the last entry
+  // of `hw.disknames`, and the RISC-V disks enumerate as `ld4` and `ld5` with
+  // the boot disk's wedges `dk0` and `dk1` registered after both of them, so
+  // the last entry is the root wedge rather than the resources disk. That image
+  // gives its user an empty password instead, which needs nothing from this
+  // end: sshd's keyboard-interactive method accepts it without a prompt.
+  override get requiresSshKey(): boolean {
+    return this.architecture.resolve({riscv64: false, default: true})
   }
 }

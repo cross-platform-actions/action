@@ -2565,7 +2565,20 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
         return version_1.default.operating_system.netbsd;
     }
     get vmClass() {
-        return qemu_vm.Vm;
+        return this.architecture.resolve({
+            riscv64: qemu_vm.VmRiscv64,
+            default: qemu_vm.Vm
+        });
+    }
+    // The FAT resources disk that carries the generated SSH key can be attached
+    // on riscv64, but the image cannot find it: its rc.local takes the last entry
+    // of `hw.disknames`, and the RISC-V disks enumerate as `ld4` and `ld5` with
+    // the boot disk's wedges `dk0` and `dk1` registered after both of them, so
+    // the last entry is the root wedge rather than the resources disk. That image
+    // gives its user an empty password instead, which needs nothing from this
+    // end: sshd's keyboard-interactive method accepts it without a prompt.
+    get requiresSshKey() {
+        return this.architecture.resolve({ riscv64: false, default: true });
     }
 };
 NetBsd = __decorate([
@@ -2582,7 +2595,7 @@ exports["default"] = NetBsd;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Vm = void 0;
+exports.VmRiscv64 = exports.Vm = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
 class Vm extends qemu_vm_1.Vm {
     get hardDriverFlags() {
@@ -2593,6 +2606,31 @@ class Vm extends qemu_vm_1.Vm {
     }
 }
 exports.Vm = Vm;
+// On RISC-V the firmware is U-Boot, loaded via -kernel on top of QEMU's
+// built-in OpenSBI. U-Boot then EFI-boots the disk image. Booting U-Boot via
+// -bios instead does not reliably boot the installed disk. The RISC-V kernel
+// only attaches virtio devices through the MMIO transport, it leaves the ones
+// on the PCI bus unconfigured.
+class VmRiscv64 extends Vm {
+    get hardDriverFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-blk-device,drive=drive0',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=unsafe,discard=ignore,format=raw`,
+            '-device', 'virtio-blk-device,drive=drive1',
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=unsafe,discard=ignore,format=raw`,
+        ];
+    }
+    get netDeviceFlags() {
+        // An MMIO device has no PCI address.
+        return ['-device', 'virtio-net-device,netdev=user.0'];
+    }
+    get firmwareFlags() {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return ['-kernel', this.configuration.firmware.toString()];
+    }
+}
+exports.VmRiscv64 = VmRiscv64;
 //# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
@@ -3062,7 +3100,8 @@ class Qemu extends os.OperatingSystem {
     get hypervisor() {
         const cls = this.architecture.resolve({
             arm64: hypervisor_1.QemuEfi,
-            x86_64: hypervisor_1.Qemu
+            x86_64: hypervisor_1.Qemu,
+            riscv64: hypervisor_1.QemuRiscv
         });
         return new cls();
     }
@@ -3188,7 +3227,7 @@ class Vm extends vm.Vm {
             '-cpu', this.cpuFlagValue,
             '-smp', this.configuration.cpuCount.toString(),
             '-m', this.configuration.memory,
-            '-device', `${this.netDevive},netdev=user.0,addr=0x03`,
+            ...this.netDeviceFlags,
             '-netdev', this.netdev,
             '-display', 'none',
             '-monitor', 'none',
@@ -3211,6 +3250,11 @@ class Vm extends vm.Vm {
     }
     get netDevive() {
         return 'virtio-net';
+    }
+    // The complete `-device` flags for the network interface, so that a machine
+    // without a PCI bus can replace them rather than only name the device.
+    get netDeviceFlags() {
+        return ['-device', `${this.netDevive},netdev=user.0,addr=0x03`];
     }
     get ipv6() {
         return '';

@@ -45,7 +45,7 @@ export abstract class Vm extends vm.Vm {
       '-smp', this.configuration.cpuCount.toString(),
       '-m', this.configuration.memory,
 
-      '-device', `${this.netDevive},netdev=user.0,addr=0x03`,
+      ...this.netDeviceFlags,
       '-netdev', this.netdev,
 
       '-display', 'none',
@@ -76,6 +76,12 @@ export abstract class Vm extends vm.Vm {
 
   protected get netDevive(): string {
     return 'virtio-net'
+  }
+
+  // The complete `-device` flags for the network interface, so that a machine
+  // without a PCI bus can replace them rather than only name the device.
+  protected get netDeviceFlags(): string[] {
+    return ['-device', `${this.netDevive},netdev=user.0,addr=0x03`]
   }
 
   protected get ipv6(): string {

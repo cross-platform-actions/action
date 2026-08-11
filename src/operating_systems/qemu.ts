@@ -11,7 +11,8 @@ import {Class} from '../utility'
 import {
   Hypervisor,
   Qemu as QemuHypervisor,
-  QemuEfi as QemuEfiHypervisor
+  QemuEfi as QemuEfiHypervisor,
+  QemuRiscv as QemuRiscvHypervisor
 } from '../hypervisor'
 
 export abstract class Qemu extends os.OperatingSystem {
@@ -24,7 +25,8 @@ export abstract class Qemu extends os.OperatingSystem {
   override get hypervisor(): Hypervisor {
     const cls = this.architecture.resolve({
       arm64: QemuEfiHypervisor,
-      x86_64: QemuHypervisor
+      x86_64: QemuHypervisor,
+      riscv64: QemuRiscvHypervisor
     })
 
     return new cls()

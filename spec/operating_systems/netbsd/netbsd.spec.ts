@@ -86,6 +86,34 @@ describe('NetBSD OperatingSystem', () => {
       )
     })
 
+    describe('RISC-V 64 architecture', () => {
+      let riscv64Architecture = arch.create(
+        archKind.Kind.riscv64,
+        host,
+        osKind,
+        host.hypervisor
+      )
+      let netbsdRiscv64 = new NetBsd(riscv64Architecture, '11.0')
+
+      it('creates a virtual machine that attaches its devices over MMIO', () => {
+        let vm = netbsdRiscv64.createVirtualMachine(
+          hypervisorDirectory,
+          resourcesDirectory,
+          firmwareDirectory,
+          input,
+          config
+        )
+
+        expect(vm).toBeInstanceOf(netbsdQemuVm.VmRiscv64)
+      })
+
+      // The image can't locate the resources disk the key is delivered on, so it
+      // lets its user in with an empty password instead.
+      it('does not require an SSH key', () => {
+        expect(netbsdRiscv64.requiresSshKey).toBe(false)
+      })
+    })
+
     describe('VAX architecture', () => {
       let vaxArchitecture = arch.create(
         archKind.Kind.vax,

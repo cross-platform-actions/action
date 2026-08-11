@@ -226,6 +226,17 @@ jobs:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action
 
+        # A riscv64 image exists only for 11.0, so it gets one extra job rather
+        # than an exclusion per older version.
+        include:
+          - version: '11.0'
+            architecture:
+              name: riscv64
+              uname: riscv64
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
         exclude:
           # arm64 images exist only for 10.0 and newer.
           - version: '9.4'
