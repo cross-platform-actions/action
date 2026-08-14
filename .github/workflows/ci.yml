@@ -116,6 +116,11 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          # TODO: set `uname` to the hrev of the R1/beta6 release, once the
+          # release is out.
+          - name: 'r1beta6'
+            uname: hrev00000
+
           - name: 'r1beta5'
             uname: hrev57937
 
