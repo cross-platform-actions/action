@@ -9,7 +9,7 @@ const version = {
     omnios: 'v0.2.0'
   },
 
-  resources: 'v1.1.0',
+  resources: 'v2.0.0',
   simh: 'v0.0.1'
 }
 
