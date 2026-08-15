@@ -64,7 +64,7 @@ Here's a sample workflow file which will set up a matrix resulting in nine
 jobs. One which will run on FreeBSD 15.1, one which runs OpenBSD 7.9, one which
 runs NetBSD 11.0, one which runs OpenBSD 7.9 on ARM64, one which runs NetBSD
 11.0 on ARM64, one which runs DragonFly BSD 6.4.2, one which runs MidnightBSD
-4.0.4, one which runs Haiku R1/beta6 and one which runs OmniOS r151056.
+4.0.4, one which runs Haiku R1/beta5 and one which runs OmniOS r151056.
 
 ```yaml
 name: CI
@@ -110,7 +110,7 @@ jobs:
 
           - name: haiku
             architecture: x86-64
-            version: 'r1beta6'
+            version: 'r1beta5'
 
           - name: omnios
             architecture: x86-64
@@ -352,6 +352,9 @@ operating systems.
 |---------|--------|
 | r1beta6 | ✅     |
 | r1beta5 | ✅     |
+
+Note, R1/beta6 has not been officially released yet. The image is built from
+the official test build, `hrev59866_53`, until the release is out.
 
 ### [OmniOS][omnios_builder] (`omnios`)
 
