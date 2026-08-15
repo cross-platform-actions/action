@@ -71,6 +71,7 @@ describe('NetBSD QemuVm', () => {
 
       expect(joined).toContain('-bios')
       expect(joined).toContain('virtio-scsi-pci')
+      expect(joined).not.toContain('+invtsc')
       expect(joined).not.toContain('-kernel')
       expect(joined).not.toContain('microvm')
       expect(joined).not.toContain('virtio-mmio')
@@ -118,6 +119,12 @@ describe('NetBSD QemuVm', () => {
       expect(command).toContain('-machine type=microvm,acpi=off,pic=off')
       expect(command).toContain(`-kernel ${kernel}`)
       expect(command).toContain('-append root=dk0 console=com rw')
+    })
+
+    // Without this the guest won't use the TSC, and the only timecounter left
+    // on this machine type is the i8254, which is two port reads away.
+    it('advertises an invariant TSC', () => {
+      expect(command).toContain('amx-bf16=off,+invtsc')
     })
 
     // The firmware is what loads the kernel on this machine type, and the only

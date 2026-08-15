@@ -116,6 +116,14 @@ export class MicrovmVm extends Vm {
     ]
   }
 
+  // Decides what the guest uses to tell the time. NetBSD won't pick a TSC that
+  // isn't advertised as invariant, and this machine type has no HPET to settle
+  // for either, so it falls back to the i8254 -- two port reads, each of which
+  // leaves the guest. An ssh transfer measured 15 MB/s that way, 40 with the TSC.
+  protected override get cpuidFlags(): string[] {
+    return ['+invtsc']
+  }
+
   // Modern virtio rather than the legacy MMIO layout QEMU defaults to.
   protected override get extraFlags(): string[] {
     return ['-global', 'virtio-mmio.force-legacy=false']
