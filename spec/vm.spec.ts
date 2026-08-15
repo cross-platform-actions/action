@@ -34,6 +34,7 @@ class FakeClock implements Clock {
 // attempt number `succeedsOnAttempt`.
 class FakeSsh implements Executor {
   attempts = 0
+  args: string[] = []
 
   private readonly clock: FakeClock
   private readonly duration: number
@@ -53,8 +54,9 @@ class FakeSsh implements Executor {
     this.succeedsOnAttempt = succeedsOnAttempt
   }
 
-  async execute(): Promise<number> {
+  async execute(_commandLine: string, args: string[] = []): Promise<number> {
     this.attempts++
+    this.args = args
     this.clock.advance(this.duration * 1000)
 
     return this.attempts >= this.succeedsOnAttempt ? 0 : 255
@@ -137,6 +139,24 @@ describe('Vm', () => {
 
       expect(ssh.attempts).toEqual(1)
       expect(clock.now()).toEqual(2500)
+    })
+
+    // The hypervisor's user mode networking accepts the forwarded connection
+    // before the guest does, so a probe against a guest that isn't listening
+    // yet blocks for the whole connect timeout rather than failing fast. The
+    // SSH configuration's ten seconds would then dominate the boot time of a
+    // guest that becomes ready sooner.
+    it('bounds a single probe well below the SSH configuration timeout', async () => {
+      const ssh = new FakeSsh({clock, duration: 0, succeedsOnAttempt: 1})
+
+      await createVm(ssh).wait(240)
+
+      expect(ssh.args).toEqual([
+        '-t',
+        '-o',
+        'ConnectTimeout=2',
+        `runner@${Vm.cpaHost}`
+      ])
     })
   })
 })

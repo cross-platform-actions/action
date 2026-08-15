@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Changed
+- Every guest becomes usable sooner, by up to 8 seconds, because the action no
+    longer waits on a readiness probe it sent before the guest was listening
+
 ### Added
 - Log a breakdown of how long each phase of setting up the VM took, together
     with how long the VM took to become reachable over SSH

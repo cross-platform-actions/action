@@ -3538,6 +3538,13 @@ class Vm extends vm.Vm {
             return 'localhost';
         });
     }
+    // The simulated machine runs at roughly 1 MIPS, where even the SSH
+    // identification string exchange isn't necessarily prompt. Keep the longer
+    // timeout a probe used to get, rather than risk a probe that times out
+    // against a guest that is in fact listening.
+    get readinessProbeTimeout() {
+        return 10;
+    }
     // SIMH cannot daemonize itself like QEMU. Redirect its output to a file
     // instead of inheriting the runner's pipes, otherwise the runner would
     // wait for the simulator to exit before finishing the step.
@@ -3909,6 +3916,14 @@ class Vm {
             this.ipAddress = yield this.getIpAddress();
         });
     }
+    // Bounds a single readiness probe, in seconds. User mode networking accepts
+    // the forwarded connection before the guest's sshd does, so a probe sent too
+    // early blocks rather than failing fast. The SSH ConnectTimeout a probe used
+    // to get is ten seconds -- right for a command, but as a probe interval it
+    // costs all ten whenever the guest is ready sooner.
+    get readinessProbeTimeout() {
+        return 2;
+    }
     // Waits, at most `timeout` seconds, for the VM to become ready.
     wait(timeout) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -3953,7 +3968,10 @@ class Vm {
             if (options.log)
                 core.info(`Executing command inside VM: ${command}`);
             const buffer = Buffer.from(command);
-            return yield this.executor.execute('ssh', ['-t', this.sshTarget], {
+            const connectTimeout = options.connectTimeout === undefined
+                ? []
+                : ['-o', `ConnectTimeout=${options.connectTimeout}`];
+            return yield this.executor.execute('ssh', ['-t', ...connectTimeout, this.sshTarget], {
                 input: buffer,
                 silent: options.silent,
                 ignoreReturnCode: options.ignoreReturnCode
@@ -3994,7 +4012,10 @@ class Vm {
     isReady() {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Waiting for VM to be ready...');
-            const ready = (yield this.execute('true', { ignoreReturnCode: true })) === 0;
+            const ready = (yield this.execute('true', {
+                ignoreReturnCode: true,
+                connectTimeout: this.readinessProbeTimeout
+            })) === 0;
             if (ready)
                 core.info('VM is ready');
             return ready;
