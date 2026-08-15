@@ -100,6 +100,13 @@ export class Action {
       diskImagePath
     ].map(p => p.slice(this.homeDirectory.length + 1))
 
+    // Before the VM is created, not after: unpacking the bundle is what puts
+    // the disk and, where there is one, the kernel where the VM expects them,
+    // and a VM that boots a kernel directly is handed one at construction.
+    await this.timings.measure('prepare disk', async () =>
+      runPreparer.prepareDisk(diskImagePath, resourcesDirectory)
+    )
+
     const vm = this.creareVm(
       hypervisorDirectory,
       firmwareDirectory,
@@ -111,10 +118,6 @@ export class Action {
     )
 
     const implementation = this.getImplementation(vm)
-    await this.timings.measure('prepare disk', async () =>
-      implementation.prepareDisk(diskImagePath, resourcesDirectory)
-    )
-
     await this.timings.measure('init', async () => implementation.init())
     try {
       await this.timings.measure('start hypervisor', async () =>
@@ -226,8 +229,17 @@ export class Action {
     return env ? `SendEnv ${env}` : ''
   }
 
+  // A platform whose images accept a credential-less login needs no key -- but
+  // only for the images this action publishes. An image supplied through
+  // `image_url` may well have been built from a release that expects the key on
+  // the resources disk, and there is no way to tell from the outside, so it
+  // keeps getting one.
+  get requiresSshKey(): boolean {
+    return this.operatingSystem.requiresSshKey || this.input.imageURL !== ''
+  }
+
   private async setupSSHKey(): Promise<void> {
-    if (!this.operatingSystem.requiresSshKey) return
+    if (!this.requiresSshKey) return
 
     await this.timings.measure('ssh key', async () => this.createSSHKey(), {
       nested: true
@@ -325,6 +337,7 @@ interface RunPreparer {
     hypervisorArchivePath: string,
     resourcesArchivePath: string
   ): [Promise<string>, Promise<string>]
+  prepareDisk(diskImagePath: string, resourcesDirectory: string): Promise<void>
 }
 
 // Used when the VM is not running
@@ -368,6 +381,17 @@ class InitialRunPreparer implements RunPreparer {
       this.action.unarchive('resources', resourcesArchivePath)
     ]
   }
+
+  async prepareDisk(
+    diskImagePath: string,
+    resourcesDirectory: string
+  ): Promise<void> {
+    await this.action.operatingSystem.prepareDisk(
+      diskImagePath,
+      this.action['targetDiskName'],
+      resourcesDirectory
+    )
+  }
 }
 
 // Used when the VM is already running
@@ -402,10 +426,16 @@ class LiveRunPreparer implements RunPreparer {
   unarchive(): [Promise<string>, Promise<string>] {
     return [Promise.resolve(''), Promise.resolve('')]
   }
+
+  async prepareDisk(
+    _diskImagePath: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+    _resourcesDirectory: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  ): Promise<void> {
+    // noop
+  }
 }
 
 interface Implementation {
-  prepareDisk(diskImagePath: string, resourcesDirectory: string): Promise<void>
   init(): Promise<void>
   run(): Promise<void>
   wait(timeout: number): Promise<void>
@@ -420,13 +450,6 @@ interface Implementation {
 }
 
 class LiveImplementation implements Implementation {
-  async prepareDisk(
-    _diskImagePath: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-    _resourcesDirectory: string // eslint-disable-line @typescript-eslint/no-unused-vars
-  ): Promise<void> {
-    // noop
-  }
-
   async init(): Promise<void> {
     // noop
   }
@@ -472,17 +495,6 @@ class InitialImplementation implements Implementation {
     this.vm = vm
   }
 
-  async prepareDisk(
-    diskImagePath: string,
-    resourcesDirectory: string
-  ): Promise<void> {
-    await this.action.operatingSystem.prepareDisk(
-      diskImagePath,
-      this.targetDiskName,
-      resourcesDirectory
-    )
-  }
-
   async init(): Promise<void> {
     await this.vm.init()
   }
@@ -502,15 +514,11 @@ class InitialImplementation implements Implementation {
     await this.vm.setupWorkDirectory(homeDirectory, workDirectory)
   }
 
-  private get targetDiskName(): string {
-    return this.action['targetDiskName']
-  }
-
   configSSH(ipAddress: string): void {
     core.debug('Configuring SSH')
 
     this.createSSHConfig()
-    if (this.operatingSystem.requiresSshKey) this.setupAuthorizedKeys()
+    if (this.action.requiresSshKey) this.setupAuthorizedKeys()
     this.setupHostname(ipAddress)
   }
 
