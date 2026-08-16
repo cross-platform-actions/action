@@ -40,6 +40,14 @@ inputs:
   cpu_count:
     required: false
     description: The number of CPU cores for the virtual machine
+  variant:
+    required: false
+    description: |
+      Which variant of the operating system to run. A variant is a named
+      configuration of the platform, not a set of independent options. Valid
+      values are `default` and, where the platform supports it, `microvm`.
+      Asking for a variant a platform doesn't have is an error.
+    default: default
   image_url:
     required: false
     description: URL for running the action with a custom image.

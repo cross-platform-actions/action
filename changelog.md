@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     longer waits on a readiness probe it sent before the guest was listening
 
 ### Added
+- A `variant` input, selecting a named configuration of a platform. Defaults to
+    `default`, which boots exactly as before, so no existing workflow changes.
+    See [Variants](readme.md#variants-variant)
 - Log a breakdown of how long each phase of setting up the VM took, together
     with how long the VM took to become reachable over SSH
 

@@ -67,6 +67,9 @@ export class Action {
     // The phases below are all no-ops when the VM is already running, so
     // there's nothing worth reporting for those invocations.
     const isInitialRun = !vmModule.Vm.isRunning
+    // Before anything is downloaded, so an unsupported variant costs a second
+    // rather than the image it would have booted.
+    this.operatingSystem.validateVariant(this.input.variant)
     const runPreparer = this.createRunPreparer()
     runPreparer.createInputHash()
     runPreparer.validateInputHash()

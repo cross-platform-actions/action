@@ -82,6 +82,9 @@ class Action {
             // The phases below are all no-ops when the VM is already running, so
             // there's nothing worth reporting for those invocations.
             const isInitialRun = !vmModule.Vm.isRunning;
+            // Before anything is downloaded, so an unsupported variant costs a second
+            // rather than the image it would have booted.
+            this.operatingSystem.validateVariant(this.input.variant);
             const runPreparer = this.createRunPreparer();
             runPreparer.createInputHash();
             runPreparer.validateInputHash();
@@ -746,6 +749,7 @@ exports.Input = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const architecture = __importStar(__nccwpck_require__(656));
 const shell_1 = __nccwpck_require__(9044);
+const variant_1 = __nccwpck_require__(2002);
 const os = __importStar(__nccwpck_require__(6713));
 const host_1 = __nccwpck_require__(8215);
 const sync_direction_1 = __nccwpck_require__(3377);
@@ -846,6 +850,20 @@ class Input {
         }
         return (this.syncDirection_ = syncDirection);
     }
+    get variant() {
+        if (this.variant_ !== undefined)
+            return this.variant_;
+        const input = core.getInput('variant');
+        core.debug(`variant input: '${input}'`);
+        if (input === undefined || input === '')
+            return (this.variant_ = variant_1.Variant.default);
+        const variant = (0, variant_1.toVariant)(input);
+        if (variant === undefined) {
+            const values = variant_1.validVariants.join(', ');
+            throw Error(`Invalid variant: ${input}\nValid variants are: ${values}`);
+        }
+        return (this.variant_ = variant);
+    }
     get shutdownVm() {
         if (this.shutdownVm_ !== undefined)
             return this.shutdownVm_;
@@ -869,7 +887,8 @@ class Input {
             this.environmentVariables,
             this.architecture,
             this.memory,
-            this.cpuCount
+            this.cpuCount,
+            this.variant
         ];
         const hash = (0, crypto_1.createHash)('sha256');
         for (const component of components)
@@ -944,6 +963,45 @@ const syncDirectionMap = {
 };
 exports.validSyncDirections = Object.keys(syncDirectionMap);
 //# sourceMappingURL=sync_direction.js.map
+
+/***/ }),
+
+/***/ 2002:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toString = exports.validVariants = exports.toVariant = exports.Variant = void 0;
+// A named, tested configuration of a platform, rather than a set of
+// independent knobs. Keeping it a closed list is deliberate: every value here
+// is something CI boots, and a combination nobody tests never becomes
+// reachable by writing two flags at once.
+var Variant;
+(function (Variant) {
+    Variant[Variant["default"] = 0] = "default";
+    Variant[Variant["microvm"] = 1] = "microvm";
+})(Variant = exports.Variant || (exports.Variant = {}));
+const stringToVariant = (() => {
+    const map = new Map();
+    map.set('default', Variant.default);
+    map.set('microvm', Variant.microvm);
+    return map;
+})();
+function toVariant(value) {
+    return stringToVariant.get(value.toLowerCase());
+}
+exports.toVariant = toVariant;
+exports.validVariants = Array.from(stringToVariant.keys());
+function toString(variant) {
+    for (const [key, value] of stringToVariant) {
+        if (value === variant)
+            return key;
+    }
+    throw Error(`Unreachable: missing Variant.${variant} in 'stringToVariant'`);
+}
+exports.toString = toString;
+//# sourceMappingURL=variant.js.map
 
 /***/ }),
 
@@ -1813,6 +1871,7 @@ exports.convertToRawDisk = exports.OperatingSystem = void 0;
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
+const variant_1 = __nccwpck_require__(2002);
 const resource_urls_1 = __nccwpck_require__(3990);
 const resource_disk_1 = __nccwpck_require__(7102);
 class OperatingSystem {
@@ -1867,6 +1926,22 @@ class OperatingSystem {
     // Whether the VM can be rebooted from within (`cpa.sh --reboot`).
     get supportsReboot() {
         return true;
+    }
+    // The variants this platform has. Every platform has `default`; one that can
+    // also boot another way says so here, and only after CI boots it that way.
+    get supportedVariants() {
+        return [variant_1.Variant.default];
+    }
+    // Throws unless this platform has the variant that was asked for. Quietly
+    // booting the default instead would hand back something other than what was
+    // asked for without saying so.
+    validateVariant(variant) {
+        if (this.supportedVariants.includes(variant))
+            return;
+        const supported = this.supportedVariants.map(variant_1.toString).join(', ');
+        throw Error(`The variant '${(0, variant_1.toString)(variant)}' is not supported by ` +
+            `${this.name} on ${this.architecture.name}. ` +
+            `Supported variants are: ${supported}`);
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {

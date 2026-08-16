@@ -7,6 +7,7 @@ import * as exec from '@actions/exec'
 import * as architecture from './architecture'
 import * as vmModule from './vm'
 import {Input} from './action/input'
+import {Variant, toString as variantToString} from './action/variant'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from './resource_disk'
 import * as hypervisor from './hypervisor'
@@ -96,6 +97,27 @@ export abstract class OperatingSystem {
   // Whether the VM can be rebooted from within (`cpa.sh --reboot`).
   get supportsReboot(): boolean {
     return true
+  }
+
+  // The variants this platform has. Every platform has `default`; one that can
+  // also boot another way says so here, and only after CI boots it that way.
+  get supportedVariants(): Variant[] {
+    return [Variant.default]
+  }
+
+  // Throws unless this platform has the variant that was asked for. Quietly
+  // booting the default instead would hand back something other than what was
+  // asked for without saying so.
+  validateVariant(variant: Variant): void {
+    if (this.supportedVariants.includes(variant)) return
+
+    const supported = this.supportedVariants.map(variantToString).join(', ')
+
+    throw Error(
+      `The variant '${variantToString(variant)}' is not supported by ` +
+        `${this.name} on ${this.architecture.name}. ` +
+        `Supported variants are: ${supported}`
+    )
   }
 
   abstract createVirtualMachine(
