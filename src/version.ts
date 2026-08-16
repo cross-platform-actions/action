@@ -4,7 +4,7 @@ const version = {
     freebsd: 'v0.16.0',
     haiku: 'v0.1.0',
     midnightbsd: 'v0.0.1',
-    netbsd: 'v0.7.0',
+    netbsd: 'v1.0.0',
     openbsd: 'v0.14.0',
     omnios: 'v0.2.0'
   },
