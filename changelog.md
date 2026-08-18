@@ -4,7 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
+### Changed
+- NetBSD images download around 45% smaller -- 11.0 x86-64 goes from 497 MiB to
+    268 MiB -- which is most of what a NetBSD job spends on setup
+    ([#151](https://github.com/cross-platform-actions/action/issues/151))
+- Every guest becomes usable sooner, by up to 8 seconds, because the action no
+    longer waits on a readiness probe it sent before the guest was listening
+- NetBSD guests are logged into without a credential, so no SSH key is generated
+    and no resources disk is built to carry one. A custom image supplied through
+    `image_url` still gets both, since it may expect them
+
+### Added
+- A `variant` input, selecting a named configuration of a platform. Defaults to
+    `default`, which boots exactly as before, so no existing workflow changes.
+    See [Variants](readme.md#variants-variant)
+- The `microvm` variant for NetBSD on `x86-64`, which reaches a usable guest in
+    roughly half the time. It is opt-in because it changes the hardware the guest
+    sees: the root disk becomes `ld0` rather than `sd0`, there is no PCI bus to
+    inspect, and `uname -v` reports a `MICROVM` kernel. Asking for it where it
+    cannot be booted is an error, not a slow boot
+- Log a breakdown of how long each phase of setting up the VM took, together
+    with how long the VM took to become reachable over SSH
+
+### Security
+- The guest's SSH port is only forwarded to the runner's loopback address. It was
+    previously bound to every interface, making the guest reachable from anything
+    that could reach the runner
 
 ## [1.4.0] - 2026-08-10
 ### Added

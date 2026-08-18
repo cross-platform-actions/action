@@ -375,6 +375,94 @@ jobs:
           hostname: ${{ matrix.hostname }}
           work_directory: ${{ matrix.host.work_directory }}
 
+  # A custom image predates the bundle and the credential-less login, so this
+  # boots the last release that shipped qcow2 -- the format and the SSH key
+  # expectations a user's own image is most likely to have been built from.
+  test-custom-netbsd-image:
+    timeout-minutes: 5
+    name: Test a custom NetBSD image from before the bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: netbsd
+          architecture: x86-64
+          version: '11.0'
+          image_url: https://github.com/cross-platform-actions/netbsd-builder/releases/download/v0.7.0/netbsd-11.0-x86-64.qcow2
+
+      - name: Test
+        shell: cpa.sh {0}
+        run: uname -a
+
+  test-microvm-variant:
+    timeout-minutes: 5
+    name: Test the microvm variant
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Start VM
+        uses: ./
+        with:
+          operating_system: netbsd
+          architecture: x86-64
+          version: '11.0'
+          variant: microvm
+
+      # That the VM booted says nothing about which way it booted, and a
+      # silent fall back to the firmware is the failure worth catching. The
+      # MICROVM kernel is only reachable on this path, so its name is enough;
+      # which devices it attaches is QEMU's and NetBSD's business, and is
+      # asserted against the command we build in the unit tests instead.
+      - name: Test
+        shell: cpa.sh {0}
+        run: |
+          set -ex
+          uname -v | grep -q MICROVM
+
+  test-microvm-variant-unsupported:
+    timeout-minutes: 5
+    name: Test the microvm variant on an image without a kernel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      # NetBSD gained a MICROVM kernel configuration in 11.0, so 10.1's bundle
+      # carries no kernel. Asking for the variant anyway has to fail, rather
+      # than quietly boot through the firmware.
+      - name: Start VM
+        id: start-vm
+        continue-on-error: true
+        uses: ./
+        with:
+          operating_system: netbsd
+          architecture: x86-64
+          version: '10.1'
+          variant: microvm
+
+      - name: Verify the action failed
+        shell: bash
+        run: |
+          [ '${{ steps.start-vm.outcome }}' = 'failure' ] || {
+            echo '::error::expected the action to reject the microvm variant'
+            exit 1
+          }
+
   test-no-env:
     timeout-minutes: 5
     name: Test without environment variables

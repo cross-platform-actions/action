@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as architecture from '../architectures/kind'
 import {Shell, toShell} from './shell'
+import {Variant, toVariant, validVariants} from './variant'
 import * as os from '../operating_systems/kind'
 import {Host, host as defaultHost} from '../host'
 import * as hypervisor from '../hypervisor'
@@ -25,6 +26,7 @@ export class Input {
   private hypervisor_?: hypervisor.Hypervisor
   private syncDirection_?: SyncDirection
   private shutdownVm_?: boolean
+  private variant_?: Variant
 
   constructor(host: Host = defaultHost()) {
     this.host = host
@@ -140,6 +142,25 @@ export class Input {
     return (this.syncDirection_ = syncDirection)
   }
 
+  get variant(): Variant {
+    if (this.variant_ !== undefined) return this.variant_
+
+    const input = core.getInput('variant')
+    core.debug(`variant input: '${input}'`)
+    if (input === undefined || input === '')
+      return (this.variant_ = Variant.default)
+
+    const variant = toVariant(input)
+
+    if (variant === undefined) {
+      const values = validVariants.join(', ')
+
+      throw Error(`Invalid variant: ${input}\nValid variants are: ${values}`)
+    }
+
+    return (this.variant_ = variant)
+  }
+
   get shutdownVm(): boolean {
     if (this.shutdownVm_ !== undefined) return this.shutdownVm_
 
@@ -166,7 +187,8 @@ export class Input {
       this.environmentVariables,
       this.architecture,
       this.memory,
-      this.cpuCount
+      this.cpuCount,
+      this.variant
     ]
 
     const hash = createHash('sha256')

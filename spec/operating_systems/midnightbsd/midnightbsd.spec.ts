@@ -79,7 +79,9 @@ describe('MidnightBSD OperatingSystem', () => {
           ssHostPort: 2847,
           cpu: 'max',
           machineType: 'q35',
-          firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`
+          firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`,
+          microvmFirmware: `${firmwareDirectory}/share/qemu/qboot.rom`,
+          kernel: `${resourcesDirectory}/kernel`
         }
       )
     })

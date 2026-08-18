@@ -42,6 +42,14 @@ export abstract class Vm extends vm.Vm {
     return 'localhost'
   }
 
+  // The simulated machine runs at roughly 1 MIPS, where even the SSH
+  // identification string exchange isn't necessarily prompt. Keep the longer
+  // timeout a probe used to get, rather than risk a probe that times out
+  // against a guest that is in fact listening.
+  protected override get readinessProbeTimeout(): number {
+    return 10
+  }
+
   // SIMH cannot daemonize itself like QEMU. Redirect its output to a file
   // instead of inheriting the runner's pipes, otherwise the runner would
   // wait for the simulator to exit before finishing the step.

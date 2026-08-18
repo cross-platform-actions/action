@@ -12,6 +12,9 @@ export interface ExecuteOptions {
   log?: boolean
   ignoreReturnCode?: boolean
   silent?: boolean
+  // Overrides the SSH configuration's ConnectTimeout, in seconds, for this
+  // invocation only.
+  connectTimeout?: number
 }
 
 export async function execWithOutput(

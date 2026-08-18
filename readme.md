@@ -228,6 +228,7 @@ This section lists the available inputs for the action.
 | `environment_variables` | ❌       | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces. The `CI` and any environment variables starting with `GITHUB_` are forwarded automatically.                                                     |
 | `memory`                | ❌       | `6G`              | string  | The amount of memory for the virtual machine.                                                                                                                                                                                                                |
 | `cpu_count`             | ❌       | `2`               | integer | The number of CPU cores for the virtual machine.                                                                                                                                                                                                             |
+| `variant`               | ❌       | `default`         | string  | Which variant of the operating system to run. See [Variants](#variants-variant). Valid values are `default` and, where the platform has it, `microvm`.                                                                                                       |
 | `image_url`             | ❌       | ❌                | string  | URL a custom VM image that should be used in place of the default ones.                                                                                                                                                                                      |
 | `sync_files`            | ❌       | `true`            | string  | Specifies if the local files should be synchronized to the virtual machine and in which direction. Valid values are `true`, `false`, `runner-to-vm` and `vm-to-runner`. `true` synchronizes files in both directions. `false` disables file synchronization. |
 | `shutdown_vm`           | ❌       | conditional       | boolean | **Deprecated.** Specifies if the VM should be shutdown after the action has been run. If unset, defaults to `true` when `run` is provided and `false` otherwise. There is no replacement.                                                                    |
@@ -241,6 +242,38 @@ floating point number, drop the fraction part (because `13` and `13.0` are the
 same) and the GitHub action will only see `13` instead of `13.0`. The solution
 is to explicitly state that a string is required by using quotes: `version:
 '13.0'`.
+
+#### Variants (`variant`)
+
+A variant is a named configuration of a platform, not a set of independent
+options. Asking for a variant a platform doesn't have is an error listing the
+ones it does, rather than a silent fallback.
+
+| Variant   | Available on | Description                                                                     |
+|-----------|--------------|---------------------------------------------------------------------------------|
+| `default` | everything   | The platform as it has always booted: firmware, boot loader, then the kernel.   |
+| `microvm` | NetBSD 11 on `x86-64` | Boots the kernel directly on QEMU's `microvm` machine type, which has no boot loader, no PCI bus and no ACPI. |
+
+```yaml
+- uses: cross-platform-actions/action@v1
+  with:
+    operating_system: netbsd
+    version: '11.0'
+    variant: microvm
+```
+
+The `microvm` variant reaches a usable guest in roughly half the time, but it
+is opt-in because it changes the hardware the guest sees, and a job that
+inspects hardware will notice:
+
+- the root disk is `ld0` (virtio-blk), not `sd0` (vioscsi)
+- there is no PCI bus and no ACPI, so `pcictl` and anything reading ACPI differ
+- the kernel is `MICROVM` rather than `GENERIC`, which `uname -v` reports
+- bulk transfers into the guest are slower, virtio over MMIO having one
+    interrupt line per device where PCI has a vector per queue
+
+It also needs an image new enough to ship a kernel beside its disk. Asking for
+it with an older image is an error rather than a slow boot.
 
 #### Custom VM Image (`image_url`)
 

@@ -26,6 +26,12 @@ export interface Configuration {
   machineType: string
   resourcesDiskImage: fs.PathLike
   firmware?: fs.PathLike
+  // Where the hypervisor archive's firmware for QEMU's `microvm` machine type
+  // would be, whether or not that archive carried one.
+  microvmFirmware?: fs.PathLike
+  // Where a bundled image's kernel is extracted to, whether or not the bundle
+  // had one. A VM that can boot a kernel directly checks for it there.
+  kernel?: fs.PathLike
 }
 
 interface Process {
@@ -149,14 +155,33 @@ export abstract class Vm {
     this.ipAddress = await this.getIpAddress()
   }
 
+  // Bounds a single readiness probe, in seconds. User mode networking accepts
+  // the forwarded connection before the guest's sshd does, so a probe sent too
+  // early blocks rather than failing fast. The SSH ConnectTimeout a probe used
+  // to get is ten seconds -- right for a command, but as a probe interval it
+  // costs all ten whenever the guest is ready sooner.
+  protected get readinessProbeTimeout(): number {
+    return 2
+  }
+
   // Waits, at most `timeout` seconds, for the VM to become ready.
   async wait(timeout: number): Promise<void> {
     const deadline = new Deadline(timeout, this.clock)
+    const startedAt = this.clock.now()
     let attempts = 0
 
     while (!deadline.hasPassed) {
       attempts++
-      if (await this.isReady()) return
+      if (await this.isReady()) {
+        // The probe interval bounds how precisely this reflects when the guest
+        // actually became reachable, so log both numbers.
+        const seconds = ((this.clock.now() - startedAt) / 1000).toFixed(2)
+        core.info(
+          `The VM became ready after ${seconds} seconds ` +
+            `and ${attempts} attempt(s)`
+        )
+        return
+      }
       await deadline.sleepAtMost(1000)
     }
 
@@ -197,12 +222,20 @@ export abstract class Vm {
     options = {...defaultOptions, ...options}
     if (options.log) core.info(`Executing command inside VM: ${command}`)
     const buffer = Buffer.from(command)
+    const connectTimeout =
+      options.connectTimeout === undefined
+        ? []
+        : ['-o', `ConnectTimeout=${options.connectTimeout}`]
 
-    return await this.executor.execute('ssh', ['-t', this.sshTarget], {
-      input: buffer,
-      silent: options.silent,
-      ignoreReturnCode: options.ignoreReturnCode
-    })
+    return await this.executor.execute(
+      'ssh',
+      ['-t', ...connectTimeout, this.sshTarget],
+      {
+        input: buffer,
+        silent: options.silent,
+        ignoreReturnCode: options.ignoreReturnCode
+      }
+    )
   }
 
   async execute2(args: string[], intput: Buffer): Promise<number> {
@@ -243,7 +276,11 @@ export abstract class Vm {
 
   private async isReady(): Promise<boolean> {
     core.info('Waiting for VM to be ready...')
-    const ready = (await this.execute('true', {ignoreReturnCode: true})) === 0
+    const ready =
+      (await this.execute('true', {
+        ignoreReturnCode: true,
+        connectTimeout: this.readinessProbeTimeout
+      })) === 0
     if (ready) core.info('VM is ready')
 
     return ready

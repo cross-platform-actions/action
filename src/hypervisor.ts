@@ -10,6 +10,7 @@ export interface Hypervisor {
   get kind(): Kind
   get sshPort(): number
   get firmwareFile(): string
+  get microvmFirmwareFile(): string
   get binaryDirectory(): string
   get efi(): Hypervisor
   getResourceUrl(architecture: Architecture): string
@@ -29,6 +30,14 @@ export class Qemu implements Hypervisor {
 
   get firmwareFile(): string {
     return `${this.firmwareDirectory}/bios-256k.bin`
+  }
+
+  // qboot, the firmware for QEMU's `microvm` machine type: it loads a directly
+  // booted kernel and leaves behind the MP table. SeaBIOS does neither there,
+  // so this is not interchangeable with the firmware above. A hypervisor
+  // archive without the file keeps working, on the other boot path.
+  get microvmFirmwareFile(): string {
+    return `${this.firmwareDirectory}/qboot.rom`
   }
 
   get binaryDirectory(): string {
@@ -78,6 +87,10 @@ export class Simh implements Hypervisor {
 
   // SIMH simulators have their firmware built in.
   get firmwareFile(): string {
+    return ''
+  }
+
+  get microvmFirmwareFile(): string {
     return ''
   }
 

@@ -54,10 +54,12 @@ const vmModule = __importStar(__nccwpck_require__(2772));
 const vm_file_system_synchronizer_1 = __nccwpck_require__(8544);
 const input = __importStar(__nccwpck_require__(1099));
 const shell = __importStar(__nccwpck_require__(9044));
+const timings_1 = __nccwpck_require__(7915);
 const utility = __importStar(__nccwpck_require__(2857));
 const child_process_1 = __nccwpck_require__(2081);
 class Action {
     constructor() {
+        this.timings = new timings_1.Timings();
         this.inputHashPath = '/tmp/cross-platform-actions-input-hash';
         this.input = new input.Input();
         this.privateSshKeyName = 'id_ed25519';
@@ -77,11 +79,19 @@ class Action {
             core.startGroup('Setting up VM');
             core.debug('Running action');
             core.info(`Host CPU: ${new host_cpu_1.HostCpu()}`);
+            // The phases below are all no-ops when the VM is already running, so
+            // there's nothing worth reporting for those invocations.
+            const isInitialRun = !vmModule.Vm.isRunning;
+            // Before anything is downloaded, so an unsupported variant costs a second
+            // rather than the image it would have booted.
+            this.operatingSystem.validateVariant(this.input.variant);
             const runPreparer = this.createRunPreparer();
             runPreparer.createInputHash();
             runPreparer.validateInputHash();
-            const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()]);
-            const [firmwareDirectory, resourcesDirectory] = yield Promise.all(runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath));
+            const [diskImagePath, hypervisorArchivePath, resourcesArchivePath] = yield this.timings.measure('download', () => __awaiter(this, void 0, void 0, function* () { return Promise.all([...runPreparer.download(), runPreparer.setupSSHKey()]); }));
+            const [firmwareDirectory, resourcesDirectory] = yield this.timings.measure('unarchive', () => __awaiter(this, void 0, void 0, function* () {
+                return Promise.all(runPreparer.unarchive(hypervisorArchivePath, resourcesArchivePath));
+            }));
             const hypervisorDirectory = path.join(firmwareDirectory, this.operatingSystem.hypervisor.binaryDirectory);
             const excludes = [
                 resourcesArchivePath,
@@ -91,26 +101,31 @@ class Action {
                 firmwareDirectory,
                 diskImagePath
             ].map(p => p.slice(this.homeDirectory.length + 1));
+            // Before the VM is created, not after: unpacking the bundle is what puts
+            // the disk and, where there is one, the kernel where the VM expects them,
+            // and a VM that boots a kernel directly is handed one at construction.
+            yield this.timings.measure('prepare disk', () => __awaiter(this, void 0, void 0, function* () { return runPreparer.prepareDisk(diskImagePath, resourcesDirectory); }));
             const vm = this.creareVm(hypervisorDirectory, firmwareDirectory, resourcesDirectory, {
                 memory: this.input.memory,
                 cpuCount: this.input.cpuCount
             });
             const implementation = this.getImplementation(vm);
-            yield implementation.prepareDisk(diskImagePath, resourcesDirectory);
-            yield implementation.init();
+            yield this.timings.measure('init', () => __awaiter(this, void 0, void 0, function* () { return implementation.init(); }));
             try {
-                yield implementation.run();
+                yield this.timings.measure('start hypervisor', () => __awaiter(this, void 0, void 0, function* () { return implementation.run(); }));
                 implementation.configSSH(vm.ipAddress);
-                yield implementation.wait(this.operatingSystem.sshReadyTimeout);
-                yield implementation.setupWorkDirectory(vm.homeDirectory, vm.workDirectory);
+                yield this.timings.measure('wait for ssh', () => __awaiter(this, void 0, void 0, function* () { return implementation.wait(this.operatingSystem.sshReadyTimeout); }));
+                yield this.timings.measure('work directory', () => __awaiter(this, void 0, void 0, function* () { return implementation.setupWorkDirectory(vm.homeDirectory, vm.workDirectory); }));
                 const syncExcludes = [
                     this.targetDiskName,
                     this.resourceDisk.diskPath,
                     ...excludes
                 ];
-                yield vm.synchronizePaths(...syncExcludes);
+                yield this.timings.measure('synchronize files', () => __awaiter(this, void 0, void 0, function* () { return vm.synchronizePaths(...syncExcludes); }));
                 implementation.setupCustomShell(syncExcludes);
                 core.info('VM is ready');
+                if (isInitialRun)
+                    this.timings.report('VM setup timings');
                 try {
                     core.endGroup();
                     yield this.runCommand(vm);
@@ -142,7 +157,7 @@ class Action {
                 ? this.input.imageURL
                 : this.operatingSystem.virtualMachineImageUrl;
             core.info(`Downloading disk image: ${imageURL}`);
-            const result = yield cache.downloadTool(imageURL);
+            const result = yield this.timings.measure('disk image', () => __awaiter(this, void 0, void 0, function* () { return cache.downloadTool(imageURL); }), { nested: true });
             core.info(`Downloaded file: ${result}`);
             return result;
         });
@@ -150,7 +165,7 @@ class Action {
     download(type, url) {
         return __awaiter(this, void 0, void 0, function* () {
             core.info(`Downloading ${type}: ${url}`);
-            const result = yield cache.downloadTool(url);
+            const result = yield this.timings.measure(type, () => __awaiter(this, void 0, void 0, function* () { return cache.downloadTool(url); }), { nested: true });
             core.info(`Downloaded file: ${result}`);
             return result;
         });
@@ -161,7 +176,7 @@ class Action {
     unarchive(type, archivePath) {
         return __awaiter(this, void 0, void 0, function* () {
             core.info(`Unarchiving ${type}: ${archivePath}`);
-            return cache.extractTar(archivePath, undefined, '-x');
+            return yield this.timings.measure(type, () => __awaiter(this, void 0, void 0, function* () { return cache.extractTar(archivePath, undefined, '-x'); }), { nested: true });
         });
     }
     unarchiveHypervisor(archivePath) {
@@ -174,10 +189,25 @@ class Action {
         const env = this.input.environmentVariables;
         return env ? `SendEnv ${env}` : '';
     }
+    // A platform whose images accept a credential-less login needs no key -- but
+    // only for the images this action publishes. An image supplied through
+    // `image_url` may well have been built from a release that expects the key on
+    // the resources disk, and there is no way to tell from the outside, so it
+    // keeps getting one.
+    get requiresSshKey() {
+        return this.operatingSystem.requiresSshKey || this.input.imageURL !== '';
+    }
     setupSSHKey() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.operatingSystem.requiresSshKey)
+            if (!this.requiresSshKey)
                 return;
+            yield this.timings.measure('ssh key', () => __awaiter(this, void 0, void 0, function* () { return this.createSSHKey(); }), {
+                nested: true
+            });
+        });
+    }
+    createSSHKey() {
+        return __awaiter(this, void 0, void 0, function* () {
             const mountPath = this.resourceDisk.create();
             yield exec.exec('ssh-keygen', [
                 '-t',
@@ -268,6 +298,11 @@ class InitialRunPreparer {
             this.action.unarchive('resources', resourcesArchivePath)
         ];
     }
+    prepareDisk(diskImagePath, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.action.operatingSystem.prepareDisk(diskImagePath, this.action['targetDiskName'], resourcesDirectory);
+        });
+    }
 }
 // Used when the VM is already running
 class LiveRunPreparer {
@@ -295,8 +330,6 @@ class LiveRunPreparer {
     unarchive() {
         return [Promise.resolve(''), Promise.resolve('')];
     }
-}
-class LiveImplementation {
     prepareDisk(_diskImagePath, // eslint-disable-line @typescript-eslint/no-unused-vars
     _resourcesDirectory // eslint-disable-line @typescript-eslint/no-unused-vars
     ) {
@@ -304,6 +337,8 @@ class LiveImplementation {
             // noop
         });
     }
+}
+class LiveImplementation {
     init() {
         return __awaiter(this, void 0, void 0, function* () {
             // noop
@@ -342,11 +377,6 @@ class InitialImplementation {
         this.action = action;
         this.vm = vm;
     }
-    prepareDisk(diskImagePath, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.action.operatingSystem.prepareDisk(diskImagePath, this.targetDiskName, resourcesDirectory);
-        });
-    }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.vm.init();
@@ -367,13 +397,10 @@ class InitialImplementation {
             yield this.vm.setupWorkDirectory(homeDirectory, workDirectory);
         });
     }
-    get targetDiskName() {
-        return this.action['targetDiskName'];
-    }
     configSSH(ipAddress) {
         core.debug('Configuring SSH');
         this.createSSHConfig();
-        if (this.operatingSystem.requiresSshKey)
+        if (this.action.requiresSshKey)
             this.setupAuthorizedKeys();
         this.setupHostname(ipAddress);
     }
@@ -730,6 +757,7 @@ exports.Input = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const architecture = __importStar(__nccwpck_require__(656));
 const shell_1 = __nccwpck_require__(9044);
+const variant_1 = __nccwpck_require__(2002);
 const os = __importStar(__nccwpck_require__(6713));
 const host_1 = __nccwpck_require__(8215);
 const sync_direction_1 = __nccwpck_require__(3377);
@@ -830,6 +858,20 @@ class Input {
         }
         return (this.syncDirection_ = syncDirection);
     }
+    get variant() {
+        if (this.variant_ !== undefined)
+            return this.variant_;
+        const input = core.getInput('variant');
+        core.debug(`variant input: '${input}'`);
+        if (input === undefined || input === '')
+            return (this.variant_ = variant_1.Variant.default);
+        const variant = (0, variant_1.toVariant)(input);
+        if (variant === undefined) {
+            const values = variant_1.validVariants.join(', ');
+            throw Error(`Invalid variant: ${input}\nValid variants are: ${values}`);
+        }
+        return (this.variant_ = variant);
+    }
     get shutdownVm() {
         if (this.shutdownVm_ !== undefined)
             return this.shutdownVm_;
@@ -853,7 +895,8 @@ class Input {
             this.environmentVariables,
             this.architecture,
             this.memory,
-            this.cpuCount
+            this.cpuCount,
+            this.variant
         ];
         const hash = (0, crypto_1.createHash)('sha256');
         for (const component of components)
@@ -928,6 +971,45 @@ const syncDirectionMap = {
 };
 exports.validSyncDirections = Object.keys(syncDirectionMap);
 //# sourceMappingURL=sync_direction.js.map
+
+/***/ }),
+
+/***/ 2002:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toString = exports.validVariants = exports.toVariant = exports.Variant = void 0;
+// A named, tested configuration of a platform, rather than a set of
+// independent knobs. Keeping it a closed list is deliberate: every value here
+// is something CI boots, and a combination nobody tests never becomes
+// reachable by writing two flags at once.
+var Variant;
+(function (Variant) {
+    Variant[Variant["default"] = 0] = "default";
+    Variant[Variant["microvm"] = 1] = "microvm";
+})(Variant = exports.Variant || (exports.Variant = {}));
+const stringToVariant = (() => {
+    const map = new Map();
+    map.set('default', Variant.default);
+    map.set('microvm', Variant.microvm);
+    return map;
+})();
+function toVariant(value) {
+    return stringToVariant.get(value.toLowerCase());
+}
+exports.toVariant = toVariant;
+exports.validVariants = Array.from(stringToVariant.keys());
+function toString(variant) {
+    for (const [key, value] of stringToVariant) {
+        if (value === variant)
+            return key;
+    }
+    throw Error(`Unreachable: missing Variant.${variant} in 'stringToVariant'`);
+}
+exports.toString = toString;
+//# sourceMappingURL=variant.js.map
 
 /***/ }),
 
@@ -1633,6 +1715,13 @@ class Qemu {
     get firmwareFile() {
         return `${this.firmwareDirectory}/bios-256k.bin`;
     }
+    // qboot, the firmware for QEMU's `microvm` machine type: it loads a directly
+    // booted kernel and leaves behind the MP table. SeaBIOS does neither there,
+    // so this is not interchangeable with the firmware above. A hypervisor
+    // archive without the file keeps working, on the other boot path.
+    get microvmFirmwareFile() {
+        return `${this.firmwareDirectory}/qboot.rom`;
+    }
     get binaryDirectory() {
         return 'bin';
     }
@@ -1674,6 +1763,9 @@ class Simh {
     }
     // SIMH simulators have their firmware built in.
     get firmwareFile() {
+        return '';
+    }
+    get microvmFirmwareFile() {
         return '';
     }
     // The simulator binary is located at the root of the archive.
@@ -1794,9 +1886,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.convertToRawDisk = exports.OperatingSystem = void 0;
+const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
+const variant_1 = __nccwpck_require__(2002);
 const resource_urls_1 = __nccwpck_require__(3990);
 const resource_disk_1 = __nccwpck_require__(7102);
 class OperatingSystem {
@@ -1852,7 +1946,92 @@ class OperatingSystem {
     get supportsReboot() {
         return true;
     }
+    // The variants this platform has. Every platform has `default`; one that can
+    // also boot another way says so here, and only after CI boots it that way.
+    get supportedVariants() {
+        return [variant_1.Variant.default];
+    }
+    // Throws unless this platform has the variant that was asked for. Quietly
+    // booting the default instead would hand back something other than what was
+    // asked for without saying so.
+    validateVariant(variant) {
+        if (this.supportedVariants.includes(variant))
+            return;
+        const supported = this.supportedVariants.map(variant_1.toString).join(', ');
+        throw Error(`The variant '${(0, variant_1.toString)(variant)}' is not supported by ` +
+            `${this.name} on ${this.architecture.name}. ` +
+            `Supported variants are: ${supported}`);
+    }
+    // Decided by what the file turned out to be rather than by what this platform
+    // publishes today, because `image_url` lets a user supply an image this action
+    // never built. Three formats have shipped: qcow2, a bare zstd compressed raw
+    // image, and the bundle.
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            switch (yield this.imageFormat(diskImage)) {
+                case ImageFormat.bundle:
+                    yield this.extractBundle(diskImage, targetDiskName, resourcesDirectory);
+                    break;
+                case ImageFormat.compressedRawDisk:
+                    yield this.decompress(diskImage, targetDiskName, resourcesDirectory);
+                    break;
+                case ImageFormat.qcow2:
+                    yield this.convertToRaw(diskImage, targetDiskName, resourcesDirectory);
+                    break;
+            }
+        });
+    }
+    imageFormat(diskImage) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const magic = readPrefix(diskImage, 4);
+            if (!magic.equals(zstdMagic))
+                return ImageFormat.qcow2;
+            // Both remaining formats are zstd, so the compressed stream has to be
+            // opened to tell them apart. A tar names its format at a fixed offset.
+            return (yield this.isTar(diskImage))
+                ? ImageFormat.bundle
+                : ImageFormat.compressedRawDisk;
+        });
+    }
+    isTar(diskImage) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const prefix = path.join(fs.mkdtempSync('/tmp/cpa-image-'), 'prefix');
+            // `dd` closes the pipe once it has a block, so zstd decompresses only that
+            // much and is then killed; its failure is expected and says nothing.
+            const command = `zstd -dc '${diskImage.toString()}' 2> /dev/null | ` +
+                `dd of='${prefix}' bs=512 count=1 2> /dev/null`;
+            yield exec.exec('/bin/sh', ['-c', command], { ignoreReturnCode: true });
+            return readPrefix(prefix, 512)
+                .subarray(tarMagicOffset, tarMagicOffset + tarMagic.length)
+                .equals(tarMagic);
+        });
+    }
+    // The whole image is the disk, so there is nothing to unpack around it.
+    decompress(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Decompressing raw disk image');
+            const target = path.join(resourcesDirectory.toString(), targetDiskName.toString());
+            yield exec.exec('zstd', ['-d', '-f', diskImage.toString(), '-o', target]);
+        });
+    }
+    get imageFileExtension() {
+        return 'qcow2';
+    }
+    // The image is already raw, so it only has to be unpacked, and the holes tar
+    // recorded stay holes. The bundle uses zstd's default 128 MiB window, so no
+    // `--long` is needed. Piped into tar rather than `tar --zstd`, which not
+    // every tar is built with.
+    extractBundle(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug('Extracting image bundle');
+            const resDir = resourcesDirectory.toString();
+            const image = diskImage.toString();
+            const command = `zstd -dc ${image} | tar -x -C ${resDir} -f -`;
+            yield exec.exec('/bin/sh', ['-c', command]);
+            fs.renameSync(path.join(resDir, OperatingSystem.diskName), path.join(resDir, targetDiskName.toString()));
+        });
+    }
+    convertToRaw(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
             core.debug('Converting qcow2 image to raw');
             const resDir = resourcesDirectory.toString();
@@ -1867,9 +2046,6 @@ class OperatingSystem {
             ]);
         });
     }
-    get imageFileExtension() {
-        return 'qcow2';
-    }
     get imageName() {
         const encodedVersion = encodeURIComponent(this.version);
         const components = [this.name, encodedVersion, this.architecture.name];
@@ -1878,6 +2054,18 @@ class OperatingSystem {
 }
 exports.OperatingSystem = OperatingSystem;
 OperatingSystem.resourceUrls = resource_urls_1.ResourceUrls.create();
+// The name of the kernel inside a bundled image, and the name it keeps once
+// extracted. Deliberately generic, like the disk's: a builder that starts
+// distributing a bundle needs no code here beyond `imageFileExtension`, and
+// every platform's kernel is found the same way.
+OperatingSystem.kernelName = 'kernel';
+// The disk inside a bundled image, named as generically as the kernel is and
+// for the same reason.
+OperatingSystem.diskName = 'disk.img';
+// A tar holding a raw `disk.img` and, on the platforms that have one, a
+// `kernel` to boot directly instead of going through firmware and a boot
+// loader. The whole thing is compressed with zstd.
+OperatingSystem.bundleFileExtension = 'tar.zst';
 function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug('Converting qcow2 image to raw');
@@ -1894,6 +2082,26 @@ function convertToRawDisk(diskImage, targetDiskName, resourcesDirectory) {
     });
 }
 exports.convertToRawDisk = convertToRawDisk;
+var ImageFormat;
+(function (ImageFormat) {
+    ImageFormat[ImageFormat["qcow2"] = 0] = "qcow2";
+    ImageFormat[ImageFormat["compressedRawDisk"] = 1] = "compressedRawDisk";
+    ImageFormat[ImageFormat["bundle"] = 2] = "bundle";
+})(ImageFormat || (ImageFormat = {}));
+const zstdMagic = Buffer.from([0x28, 0xb5, 0x2f, 0xfd]);
+const tarMagic = Buffer.from('ustar', 'ascii');
+const tarMagicOffset = 257;
+function readPrefix(file, length) {
+    const buffer = Buffer.alloc(length);
+    const descriptor = fs.openSync(file, 'r');
+    try {
+        fs.readSync(descriptor, buffer, 0, length, 0);
+    }
+    finally {
+        fs.closeSync(descriptor);
+    }
+    return buffer;
+}
 //# sourceMappingURL=operating_system.js.map
 
 /***/ }),
@@ -2547,17 +2755,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var NetBsd_1;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const factory_1 = __nccwpck_require__(133);
 const version_1 = __importDefault(__nccwpck_require__(8217));
 const qemu_1 = __nccwpck_require__(1526);
 const qemu_vm = __importStar(__nccwpck_require__(7598));
-let NetBsd = class NetBsd extends qemu_1.Qemu {
-    // Both the builder repository and the image file name are built from this,
-    // and the base class derives it from the class name. Without this the
-    // NetBsdVax subclass would look for `netbsdvax-10.1-vax.img.zst` in a
-    // `netbsdvax-builder` repository; every NetBSD image comes from the same
-    // builder under the same name, whatever the architecture.
+const variant_1 = __nccwpck_require__(2002);
+let NetBsd = NetBsd_1 = class NetBsd extends qemu_1.Qemu {
+    // The builder repository and the image file name are both built from this,
+    // and the base class derives it from the class name -- so without this the
+    // NetBsdVax subclass would look in a `netbsdvax-builder` repository.
     get name() {
         return 'netbsd';
     }
@@ -2567,8 +2775,38 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
     get vmClass() {
         return qemu_vm.Vm;
     }
+    // Booting on `microvm` changes the hardware the guest sees -- the root disk
+    // arrives as `ld0` rather than `sd0`, there is no PCI bus and no ACPI, and
+    // `uname -v` names a different kernel -- so it is something a job opts into,
+    // not something a NetBSD version quietly starts doing.
+    get supportedVariants() {
+        return [variant_1.Variant.default, variant_1.Variant.microvm];
+    }
+    vmClassFor(input, configuration) {
+        if (input.variant !== variant_1.Variant.microvm)
+            return super.vmClassFor(input, configuration);
+        qemu_vm.MicrovmVm.validate(configuration);
+        return qemu_vm.MicrovmVm;
+    }
+    // Every NetBSD image is distributed as a bundle rather than as qcow2: qcow2's
+    // own compression has to keep the image writable, so it compresses worse than
+    // a solid stream does, and a job pays that difference on every run, the
+    // download being most of what is left of its setup time. See
+    // https://github.com/cross-platform-actions/action/issues/151. The bundle also
+    // carries the kernel for the platforms that can boot one directly, which is
+    // why it's a tar and not just a compressed image.
+    get imageFileExtension() {
+        return NetBsd_1.bundleFileExtension;
+    }
+    // The images accept an SSH login with no credential at all, so there's no key
+    // to deliver and no resources disk to carry it on. VAX never could mount that
+    // disk, which is where the passwordless login came from; every architecture
+    // does it that way now.
+    get requiresSshKey() {
+        return false;
+    }
 };
-NetBsd = __decorate([
+NetBsd = NetBsd_1 = __decorate([
     factory_1.operatingSystem
 ], NetBsd);
 exports["default"] = NetBsd;
@@ -2577,22 +2815,159 @@ exports["default"] = NetBsd;
 /***/ }),
 
 /***/ 7598:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Vm = void 0;
+exports.MicrovmVm = exports.Vm = void 0;
+const fs = __importStar(__nccwpck_require__(7147));
 const qemu_vm_1 = __nccwpck_require__(1106);
+// Booting the way every other platform does: the firmware reads a boot loader
+// off the disk, which reads the kernel.
 class Vm extends qemu_vm_1.Vm {
+    // The images this action publishes accept a login with no credential, so
+    // there's no key to hand over and no resources disk to carry it on. A custom
+    // image may still expect one, in which case the action built it -- see
+    // Action.requiresSshKey -- so attach it when it's there.
     get hardDriverFlags() {
-        return this.defaultHardDriveFlags;
+        // prettier-ignore
+        return [
+            '-device', 'virtio-scsi-pci',
+            '-device', 'scsi-hd,drive=drive0,bootindex=0',
+            '-drive', this.drive,
+            ...this.resourcesDriveFlags
+        ];
+    }
+    get resourcesDriveFlags() {
+        const disk = this.configuration.resourcesDiskImage.toString();
+        if (!exists(disk))
+            return [];
+        // prettier-ignore
+        return [
+            '-device', 'scsi-hd,drive=drive1,bootindex=1',
+            '-drive', `if=none,file=${disk},id=drive1,cache=unsafe,discard=ignore,format=raw`
+        ];
+    }
+    get drive() {
+        const disk = this.configuration.diskImage.toString();
+        return `if=none,file=${disk},id=drive0,cache=unsafe,discard=ignore,format=raw`;
     }
     get ipv6() {
         return 'ipv6=off';
     }
 }
 exports.Vm = Vm;
+// QEMU's `microvm` machine type: no boot loader, no PCI bus and no ACPI, which
+// together are the few seconds a guest otherwise spends before init runs.
+//
+// Selected by `variant: microvm` rather than by what happens to be on disk, so
+// it changes the guest's hardware only for a job that asked for it.
+class MicrovmVm extends Vm {
+    // Both files are looked for rather than derived from versions: an image built
+    // before NetBSD had a MICROVM kernel configuration, or for an architecture
+    // that doesn't, carries no kernel, and a hypervisor archive built before this
+    // needed it carries no qboot.
+    //
+    // Throws rather than falling back, because the variant was asked for: a job
+    // that silently booted the other way would be slower for reasons its author
+    // has no way to see.
+    static validate(configuration) {
+        const missing = [
+            exists(configuration.kernel) ? '' : 'the image bundle carries no kernel',
+            exists(configuration.microvmFirmware)
+                ? ''
+                : 'the hypervisor archive carries no microvm firmware (qboot)'
+        ].filter(reason => reason !== '');
+        if (missing.length === 0)
+            return;
+        throw Error(`The 'microvm' variant cannot be booted: ${missing.join(' and ')}. ` +
+            'Use a newer image version, or drop the variant to boot through the ' +
+            'firmware.');
+    }
+    // acpi and the 8259 are off because the MICROVM kernel expects them to be: it
+    // configures CPUs from the MP table instead. The RTC stays on, because it's
+    // where the guest gets the time from -- nothing sets the clock at boot.
+    get machineType() {
+        return 'microvm,acpi=off,pic=off,rtc=on,x-option-roms=off';
+    }
+    // `root=dk0` because the root file system is a GPT wedge, so its name doesn't
+    // change with the driver the disk arrives on. Deliberately no `-z`: it would
+    // quiet the boot messages the post job step prints when a VM fails to boot.
+    //
+    // qboot rather than the SeaBIOS the parent passes, because here the firmware
+    // is what loads the kernel, and what leaves behind the MP table -- the only
+    // place a guest with no ACPI can read CPUs and interrupt routing from.
+    // SeaBIOS boots nothing on this machine type and says nothing about why.
+    get firmwareFlags() {
+        // prettier-ignore
+        return [
+            '-bios', this.microvmFirmware,
+            '-kernel', this.kernel,
+            '-append', 'root=dk0 console=com rw'
+        ];
+    }
+    // There is no PCI bus, so virtio arrives over MMIO instead.
+    get hardDriverFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-blk-device,drive=drive0',
+            '-drive', this.drive
+        ];
+    }
+    // Same as the disk: MMIO rather than PCI, so there's no PCI address to give
+    // it either.
+    get networkFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-net-device,netdev=user.0',
+            '-netdev', this.netdev
+        ];
+    }
+    // Decides what the guest uses to tell the time. NetBSD won't pick a TSC that
+    // isn't advertised as invariant, and this machine type has no HPET to settle
+    // for either, so it falls back to the i8254 -- two port reads, each of which
+    // leaves the guest. An ssh transfer measured 15 MB/s that way, 40 with the TSC.
+    get cpuidFlags() {
+        return ['+invtsc'];
+    }
+    // Modern virtio rather than the legacy MMIO layout QEMU defaults to.
+    get extraFlags() {
+        return ['-global', 'virtio-mmio.force-legacy=false'];
+    }
+    // Both are known to be there: `validate` runs before this class is used.
+    get kernel() {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return this.configuration.kernel.toString();
+    }
+    get microvmFirmware() {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return this.configuration.microvmFirmware.toString();
+    }
+}
+exports.MicrovmVm = MicrovmVm;
+function exists(file) {
+    return file !== undefined && fs.existsSync(file);
+}
 //# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
@@ -2621,30 +2996,27 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const path = __importStar(__nccwpck_require__(1017));
-const core = __importStar(__nccwpck_require__(2186));
-const exec = __importStar(__nccwpck_require__(1514));
 const netbsd_1 = __importDefault(__nccwpck_require__(7372));
 const vax_vm = __importStar(__nccwpck_require__(2402));
 const hypervisor_1 = __nccwpck_require__(4288);
+const variant_1 = __nccwpck_require__(2002);
 // NetBSD on the VAX architecture. Unlike the other architectures it runs on
 // the SIMH simulator instead of QEMU, which drives every difference below.
 class NetBsdVax extends netbsd_1.default {
     get vmClass() {
         return vax_vm.Vm;
+    }
+    // `microvm` is a QEMU machine type, and this runs on SIMH, so the variant
+    // NetBsd offers isn't available here.
+    get supportedVariants() {
+        return [variant_1.Variant.default];
+    }
+    vmClassFor() {
+        return this.vmClass;
     }
     get hypervisor() {
         return new hypervisor_1.Simh();
@@ -2656,33 +3028,10 @@ class NetBsdVax extends netbsd_1.default {
     get sshReadyTimeout() {
         return 2400;
     }
-    // NetBSD VAX has no working msdosfs, so the resources disk that carries the
-    // generated SSH key can't be mounted. The image gives its user an empty
-    // password instead, which needs nothing from this end: sshd's
-    // keyboard-interactive method accepts it without sending a prompt.
-    get requiresSshKey() {
-        return false;
-    }
     // The KA655 firmware self-test is unreliable when the machine is restarted
     // inside the same simulator process, so reboot isn't supported on VAX.
     get supportsReboot() {
         return false;
-    }
-    // The VAX image is a raw SIMH disk compressed with zstd, the other
-    // architectures use qcow2.
-    get imageFileExtension() {
-        return 'img.zst';
-    }
-    // The VAX image is already a raw SIMH disk, just zstd compressed, so
-    // decompress it directly instead of converting from qcow2. zstd was told to
-    // use a 128 MiB window (its default decompression limit), so no `--long`
-    // flag is needed here.
-    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug('Decompressing raw disk image');
-            const target = path.join(resourcesDirectory.toString(), targetDiskName.toString());
-            yield exec.exec('zstd', ['-d', '-f', diskImage.toString(), '-o', target]);
-        });
     }
 }
 exports["default"] = NetBsdVax;
@@ -3056,6 +3405,15 @@ const core = __importStar(__nccwpck_require__(2186));
 const os = __importStar(__nccwpck_require__(9385));
 const hypervisor_1 = __nccwpck_require__(4288);
 class Qemu extends os.OperatingSystem {
+    // Which of them to instantiate, for a platform that has more than one
+    // variant to pick between.
+    vmClassFor(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _input, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _configuration) {
+        return this.vmClass;
+    }
     get hypervisorUrl() {
         return this.architecture.resourceUrl;
     }
@@ -3071,8 +3429,9 @@ class Qemu extends os.OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, input, configuration) {
         core.debug(`Creating ${this.name} VM`);
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), cpu: this.architecture.cpu, machineType: this.architecture.machineType });
-        return new this.vmClass(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), microvmFirmware: path.join(firmwareDirectory.toString(), this.hypervisor.microvmFirmwareFile), cpu: this.architecture.cpu, machineType: this.architecture.machineType, kernel: path.join(resourcesDirectory.toString(), os.OperatingSystem.kernelName) });
+        const vmClass = this.vmClassFor(input, config);
+        return new vmClass(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 }
 exports.Qemu = Qemu;
@@ -3184,20 +3543,35 @@ class Vm extends vm.Vm {
         return [
             this.hypervisorPath.toString(),
             '-daemonize',
-            '-machine', `type=${this.configuration.machineType},accel=${accelerators}`,
+            '-machine', `type=${this.machineType},accel=${accelerators}`,
             '-cpu', this.cpuFlagValue,
             '-smp', this.configuration.cpuCount.toString(),
             '-m', this.configuration.memory,
-            '-device', `${this.netDevive},netdev=user.0,addr=0x03`,
-            '-netdev', this.netdev,
+            ...this.networkFlags,
             '-display', 'none',
             '-monitor', 'none',
             '-serial', `file:${vm.Vm.logFile}`,
             // '-nographic',
             '-boot', 'strict=off',
             ...this.firmwareFlags,
-            ...this.hardDriverFlags
+            ...this.hardDriverFlags,
+            ...this.extraFlags
         ];
+    }
+    get machineType() {
+        return this.configuration.machineType;
+    }
+    get networkFlags() {
+        // prettier-ignore
+        return [
+            '-device', `${this.netDevive},netdev=user.0,addr=0x03`,
+            '-netdev', this.netdev
+        ];
+    }
+    // Flags that don't belong to any of the groups above. Nothing needs them by
+    // default.
+    get extraFlags() {
+        return [];
     }
     get defaultHardDriveFlags() {
         // prettier-ignore
@@ -3228,7 +3602,10 @@ class Vm extends vm.Vm {
         return [
             'user',
             'id=user.0',
-            `hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
+            // Bound to the loopback address. An empty host address would make QEMU
+            // listen on every interface, which exposes the guest's sshd to anything
+            // that can reach the runner. The action connects to localhost.
+            `hostfwd=tcp:127.0.0.1:${this.configuration.ssHostPort}-:22`,
             this.ipv6
         ]
             .filter(e => e !== '')
@@ -3519,6 +3896,13 @@ class Vm extends vm.Vm {
             return 'localhost';
         });
     }
+    // The simulated machine runs at roughly 1 MIPS, where even the SSH
+    // identification string exchange isn't necessarily prompt. Keep the longer
+    // timeout a probe used to get, rather than risk a probe that times out
+    // against a guest that is in fact listening.
+    get readinessProbeTimeout() {
+        return 10;
+    }
     // SIMH cannot daemonize itself like QEMU. Redirect its output to a file
     // instead of inheriting the runner's pipes, otherwise the runner would
     // wait for the simulator to exit before finishing the step.
@@ -3542,6 +3926,117 @@ class Vm extends vm.Vm {
 exports.Vm = Vm;
 Vm.consolePort = 2848;
 //# sourceMappingURL=simh_vm.js.map
+
+/***/ }),
+
+/***/ 7915:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Timings = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const clock_1 = __nccwpck_require__(9948);
+// Records how long the individual phases of setting up a VM take, so the setup
+// time can be broken down and compared between runs.
+class Timings {
+    constructor(clock = new clock_1.SystemClock()) {
+        this.measurements = [];
+        this.clock = clock;
+        this.startedAt = clock.now();
+    }
+    // The wall clock time, in milliseconds, that has elapsed since this instance
+    // was created.
+    get elapsed() {
+        return this.clock.now() - this.startedAt;
+    }
+    // Runs `block`, recording how long it took under `name`. Phases are reported
+    // in the order they start, so a phase always precedes the nested phases it
+    // runs.
+    measure(name, block, { nested = false } = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const startedAt = this.clock.now();
+            const measurement = { name, milliseconds: 0, nested };
+            this.measurements.push(measurement);
+            try {
+                return yield block();
+            }
+            finally {
+                measurement.milliseconds = this.clock.now() - startedAt;
+            }
+        });
+    }
+    // Logs the recorded phases, in the order they started, followed by the total
+    // wall clock time. The same numbers go to the debug log as JSON, for
+    // comparing runs mechanically.
+    report(title) {
+        const total = this.elapsed;
+        const width = Math.max(this.totalLabel.length, ...this.measurements.map(m => this.label(m).length));
+        core.info(`${title} (indented phases run concurrently, inside the phase they're ` +
+            'listed under):');
+        for (const measurement of this.measurements)
+            core.info(this.format(this.label(measurement), measurement.milliseconds, width));
+        core.info(this.format(this.totalLabel, total, width));
+        core.debug(`${title} (JSON): ${JSON.stringify(this.toJson(total))}`);
+    }
+    get totalLabel() {
+        return 'total';
+    }
+    label(measurement) {
+        return measurement.nested ? `  ${measurement.name}` : measurement.name;
+    }
+    format(label, milliseconds, width) {
+        const seconds = (milliseconds / 1000).toFixed(2);
+        return `  ${label.padEnd(width)}  ${seconds.padStart(8)} s`;
+    }
+    toJson(total) {
+        const json = {};
+        let parent = '';
+        for (const measurement of this.measurements) {
+            if (measurement.nested)
+                json[`${parent}${measurement.name}`] = measurement.milliseconds / 1000;
+            else {
+                json[measurement.name] = measurement.milliseconds / 1000;
+                // Nested phase names are only unique within the phase they belong to,
+                // so qualify them to keep the keys of the JSON object unique.
+                parent = `${measurement.name} / `;
+            }
+        }
+        json[this.totalLabel] = total / 1000;
+        return json;
+    }
+}
+exports.Timings = Timings;
+//# sourceMappingURL=timings.js.map
 
 /***/ }),
 
@@ -3652,11 +4147,11 @@ const version = {
         freebsd: 'v0.16.0',
         haiku: 'v0.1.0',
         midnightbsd: 'v0.0.1',
-        netbsd: 'v0.7.0',
+        netbsd: 'v1.0.0',
         openbsd: 'v0.14.0',
         omnios: 'v0.2.0'
     },
-    resources: 'v1.1.0',
+    resources: 'v2.0.0',
     simh: 'v0.0.1'
 };
 exports["default"] = version;
@@ -3779,15 +4274,30 @@ class Vm {
             this.ipAddress = yield this.getIpAddress();
         });
     }
+    // Bounds a single readiness probe, in seconds. User mode networking accepts
+    // the forwarded connection before the guest's sshd does, so a probe sent too
+    // early blocks rather than failing fast. The SSH ConnectTimeout a probe used
+    // to get is ten seconds -- right for a command, but as a probe interval it
+    // costs all ten whenever the guest is ready sooner.
+    get readinessProbeTimeout() {
+        return 2;
+    }
     // Waits, at most `timeout` seconds, for the VM to become ready.
     wait(timeout) {
         return __awaiter(this, void 0, void 0, function* () {
             const deadline = new deadline_1.Deadline(timeout, this.clock);
+            const startedAt = this.clock.now();
             let attempts = 0;
             while (!deadline.hasPassed) {
                 attempts++;
-                if (yield this.isReady())
+                if (yield this.isReady()) {
+                    // The probe interval bounds how precisely this reflects when the guest
+                    // actually became reachable, so log both numbers.
+                    const seconds = ((this.clock.now() - startedAt) / 1000).toFixed(2);
+                    core.info(`The VM became ready after ${seconds} seconds ` +
+                        `and ${attempts} attempt(s)`);
                     return;
+                }
                 yield deadline.sleepAtMost(1000);
             }
             throw Error(`Waiting for VM to become ready timed out after ${timeout} seconds ` +
@@ -3816,7 +4326,10 @@ class Vm {
             if (options.log)
                 core.info(`Executing command inside VM: ${command}`);
             const buffer = Buffer.from(command);
-            return yield this.executor.execute('ssh', ['-t', this.sshTarget], {
+            const connectTimeout = options.connectTimeout === undefined
+                ? []
+                : ['-o', `ConnectTimeout=${options.connectTimeout}`];
+            return yield this.executor.execute('ssh', ['-t', ...connectTimeout, this.sshTarget], {
                 input: buffer,
                 silent: options.silent,
                 ignoreReturnCode: options.ignoreReturnCode
@@ -3857,7 +4370,10 @@ class Vm {
     isReady() {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Waiting for VM to be ready...');
-            const ready = (yield this.execute('true', { ignoreReturnCode: true })) === 0;
+            const ready = (yield this.execute('true', {
+                ignoreReturnCode: true,
+                connectTimeout: this.readinessProbeTimeout
+            })) === 0;
             if (ready)
                 core.info('VM is ready');
             return ready;

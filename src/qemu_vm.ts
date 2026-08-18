@@ -40,13 +40,12 @@ export abstract class Vm extends vm.Vm {
     return [
       this.hypervisorPath.toString(),
       '-daemonize',
-      '-machine', `type=${this.configuration.machineType},accel=${accelerators}`,
+      '-machine', `type=${this.machineType},accel=${accelerators}`,
       '-cpu', this.cpuFlagValue,
       '-smp', this.configuration.cpuCount.toString(),
       '-m', this.configuration.memory,
 
-      '-device', `${this.netDevive},netdev=user.0,addr=0x03`,
-      '-netdev', this.netdev,
+      ...this.networkFlags,
 
       '-display', 'none',
       '-monitor', 'none',
@@ -55,8 +54,27 @@ export abstract class Vm extends vm.Vm {
 
       '-boot', 'strict=off',
       ...this.firmwareFlags,
-      ...this.hardDriverFlags
+      ...this.hardDriverFlags,
+      ...this.extraFlags
     ]
+  }
+
+  protected get machineType(): string {
+    return this.configuration.machineType
+  }
+
+  protected get networkFlags(): string[] {
+    // prettier-ignore
+    return [
+      '-device', `${this.netDevive},netdev=user.0,addr=0x03`,
+      '-netdev', this.netdev
+    ]
+  }
+
+  // Flags that don't belong to any of the groups above. Nothing needs them by
+  // default.
+  protected get extraFlags(): string[] {
+    return []
   }
 
   protected abstract get hardDriverFlags(): string[]
@@ -94,11 +112,14 @@ export abstract class Vm extends vm.Vm {
     return ['hvf', 'kvm', 'tcg']
   }
 
-  private get netdev(): string {
+  protected get netdev(): string {
     return [
       'user',
       'id=user.0',
-      `hostfwd=tcp::${this.configuration.ssHostPort}-:22`,
+      // Bound to the loopback address. An empty host address would make QEMU
+      // listen on every interface, which exposes the guest's sshd to anything
+      // that can reach the runner. The action connects to localhost.
+      `hostfwd=tcp:127.0.0.1:${this.configuration.ssHostPort}-:22`,
       this.ipv6
     ]
       .filter(e => e !== '')
