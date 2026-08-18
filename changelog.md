@@ -28,6 +28,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Log a breakdown of how long each phase of setting up the VM took, together
     with how long the VM took to become reachable over SSH
 
+### Fixed
+- 5-level paging (LA57) is no longer exposed to the guests on x86-64
+    ([#158](https://github.com/cross-platform-actions/action/issues/158)).
+    FreeBSD 13.0 enables 5-level paging whenever the CPU reports it and panics
+    in the trampoline that switches to it, so every job that landed on an Intel
+    runner from Ice Lake onwards failed to boot
+- STIBP always-on mode is no longer exposed to the guests on x86-64
+    ([#158](https://github.com/cross-platform-actions/action/issues/158)). Some
+    of the AMD runners report it without the STIBP and IBRS bits that normally
+    come with it, which made DragonFly BSD write `IA32_SPEC_CTRL` and take a
+    general protection fault while booting
+
 ### Security
 - The guest's SSH port is only forwarded to the runner's loopback address. It was
     previously bound to every interface, making the guest reachable from anything

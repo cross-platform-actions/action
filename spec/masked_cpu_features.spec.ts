@@ -30,6 +30,9 @@ const cpuFlag = (command: string[]): string =>
   command[command.indexOf('-cpu') + 1]
 
 const amxFeatures = ['amx-tile=off', 'amx-int8=off', 'amx-bf16=off']
+const la57Feature = 'la57=off'
+const stibpAlwaysOnFeature = 'stibp-always-on=off'
+const allFeatures = [...amxFeatures, la57Feature, stibpAlwaysOnFeature]
 
 describe('masked CPU features', () => {
   describe('on x86-64', () => {
@@ -48,6 +51,14 @@ describe('masked CPU features', () => {
       )
     })
 
+    it('turns 5-level paging off, because FreeBSD 13.0 panics switching to it', () => {
+      expect(cpuFlag(vm.command)).toContain(la57Feature)
+    })
+
+    it('turns STIBP always-on mode off, because DragonFly BSD faults writing IA32_SPEC_CTRL', () => {
+      expect(cpuFlag(vm.command)).toContain(stibpAlwaysOnFeature)
+    })
+
     it('keeps the CPU model it was configured with', () => {
       expect(cpuFlag(vm.command).split(',')[0]).toEqual('max')
     })
@@ -63,8 +74,8 @@ describe('masked CPU features', () => {
       configuration
     )
 
-    it('masks nothing, since AMX only exists on x86', () => {
-      amxFeatures.forEach(feature =>
+    it('masks nothing, since none of these features exist on ARM', () => {
+      allFeatures.forEach(feature =>
         expect(cpuFlag(vm.command)).not.toContain(feature)
       )
     })
@@ -89,9 +100,9 @@ describe('masked CPU features', () => {
       configuration
     )
 
-    it('masks both that feature and AMX', () => {
+    it("masks both that feature and the architecture's", () => {
       expect(cpuFlag(vm.command)).toContain('-its-own-feature')
-      amxFeatures.forEach(feature =>
+      allFeatures.forEach(feature =>
         expect(cpuFlag(vm.command)).toContain(feature)
       )
     })

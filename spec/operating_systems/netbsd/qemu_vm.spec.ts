@@ -124,7 +124,10 @@ describe('NetBSD QemuVm', () => {
     // Without this the guest won't use the TSC, and the only timecounter left
     // on this machine type is the i8254, which is two port reads away.
     it('advertises an invariant TSC', () => {
-      expect(command).toContain('amx-bf16=off,+invtsc')
+      const args = command.split(' ')
+      const cpuFlag = args[args.indexOf('-cpu') + 1]
+
+      expect(cpuFlag.split(',')).toContain('+invtsc')
     })
 
     // The firmware is what loads the kernel on this machine type, and the only
