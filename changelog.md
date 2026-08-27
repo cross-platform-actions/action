@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `image_url` still gets both, since it may expect them
 
 ### Added
+- Add support for Haiku R1/beta6
+    ([#165](https://github.com/cross-platform-actions/action/issues/165))
 - A `variant` input, selecting a named configuration of a platform. Defaults to
     `default`, which boots exactly as before, so no existing workflow changes.
     See [Variants](readme.md#variants-variant)

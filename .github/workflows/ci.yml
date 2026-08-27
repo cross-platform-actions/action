@@ -116,6 +116,9 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - name: 'r1beta6'
+            uname: hrev59866
+
           - name: 'r1beta5'
             uname: hrev57937
 
@@ -506,7 +509,7 @@ jobs:
         with:
           operating_system: haiku
           architecture: x86-64
-          version: r1beta5
+          version: r1beta6
 
       - name: Test
         shell: cpa.sh {0}
@@ -874,7 +877,7 @@ jobs:
         with:
           operating_system: haiku
           architecture: x86-64
-          version: r1beta5
+          version: r1beta6
 
       - name: Verify VM is running before reboot
         shell: cpa.sh {0}
