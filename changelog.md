@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+## [1.5.0] - 2026-08-28
 ### Changed
 - NetBSD images download around 45% smaller -- 11.0 x86-64 goes from 497 MiB to
     268 MiB -- which is most of what a NetBSD job spends on setup
@@ -451,7 +453,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v1.5.0...HEAD
+
+[1.5.0]: https://github.com/cross-platform-actions/action/compare/v1.4.0...v1.5.0
 
 [1.4.0]: https://github.com/cross-platform-actions/action/compare/v1.3.0...v1.4.0
 
