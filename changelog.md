@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Fixed
+- DragonFly BSD guests no longer occasionally start a job without working
+    connectivity ([#164](https://github.com/cross-platform-actions/action/issues/164)).
+    The image configured its interface with `dhclient`, which daemonizes before
+    the DHCP exchange finishes, so the boot never waited for the network and the
+    first step could run while the guest still had no route off its own subnet.
+    The image now configures the interface statically, from the lease user mode
+    networking hands out identically on every boot
 
 ## [1.5.0] - 2026-08-28
 ### Changed
