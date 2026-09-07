@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- Add support for NetBSD 9.5
+
 ### Fixed
 - DragonFly BSD guests no longer occasionally start a job without working
     connectivity ([#164](https://github.com/cross-platform-actions/action/issues/164)).
