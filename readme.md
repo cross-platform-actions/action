@@ -346,6 +346,7 @@ operating system will list which versions are supported.
 | 11.0    | ✅     | ✅    | ✅    |
 | 10.1    | ✅     | ✅    | ✅    |
 | 10.0    | ✅     | ✅    | ❌    |
+| 9.5     | ✅     | ❌    | ❌    |
 | 9.4     | ✅     | ❌    | ❌    |
 | 9.3     | ✅     | ❌    | ❌    |
 | 9.2     | ✅     | ❌    | ❌    |
