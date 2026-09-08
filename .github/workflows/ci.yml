@@ -207,6 +207,7 @@ jobs:
           - '11.0'
           - '10.1'
           - '10.0'
+          - '9.5'
           - '9.4'
           - '9.3'
           - '9.2'
@@ -231,6 +232,9 @@ jobs:
 
         exclude:
           # arm64 images exist only for 10.0 and newer.
+          - version: '9.5'
+            architecture: { name: arm64 }
+
           - version: '9.4'
             architecture: { name: arm64 }
 
@@ -242,6 +246,9 @@ jobs:
 
           # VAX images exist only for 10.1 and 11.0.
           - version: '10.0'
+            architecture: { name: vax }
+
+          - version: '9.5'
             architecture: { name: vax }
 
           - version: '9.4'
