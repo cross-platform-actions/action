@@ -4163,7 +4163,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const version = {
     operating_system: {
         dragonflybsd: 'v0.0.2',
-        freebsd: 'v0.16.0',
+        freebsd: 'v0.17.0',
         haiku: 'v0.2.0',
         midnightbsd: 'v0.0.1',
         netbsd: 'v1.1.0',

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Add support for FreeBSD 14.5 ([#168](https://github.com/cross-platform-actions/action/issues/168))
 - Add support for NetBSD 9.5
 
 ### Fixed
