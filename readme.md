@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Start VM
-        uses: cross-platform-actions/action@v1.5.0
+        uses: cross-platform-actions/action@v1.6.0
         with:
           operating_system: freebsd
           version: '15.1'
@@ -120,7 +120,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Start VM on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v1.5.0
+        uses: cross-platform-actions/action@v1.6.0
         env:
           MY_ENV1: MY_ENV1
           MY_ENV2: MY_ENV2

@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+## [1.6.0] - 2026-09-12
 ### Added
 - Add support for FreeBSD 14.5 ([#168](https://github.com/cross-platform-actions/action/issues/168))
 - Add support for NetBSD 9.5
@@ -465,7 +467,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v1.6.0...HEAD
+
+[1.6.0]: https://github.com/cross-platform-actions/action/compare/v1.5.0...v1.6.0
 
 [1.5.0]: https://github.com/cross-platform-actions/action/compare/v1.4.0...v1.5.0
 
