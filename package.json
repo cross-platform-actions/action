@@ -30,7 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.2.6",
-    "@actions/exec": "^1.0.4",
+    "@actions/exec": "^3.0.0",
     "@actions/tool-cache": "^1.6.0",
     "array.prototype.flatmap": "^1.2.4"
   },
