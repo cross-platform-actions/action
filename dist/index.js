@@ -4167,7 +4167,7 @@ const version = {
         haiku: 'v0.2.0',
         midnightbsd: 'v0.0.1',
         netbsd: 'v1.1.0',
-        openbsd: 'v0.14.0',
+        openbsd: 'v0.15.0',
         omnios: 'v0.2.0'
     },
     resources: 'v2.0.0',

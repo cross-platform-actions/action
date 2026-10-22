@@ -61,7 +61,7 @@ jobs:
 ### Full Example
 
 Here's a sample workflow file which will set up a matrix resulting in nine
-jobs. One which will run on FreeBSD 15.1, one which runs OpenBSD 7.9, one which
+jobs. One which will run on FreeBSD 15.1, one which runs OpenBSD 8.0, one which
 runs NetBSD 11.0, one which runs OpenBSD 7.9 on ARM64, one which runs NetBSD
 11.0 on ARM64, one which runs DragonFly BSD 6.4.2, one which runs MidnightBSD
 4.0.4, one which runs Haiku R1/beta6 and one which runs OmniOS r151056.
@@ -86,11 +86,11 @@ jobs:
 
           - name: openbsd
             architecture: x86-64
-            version: '7.9'
+            version: '8.0'
 
           - name: openbsd
             architecture: arm64
-            version: '7.9'
+            version: '8.0'
 
           - name: netbsd
             architecture: x86-64
@@ -307,6 +307,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
+| 8.0     | ✅     | ✅     |
 | 7.9     | ✅     | ✅     |
 | 7.8     | ✅     | ✅     |
 | 7.7     | ✅     | ✅     |
