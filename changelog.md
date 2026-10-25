@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for OpenBSD 8.0 ([#171](https://github.com/cross-platform-actions/action/issues/171))
+- Add support for NetBSD 10.2 ([#169](https://github.com/cross-platform-actions/action/issues/169))
 
 ## [1.6.0] - 2026-09-12
 ### Added

@@ -209,6 +209,7 @@ jobs:
       matrix:
         version:
           - '11.0'
+          - '10.2'
           - '10.1'
           - '10.0'
           - '9.5'
@@ -248,7 +249,7 @@ jobs:
           - version: '9.2'
             architecture: { name: arm64 }
 
-          # VAX images exist only for 10.1 and 11.0.
+          # VAX images exist only for 10.1 and newer.
           - version: '10.0'
             architecture: { name: vax }
 

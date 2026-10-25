@@ -346,6 +346,7 @@ operating system will list which versions are supported.
 | Version | x86-64 | arm64 | vax   |
 |---------|--------|-------|-------|
 | 11.0    | ✅     | ✅    | ✅    |
+| 10.2    | ✅     | ✅    | ✅    |
 | 10.1    | ✅     | ✅    | ✅    |
 | 10.0    | ✅     | ✅    | ❌    |
 | 9.5     | ✅     | ❌    | ❌    |
