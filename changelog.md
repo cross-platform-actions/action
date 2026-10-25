@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for OpenBSD 8.0 ([#171](https://github.com/cross-platform-actions/action/issues/171))
 
+### Added
+- Add concurrency to the CI workflow to prevent redundant builds.
+- Enforce explicit permissions in the CI and Release workflows for improved security.
+
 ## [1.6.0] - 2026-09-12
 ### Added
 - Add support for FreeBSD 14.5 ([#168](https://github.com/cross-platform-actions/action/issues/168))
