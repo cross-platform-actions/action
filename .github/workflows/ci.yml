@@ -363,6 +363,7 @@ jobs:
       matrix:
         hostname: [runnervmg1sw1.local]
         version:
+          - 'r151060'
           - 'r151056'
 
         architecture:
