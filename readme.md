@@ -343,16 +343,16 @@ operating system will list which versions are supported.
 
 ### [NetBSD][netbsd_builder] (`netbsd`)
 
-| Version | x86-64 | arm64 | vax   |
-|---------|--------|-------|-------|
-| 11.0    | ✅     | ✅    | ✅    |
-| 10.2    | ✅     | ✅    | ✅    |
-| 10.1    | ✅     | ✅    | ✅    |
-| 10.0    | ✅     | ✅    | ❌    |
-| 9.5     | ✅     | ❌    | ❌    |
-| 9.4     | ✅     | ❌    | ❌    |
-| 9.3     | ✅     | ❌    | ❌    |
-| 9.2     | ✅     | ❌    | ❌    |
+| Version | x86-64 | arm64 | vax   | sparc64 |
+|---------|--------|-------|-------|---------|
+| 11.0    | ✅     | ✅    | ✅    | ✅      |
+| 10.2    | ✅     | ✅    | ✅    | ✅      |
+| 10.1    | ✅     | ✅    | ✅    | ✅      |
+| 10.0    | ✅     | ✅    | ❌    | ❌      |
+| 9.5     | ✅     | ❌    | ❌    | ❌      |
+| 9.4     | ✅     | ❌    | ❌    | ❌      |
+| 9.3     | ✅     | ❌    | ❌    | ❌      |
+| 9.2     | ✅     | ❌    | ❌    | ❌      |
 
 Note, the VAX architecture runs on the [SIMH][simh_builder] simulator
 (MicroVAX 3900) instead of QEMU and comes with a couple of limitations:
@@ -366,6 +366,16 @@ Note, the VAX architecture runs on the [SIMH][simh_builder] simulator
     firmware self-test is unreliable when the machine is restarted inside the
     same simulator process.
 * The X11 sets are not installed on VAX due to the lack of a display.
+
+Note, the sparc64 architecture runs on QEMU's `sun4u` machine, which is always
+emulated, and comes with a couple of limitations:
+
+* The `sun4u` machine supports at most 3 GB of memory and a single CPU. Larger
+    `memory` inputs are clamped to 3 GB and the `cpu_count` input is ignored.
+* The emulated machine is slow; it takes several minutes to boot before the VM
+    becomes reachable.
+* Rebooting the VM (`cpa.sh --reboot`) is not supported: the machine's
+    firmware, OpenBIOS, fails to boot it again after a restart.
 
 ### [DragonFly BSD][dragonflybsd_builder] (`dragonflybsd`)
 
@@ -409,6 +419,7 @@ operating systems, see the sections for each operating system above.
 | `vax`        |                 |
 | `x86-64`     | `x86_64`, `x64` |
 | `riscv64`    | `riscv`, `rv64` |
+| `sparc64`    | `sparc`         |
 
 ### Hypervisors
 

@@ -42,8 +42,8 @@ export abstract class Vm extends vm.Vm {
       '-daemonize',
       '-machine', `type=${this.machineType},accel=${accelerators}`,
       '-cpu', this.cpuFlagValue,
-      '-smp', this.configuration.cpuCount.toString(),
-      '-m', this.configuration.memory,
+      '-smp', this.smp,
+      '-m', this.memory,
 
       ...this.networkFlags,
 
@@ -52,7 +52,7 @@ export abstract class Vm extends vm.Vm {
       '-serial', `file:${vm.Vm.logFile}`,
       // '-nographic',
 
-      '-boot', 'strict=off',
+      ...this.bootFlags,
       ...this.firmwareFlags,
       ...this.hardDriverFlags,
       ...this.extraFlags
@@ -78,6 +78,18 @@ export abstract class Vm extends vm.Vm {
   }
 
   protected abstract get hardDriverFlags(): string[]
+
+  protected get bootFlags(): string[] {
+    return ['-boot', 'strict=off']
+  }
+
+  protected get memory(): string {
+    return this.configuration.memory
+  }
+
+  protected get smp(): string {
+    return this.configuration.cpuCount.toString()
+  }
 
   protected get defaultHardDriveFlags(): string[] {
     // prettier-ignore

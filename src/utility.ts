@@ -49,6 +49,25 @@ export function getOrDefaultOrThrow<V>(
   return value
 }
 
+// Parses a QEMU `-m` memory string (e.g. '6G', '2048M', '512') into a number
+// of mebibytes. A unitless value is interpreted as mebibytes, matching QEMU's
+// default. Returns undefined when the value cannot be parsed.
+export function mebibytes(memory: string): number | undefined {
+  const match = memory.trim().match(/^(\d+)\s*([kmg]?)i?b?$/i)
+  if (match === null) return undefined
+
+  const value = parseInt(match[1], 10)
+
+  switch (match[2].toLocaleLowerCase()) {
+    case 'g':
+      return value * 1024
+    case 'k':
+      return Math.floor(value / 1024)
+    default:
+      return value
+  }
+}
+
 export function getOrThrow<Key, Value>(
   map: ReadonlyMap<Key, Value>,
   key: Key
