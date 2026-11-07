@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for OmniOS r151060
+- Add support for NetBSD on SPARC64 ([#41](https://github.com/cross-platform-actions/action/issues/41))
+
+### Changed
+- Bump the bundled QEMU to 11.1.3
 
 ## [1.7.0] - 2026-10-25
 ### Added

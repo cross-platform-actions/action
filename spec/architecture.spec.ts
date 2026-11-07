@@ -160,6 +160,24 @@ describe('toKind', () => {
     })
   })
 
+  describe('sparc64', () => {
+    it('returns the sparc64 architecture', () => {
+      expect(architecture.toKind('sparc64')).toBe(architecture.Kind.sparc64)
+    })
+  })
+
+  describe('SPARC64', () => {
+    it('returns the sparc64 architecture', () => {
+      expect(architecture.toKind('SPARC64')).toBe(architecture.Kind.sparc64)
+    })
+  })
+
+  describe('sparc', () => {
+    it('returns the sparc64 architecture', () => {
+      expect(architecture.toKind('sparc')).toBe(architecture.Kind.sparc64)
+    })
+  })
+
   describe('invalid architecture', () => {
     it('returns undefined', () => {
       expect(architecture.toKind('null')).toBeUndefined()

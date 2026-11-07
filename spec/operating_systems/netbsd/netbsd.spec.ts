@@ -4,6 +4,9 @@ import * as path from 'path'
 
 import NetBsd from '../../../src/operating_systems/netbsd/netbsd'
 import NetBsdVax from '../../../src/operating_systems/netbsd/vax'
+import NetBsdSparc64 from '../../../src/operating_systems/netbsd/sparc64'
+import '../../../src/operating_systems/netbsd/factory'
+import {Factory} from '../../../src/operating_systems/factory'
 import * as hostModule from '../../../src/host'
 import * as arch from '../../../src/architectures/factory'
 import * as archKind from '../../../src/architectures/kind'
@@ -13,6 +16,7 @@ import * as hypervisor from '../../../src/hypervisor'
 import * as qemu from '../../../src/qemu_vm'
 import * as netbsdQemuVm from '../../../src/operating_systems/netbsd/qemu_vm'
 import * as netbsdVaxVm from '../../../src/operating_systems/netbsd/vax_vm'
+import * as netbsdSparc64Vm from '../../../src/operating_systems/netbsd/sparc64_vm'
 import {Input} from '../../../src/action/input'
 import {Variant} from '../../../src/action/variant'
 import * as vmModule from '../../../src/vm'
@@ -229,6 +233,87 @@ describe('NetBSD OperatingSystem', () => {
           }
         )
       })
+    })
+  })
+
+  describe('SPARC64 architecture', () => {
+    let sparc64Architecture = arch.create(
+      archKind.Kind.sparc64,
+      host,
+      osKind,
+      host.hypervisor
+    )
+    let netbsdSparc64 = new NetBsdSparc64(sparc64Architecture, '0.0.0')
+    let config = {
+      memory: '4G',
+      cpuCount: 7,
+      diskImage: '',
+      resourcesDiskImage: ''
+    }
+
+    it('is what the factory creates for sparc64', () => {
+      const created = Factory.for(osKind, sparc64Architecture).create(
+        '0.0.0',
+        new hypervisor.Qemu()
+      )
+
+      expect(created).toBeInstanceOf(NetBsdSparc64)
+    })
+
+    // `microvm` is an x86 machine type.
+    it('rejects the microvm variant', () => {
+      expect(netbsdSparc64.supportedVariants).toEqual([Variant.default])
+      expect(() => netbsdSparc64.validateVariant(Variant.microvm)).toThrowError(
+        /not supported by netbsd on sparc64.*Supported variants are: default/
+      )
+    })
+
+    it('waits longer than the default for the emulated machine to boot', () => {
+      expect(netbsdSparc64.sshReadyTimeout).toBeGreaterThan(
+        netbsd.sshReadyTimeout
+      )
+    })
+
+    it('does not support rebooting', () => {
+      expect(netbsdSparc64.supportsReboot).toBe(false)
+    })
+
+    // The base class derives the name from the class name, which would send
+    // the download to a `netbsdsparc64-builder` repository that doesn't exist.
+    it('downloads its image from the NetBSD builder', () => {
+      expect(netbsdSparc64.virtualMachineImageUrl).toEqual(
+        'https://github.com/cross-platform-actions/netbsd-builder/releases/' +
+          `download/${netbsdSparc64.virtualMachineImageReleaseVersion}/` +
+          'netbsd-0.0.0-sparc64.tar.zst'
+      )
+    })
+
+    it('creates a sun4u virtual machine booting OpenBIOS', () => {
+      let sparc64VmSpy = spyOn(netbsdSparc64Vm, 'Vm')
+
+      netbsdSparc64.createVirtualMachine(
+        hypervisorDirectory,
+        resourcesDirectory,
+        firmwareDirectory,
+        input,
+        config
+      )
+
+      expect(sparc64VmSpy).toHaveBeenCalledOnceWith(
+        hypervisorDirectory,
+        resourcesDirectory,
+        sparc64Architecture,
+        input,
+        {
+          ...config,
+          ssHostPort: 2847,
+          cpu: 'TI-UltraSparc-IIi',
+          machineType: 'sun4u',
+          firmware: `${firmwareDirectory}/share/qemu/openbios-sparc64`,
+          microvmFirmware: `${firmwareDirectory}/share/qemu/qboot.rom`,
+          kernel: `${resourcesDirectory}/kernel`
+        }
+      )
     })
   })
 })

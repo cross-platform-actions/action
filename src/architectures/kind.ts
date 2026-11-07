@@ -5,7 +5,8 @@ export enum Kind {
   arm64,
   x86_64,
   riscv64,
-  vax
+  vax,
+  sparc64
 }
 
 export function toKind(value: string): Kind | undefined {
@@ -21,5 +22,7 @@ const architectureMap: Record<string, Kind> = {
   riscv64: Kind.riscv64,
   riscv: Kind.riscv64,
   rv64: Kind.riscv64,
-  vax: Kind.vax
+  vax: Kind.vax,
+  sparc64: Kind.sparc64,
+  sparc: Kind.sparc64
 } as const

@@ -2,8 +2,31 @@ import {
   execWithOutput,
   getOrDefaultOrThrow,
   getOrThrow,
-  getImplementation
+  getImplementation,
+  mebibytes
 } from '../src/utility'
+
+describe('mebibytes', () => {
+  it('converts gibibytes to mebibytes', () => {
+    expect(mebibytes('6G')).toBe(6144)
+  })
+
+  it('returns mebibytes unchanged', () => {
+    expect(mebibytes('2048M')).toBe(2048)
+  })
+
+  it('treats a unitless value as mebibytes', () => {
+    expect(mebibytes('512')).toBe(512)
+  })
+
+  it('converts kibibytes to mebibytes', () => {
+    expect(mebibytes('4096K')).toBe(4)
+  })
+
+  it('returns undefined for an unparseable value', () => {
+    expect(mebibytes('lots')).toBeUndefined()
+  })
+})
 
 describe('execWithOutput', () => {
   it('returns the output of the executed process', async () => {

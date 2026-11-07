@@ -11,24 +11,30 @@ export class Vm extends QemuVm {
   // image may still expect one, in which case the action built it -- see
   // Action.requiresSshKey -- so attach it when it's there.
   protected get hardDriverFlags(): string[] {
+    return [...this.systemDiskFlags, ...this.resourcesDriveFlags]
+  }
+
+  protected get systemDiskFlags(): string[] {
     // prettier-ignore
     return [
       '-device', 'virtio-scsi-pci',
       '-device', 'scsi-hd,drive=drive0,bootindex=0',
-      '-drive', this.drive,
-      ...this.resourcesDriveFlags
+      '-drive', this.drive
     ]
   }
 
-  private get resourcesDriveFlags(): string[] {
-    const disk = this.configuration.resourcesDiskImage.toString()
-    if (!exists(disk)) return []
-
+  protected resourcesDiskFlags(disk: string): string[] {
     // prettier-ignore
     return [
       '-device', 'scsi-hd,drive=drive1,bootindex=1',
       '-drive', `if=none,file=${disk},id=drive1,cache=unsafe,discard=ignore,format=raw`
     ]
+  }
+
+  private get resourcesDriveFlags(): string[] {
+    const disk = this.configuration.resourcesDiskImage.toString()
+
+    return exists(disk) ? this.resourcesDiskFlags(disk) : []
   }
 
   protected get drive(): string {

@@ -111,3 +111,9 @@ export class Simh implements Hypervisor {
     return getOrDefaultOrThrow(implementation, 'simh')
   }
 }
+
+export class QemuSparc64 extends Qemu {
+  override get firmwareFile(): string {
+    return `${this.firmwareDirectory}/openbios-sparc64`
+  }
+}

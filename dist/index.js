@@ -1188,6 +1188,7 @@ const x86_64_1 = __nccwpck_require__(7055);
 const openbsd_2 = __nccwpck_require__(367);
 const riscv64_1 = __nccwpck_require__(379);
 const vax_1 = __nccwpck_require__(429);
+const sparc64_1 = __nccwpck_require__(8735);
 const openbsd_3 = __importDefault(__nccwpck_require__(9243));
 const netbsd_1 = __importDefault(__nccwpck_require__(7372));
 const utility_1 = __nccwpck_require__(2857);
@@ -1208,7 +1209,8 @@ const architectureMap = new Map([
     [kind_1.Kind.arm64, arm64_1.Arm64],
     [kind_1.Kind.x86_64, x86_64_1.X86_64],
     [kind_1.Kind.riscv64, riscv64_1.Riscv64],
-    [kind_1.Kind.vax, vax_1.Vax]
+    [kind_1.Kind.vax, vax_1.Vax],
+    [kind_1.Kind.sparc64, sparc64_1.Sparc64]
 ]);
 //# sourceMappingURL=factory.js.map
 
@@ -1230,6 +1232,7 @@ var Kind;
     Kind[Kind["x86_64"] = 1] = "x86_64";
     Kind[Kind["riscv64"] = 2] = "riscv64";
     Kind[Kind["vax"] = 3] = "vax";
+    Kind[Kind["sparc64"] = 4] = "sparc64";
 })(Kind = exports.Kind || (exports.Kind = {}));
 function toKind(value) {
     return architectureMap[value.toLocaleLowerCase()];
@@ -1244,7 +1247,9 @@ const architectureMap = {
     riscv64: Kind.riscv64,
     riscv: Kind.riscv64,
     rv64: Kind.riscv64,
-    vax: Kind.vax
+    vax: Kind.vax,
+    sparc64: Kind.sparc64,
+    sparc: Kind.sparc64
 };
 //# sourceMappingURL=kind.js.map
 
@@ -1303,6 +1308,65 @@ class Riscv64 extends architecture_1.Architecture {
 }
 exports.Riscv64 = Riscv64;
 //# sourceMappingURL=riscv64.js.map
+
+/***/ }),
+
+/***/ 8735:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Sparc64 = void 0;
+const architecture_1 = __nccwpck_require__(4019);
+const hypervisor = __importStar(__nccwpck_require__(4288));
+class Sparc64 extends architecture_1.Architecture {
+    get name() {
+        return 'sparc64';
+    }
+    get resolveName() {
+        return 'sparc64';
+    }
+    get resourceUrl() {
+        return `${this.resourceBaseUrl}/qemu-system-sparc64-${this.hostString}.tar`;
+    }
+    get cpu() {
+        return 'TI-UltraSparc-IIi';
+    }
+    get machineType() {
+        return 'sun4u';
+    }
+    get networkDevice() {
+        return 'sunhme';
+    }
+    get hypervisor() {
+        return new hypervisor.QemuSparc64();
+    }
+    get efiHypervisor() {
+        return new hypervisor.QemuSparc64();
+    }
+}
+exports.Sparc64 = Sparc64;
+//# sourceMappingURL=sparc64.js.map
 
 /***/ }),
 
@@ -1714,7 +1778,7 @@ HostQemu.LinuxHostQemu = class extends HostQemu {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Simh = exports.QemuRiscv = exports.QemuEfi = exports.Qemu = exports.Kind = void 0;
+exports.QemuSparc64 = exports.Simh = exports.QemuRiscv = exports.QemuEfi = exports.Qemu = exports.Kind = void 0;
 const utility_1 = __nccwpck_require__(2857);
 var Kind;
 (function (Kind) {
@@ -1802,6 +1866,12 @@ class Simh {
     }
 }
 exports.Simh = Simh;
+class QemuSparc64 extends Qemu {
+    get firmwareFile() {
+        return `${this.firmwareDirectory}/openbios-sparc64`;
+    }
+}
+exports.QemuSparc64 = QemuSparc64;
 //# sourceMappingURL=hypervisor.js.map
 
 /***/ }),
@@ -2728,10 +2798,12 @@ const factory_1 = __nccwpck_require__(133);
 const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
 const netbsd_1 = __importDefault(__nccwpck_require__(7372));
 const vax_1 = __importDefault(__nccwpck_require__(9349));
+const sparc64_1 = __importDefault(__nccwpck_require__(1407));
 (0, factory_1.factory)(class NetBsdFactory extends qemu_factory_1.default {
     createImpl(version) {
         const cls = this.architecture.resolve({
             vax: vax_1.default,
+            sparc64: sparc64_1.default,
             default: netbsd_1.default
         });
         return new cls(this.architecture, version);
@@ -2869,23 +2941,26 @@ class Vm extends qemu_vm_1.Vm {
     // image may still expect one, in which case the action built it -- see
     // Action.requiresSshKey -- so attach it when it's there.
     get hardDriverFlags() {
+        return [...this.systemDiskFlags, ...this.resourcesDriveFlags];
+    }
+    get systemDiskFlags() {
         // prettier-ignore
         return [
             '-device', 'virtio-scsi-pci',
             '-device', 'scsi-hd,drive=drive0,bootindex=0',
-            '-drive', this.drive,
-            ...this.resourcesDriveFlags
+            '-drive', this.drive
         ];
     }
-    get resourcesDriveFlags() {
-        const disk = this.configuration.resourcesDiskImage.toString();
-        if (!exists(disk))
-            return [];
+    resourcesDiskFlags(disk) {
         // prettier-ignore
         return [
             '-device', 'scsi-hd,drive=drive1,bootindex=1',
             '-drive', `if=none,file=${disk},id=drive1,cache=unsafe,discard=ignore,format=raw`
         ];
+    }
+    get resourcesDriveFlags() {
+        const disk = this.configuration.resourcesDiskImage.toString();
+        return exists(disk) ? this.resourcesDiskFlags(disk) : [];
     }
     get drive() {
         const disk = this.configuration.diskImage.toString();
@@ -2988,6 +3063,145 @@ function exists(file) {
     return file !== undefined && fs.existsSync(file);
 }
 //# sourceMappingURL=qemu_vm.js.map
+
+/***/ }),
+
+/***/ 1407:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const netbsd_1 = __importDefault(__nccwpck_require__(7372));
+const sparc64_vm = __importStar(__nccwpck_require__(6696));
+const hypervisor_1 = __nccwpck_require__(4288);
+const variant_1 = __nccwpck_require__(2002);
+// NetBSD on QEMU's `sun4u` machine, which is always emulated.
+class NetBsdSparc64 extends netbsd_1.default {
+    get vmClass() {
+        return sparc64_vm.Vm;
+    }
+    // `microvm` is an x86 machine type.
+    get supportedVariants() {
+        return [variant_1.Variant.default];
+    }
+    vmClassFor() {
+        return this.vmClass;
+    }
+    get hypervisor() {
+        return new hypervisor_1.QemuSparc64();
+    }
+    // Booting to a reachable sshd takes two to seven minutes under emulation.
+    get sshReadyTimeout() {
+        return 900;
+    }
+    // The guest never comes back from a reboot: OpenBIOS on sun4u fails to boot
+    // the machine again once the kernel has restarted it.
+    get supportsReboot() {
+        return false;
+    }
+}
+exports["default"] = NetBsdSparc64;
+//# sourceMappingURL=sparc64.js.map
+
+/***/ }),
+
+/***/ 6696:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Vm = void 0;
+const qemu_vm = __importStar(__nccwpck_require__(7598));
+const utility_1 = __nccwpck_require__(2857);
+// QEMU's `sun4u` machine, booted through its built-in OpenBIOS. The images run
+// on the QEMU from the resources release, which carries a fix to the sun4u PCI
+// bridge (sabre): upstream drops the IDE controller's interrupt when another
+// PCI device raises one first, and the guest hangs under disk and network load.
+class Vm extends qemu_vm.Vm {
+    // sun4u has no virtio-scsi; the disks attach to the on-board IDE controller,
+    // which is also where OpenBIOS's `disk` alias points.
+    get systemDiskFlags() {
+        return ['-drive', ideDrive(this.configuration.diskImage.toString(), 0)];
+    }
+    resourcesDiskFlags(disk) {
+        return ['-drive', ideDrive(disk, 1)];
+    }
+    // The root bus and busA have masked slots, and the on-board NIC's FCode traps
+    // OpenBIOS at boot; pciB is the only place a NIC works.
+    get networkFlags() {
+        // prettier-ignore
+        return [
+            '-device', `${this.architecture.networkDevice},bus=pciB,netdev=user.0`,
+            '-netdev', this.netdev
+        ];
+    }
+    // OpenBIOS does not boot the disk by itself with `strict=off`.
+    get bootFlags() {
+        return ['-boot', 'c'];
+    }
+    // sun4u supports a single CPU only.
+    get smp() {
+        return '1';
+    }
+    get memory() {
+        const requested = (0, utility_1.mebibytes)(this.configuration.memory);
+        if (requested === undefined || requested <= Vm.maxMemoryMebibytes)
+            return this.configuration.memory;
+        return `${Vm.maxMemoryMebibytes}M`;
+    }
+}
+exports.Vm = Vm;
+// sun4u cannot address 4 GiB or more: OpenBIOS faults at 6 GiB and the NetBSD
+// kernel panics ("Can't claim two pages of memory") at 4 GiB. The action's
+// default is 6 GiB, so clamp to a value that reliably boots.
+Vm.maxMemoryMebibytes = 3072;
+function ideDrive(file, index) {
+    return `file=${file},if=ide,index=${index},media=disk,format=raw,cache=unsafe,discard=ignore`;
+}
+//# sourceMappingURL=sparc64_vm.js.map
 
 /***/ }),
 
@@ -3564,14 +3778,14 @@ class Vm extends vm.Vm {
             '-daemonize',
             '-machine', `type=${this.machineType},accel=${accelerators}`,
             '-cpu', this.cpuFlagValue,
-            '-smp', this.configuration.cpuCount.toString(),
-            '-m', this.configuration.memory,
+            '-smp', this.smp,
+            '-m', this.memory,
             ...this.networkFlags,
             '-display', 'none',
             '-monitor', 'none',
             '-serial', `file:${vm.Vm.logFile}`,
             // '-nographic',
-            '-boot', 'strict=off',
+            ...this.bootFlags,
             ...this.firmwareFlags,
             ...this.hardDriverFlags,
             ...this.extraFlags
@@ -3591,6 +3805,15 @@ class Vm extends vm.Vm {
     // default.
     get extraFlags() {
         return [];
+    }
+    get bootFlags() {
+        return ['-boot', 'strict=off'];
+    }
+    get memory() {
+        return this.configuration.memory;
+    }
+    get smp() {
+        return this.configuration.cpuCount.toString();
     }
     get defaultHardDriveFlags() {
         // prettier-ignore
@@ -4093,7 +4316,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ExecExecutor = exports.group = exports.getImplementation = exports.getOrThrow = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
+exports.ExecExecutor = exports.group = exports.getImplementation = exports.getOrThrow = exports.mebibytes = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const core = __importStar(__nccwpck_require__(2186));
 function execWithOutput(commandLine, args, options = {}) {
@@ -4120,6 +4343,24 @@ function getOrDefaultOrThrow(record, key) {
     return value;
 }
 exports.getOrDefaultOrThrow = getOrDefaultOrThrow;
+// Parses a QEMU `-m` memory string (e.g. '6G', '2048M', '512') into a number
+// of mebibytes. A unitless value is interpreted as mebibytes, matching QEMU's
+// default. Returns undefined when the value cannot be parsed.
+function mebibytes(memory) {
+    const match = memory.trim().match(/^(\d+)\s*([kmg]?)i?b?$/i);
+    if (match === null)
+        return undefined;
+    const value = parseInt(match[1], 10);
+    switch (match[2].toLocaleLowerCase()) {
+        case 'g':
+            return value * 1024;
+        case 'k':
+            return Math.floor(value / 1024);
+        default:
+            return value;
+    }
+}
+exports.mebibytes = mebibytes;
 function getOrThrow(map, key) {
     const value = map.get(key);
     if (value === undefined)
@@ -4166,11 +4407,11 @@ const version = {
         freebsd: 'v0.17.0',
         haiku: 'v0.2.0',
         midnightbsd: 'v0.0.1',
-        netbsd: 'v1.2.0',
+        netbsd: 'v1.3.0',
         openbsd: 'v0.15.0',
         omnios: 'v0.3.0'
     },
-    resources: 'v2.0.0',
+    resources: 'v2.1.0',
     simh: 'v0.0.1'
 };
 exports["default"] = version;
