@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Add support for NetBSD on SPARC64 ([#41](https://github.com/cross-platform-actions/action/issues/41))
+- Add support for NetBSD 11.1
 
 ### Changed
 - Bump the bundled QEMU to 11.1.3
