@@ -8,6 +8,13 @@ on:
     branches:
       - master
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+  
+permissions:
+  contents: read
+  
 jobs:
   build: # make sure build/ci work properly
     runs-on: ubuntu-latest
