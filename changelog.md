@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- Add support for OpenIndiana ([#20](https://github.com/cross-platform-actions/action/issues/20))
 
 ## [1.8.0] - 2026-11-18
 ### Added

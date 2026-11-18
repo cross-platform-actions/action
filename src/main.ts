@@ -7,6 +7,7 @@ import './operating_systems/haiku/factory'
 import './operating_systems/midnightbsd/factory'
 import './operating_systems/netbsd/factory'
 import './operating_systems/omnios/factory'
+import './operating_systems/openindiana/factory'
 import './operating_systems/openbsd/factory'
 
 async function main(): Promise<void> {

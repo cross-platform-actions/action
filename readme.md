@@ -60,11 +60,12 @@ jobs:
 
 ### Full Example
 
-Here's a sample workflow file which will set up a matrix resulting in nine
+Here's a sample workflow file which will set up a matrix resulting in ten
 jobs. One which will run on FreeBSD 15.1, one which runs OpenBSD 8.0, one which
 runs NetBSD 11.0, one which runs OpenBSD 7.9 on ARM64, one which runs NetBSD
 11.0 on ARM64, one which runs DragonFly BSD 6.4.2, one which runs MidnightBSD
-4.0.4, one which runs Haiku R1/beta6 and one which runs OmniOS r151056.
+4.0.4, one which runs Haiku R1/beta6, one which runs OmniOS r151056 and one
+which runs OpenIndiana 2026.10.30.
 
 ```yaml
 name: CI
@@ -115,6 +116,10 @@ jobs:
           - name: omnios
             architecture: x86-64
             version: 'r151056'
+
+          - name: openindiana
+            architecture: x86-64
+            version: '2026.10.30'
 
     steps:
       - uses: actions/checkout@v6
@@ -408,6 +413,12 @@ operating systems.
 | r151060 | ✅     |
 | r151058 | ✅     |
 | r151056 | ✅     |
+
+### [OpenIndiana][openindiana_builder] (`openindiana`)
+
+| Version    | x86-64 |
+|------------|--------|
+| 2026.10.30 | ✅     |
 
 ### Architectures
 
@@ -808,6 +819,7 @@ files within the [`test/http`](test/http) are ignore by Git.
 [dragonflybsd_builder]: https://github.com/cross-platform-actions/dragonflybsd-builder
 [midnightbsd_builder]: https://github.com/cross-platform-actions/midnightbsd-builder
 [omnios_builder]: https://github.com/cross-platform-actions/omnios-builder
+[openindiana_builder]: https://github.com/cross-platform-actions/openindiana-builder
 [act]: https://github.com/nektos/act
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
 [Unreleased]: #unreleased

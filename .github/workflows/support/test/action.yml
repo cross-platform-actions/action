@@ -59,7 +59,7 @@ runs:
           ls -lah
           whoami
           env | sort
-          [ "`uname -s`" = '${{ inputs.name }}' ] || [ "`uname -n`" = '${{ inputs.name }}' ] || uname -v | grep -q -i '${{ inputs.name }}'
+          [ "`uname -s`" = '${{ inputs.name }}' ] || [ "`uname -n`" = '${{ inputs.name }}' ] || uname -v | grep -q -i '${{ inputs.name }}' || grep -q -i '${{ inputs.name }}' /etc/release 2> /dev/null
           [ "`uname -r`" = '${{ inputs.uname_release || inputs.version }}' ] || uname -v | grep -q '${{ inputs.uname_version }}'
           [ "`uname -m`" = '${{ inputs.uname_hardware }}' ] || [ "`uname -p`" = '${{ inputs.uname_hardware }}' ]
           [ "`pwd`" = '${{ inputs.work_directory }}' ]

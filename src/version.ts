@@ -6,7 +6,8 @@ const version = {
     midnightbsd: 'v0.0.1',
     netbsd: 'v1.3.0',
     openbsd: 'v0.15.0',
-    omnios: 'v0.3.0'
+    omnios: 'v0.3.0',
+    openindiana: 'v0.0.1'
   },
 
   resources: 'v2.1.0',

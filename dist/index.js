@@ -1917,6 +1917,7 @@ __nccwpck_require__(2078);
 __nccwpck_require__(3924);
 __nccwpck_require__(2146);
 __nccwpck_require__(6627);
+__nccwpck_require__(5975);
 __nccwpck_require__(6653);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -3606,6 +3607,114 @@ exports.QemuVmX86_64 = QemuVmX86_64;
 
 /***/ }),
 
+/***/ 5975:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const factory_1 = __nccwpck_require__(133);
+const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
+const openindiana_1 = __importDefault(__nccwpck_require__(9719));
+(0, factory_1.factory)(class OpenIndianaFactory extends qemu_factory_1.default {
+    createImpl(version) {
+        return new openindiana_1.default(this.architecture, version);
+    }
+});
+//# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 9719:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var OpenIndiana_1;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const factory_1 = __nccwpck_require__(133);
+const version_1 = __importDefault(__nccwpck_require__(8217));
+const qemu_1 = __nccwpck_require__(1526);
+const qemu_vm = __importStar(__nccwpck_require__(650));
+let OpenIndiana = OpenIndiana_1 = class OpenIndiana extends qemu_1.Qemu {
+    get virtualMachineImageReleaseVersion() {
+        return version_1.default.operating_system.openindiana;
+    }
+    get vmClass() {
+        return qemu_vm.Vm;
+    }
+    // Distributed as a bundle, like NetBSD's images, because a solid zstd stream
+    // downloads faster than qcow2's own compression.
+    get imageFileExtension() {
+        return OpenIndiana_1.bundleFileExtension;
+    }
+    // The images let `runner` in with an empty password, so there's no key to
+    // deliver and no resources disk to carry it on.
+    get requiresSshKey() {
+        return false;
+    }
+};
+OpenIndiana = OpenIndiana_1 = __decorate([
+    factory_1.operatingSystem
+], OpenIndiana);
+exports["default"] = OpenIndiana;
+//# sourceMappingURL=openindiana.js.map
+
+/***/ }),
+
+/***/ 650:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Vm = void 0;
+const qemu_vm_1 = __nccwpck_require__(1106);
+class Vm extends qemu_vm_1.Vm {
+    get hardDriverFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-blk,drive=drive0,bootindex=0,addr=0x02',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=unsafe,discard=ignore,format=raw`,
+        ];
+    }
+}
+exports.Vm = Vm;
+//# sourceMappingURL=qemu_vm.js.map
+
+/***/ }),
+
 /***/ 1526:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -4408,7 +4517,8 @@ const version = {
         midnightbsd: 'v0.0.1',
         netbsd: 'v1.3.0',
         openbsd: 'v0.15.0',
-        omnios: 'v0.3.0'
+        omnios: 'v0.3.0',
+        openindiana: 'v0.0.1'
     },
     resources: 'v2.1.0',
     simh: 'v0.0.1'
