@@ -172,9 +172,11 @@ describe('toKind', () => {
     })
   })
 
+  // `sparc` is the 32-bit architecture, a separate NetBSD port and QEMU
+  // emulator, so it must not resolve to sparc64.
   describe('sparc', () => {
-    it('returns the sparc64 architecture', () => {
-      expect(architecture.toKind('sparc')).toBe(architecture.Kind.sparc64)
+    it('returns undefined', () => {
+      expect(architecture.toKind('sparc')).toBeUndefined()
     })
   })
 

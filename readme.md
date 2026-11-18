@@ -421,7 +421,7 @@ operating systems, see the sections for each operating system above.
 | `vax`        |                 |
 | `x86-64`     | `x86_64`, `x64` |
 | `riscv64`    | `riscv`, `rv64` |
-| `sparc64`    | `sparc`         |
+| `sparc64`    |                 |
 
 ### Hypervisors
 

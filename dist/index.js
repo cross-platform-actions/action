@@ -1248,8 +1248,7 @@ const architectureMap = {
     riscv: Kind.riscv64,
     rv64: Kind.riscv64,
     vax: Kind.vax,
-    sparc64: Kind.sparc64,
-    sparc: Kind.sparc64
+    sparc64: Kind.sparc64
 };
 //# sourceMappingURL=kind.js.map
 
