@@ -68,6 +68,16 @@ export function mebibytes(memory: string): number | undefined {
   }
 }
 
+// `memory`, a QEMU `-m` memory string, or `maximum` mebibytes when it asks for
+// more. A value that can't be parsed is passed on for QEMU to reject.
+export function capMemory(memory: string, maximum: number): string {
+  const requested = mebibytes(memory)
+
+  if (requested === undefined || requested <= maximum) return memory
+
+  return `${maximum}M`
+}
+
 export function getOrThrow<Key, Value>(
   map: ReadonlyMap<Key, Value>,
   key: Key

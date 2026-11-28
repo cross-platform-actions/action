@@ -383,6 +383,11 @@ emulated, and comes with a couple of limitations:
 * Rebooting the VM (`cpa.sh --reboot`) is not supported: the machine's
     firmware, OpenBIOS, fails to boot it again after a restart.
 
+Note, the NetBSD/i386 kernel has no PAE, so it can use only the memory below
+4 GB. The i386 architecture therefore runs on QEMU's `pc` machine rather than
+`q35`, which leaves up to 3.5 GB there, and larger `memory` inputs are clamped
+to 3583M.
+
 ### [DragonFly BSD][dragonflybsd_builder] (`dragonflybsd`)
 
 | Version | x86-64 |

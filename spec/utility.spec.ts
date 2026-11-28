@@ -3,8 +3,27 @@ import {
   getOrDefaultOrThrow,
   getOrThrow,
   getImplementation,
-  mebibytes
+  mebibytes,
+  capMemory
 } from '../src/utility'
+
+describe('capMemory', () => {
+  it('caps memory above the maximum at the maximum, in mebibytes', () => {
+    expect(capMemory('6G', 3583)).toEqual('3583M')
+  })
+
+  it('leaves memory at the maximum unchanged', () => {
+    expect(capMemory('3583M', 3583)).toEqual('3583M')
+  })
+
+  it('leaves memory below the maximum as it was written', () => {
+    expect(capMemory('2G', 3583)).toEqual('2G')
+  })
+
+  it('passes a value it cannot parse on unchanged', () => {
+    expect(capMemory('lots', 3583)).toEqual('lots')
+  })
+})
 
 describe('mebibytes', () => {
   it('converts gibibytes to mebibytes', () => {

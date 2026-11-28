@@ -1230,6 +1230,14 @@ class I386 extends x86_1.X86 {
     get name() {
         return 'i386';
     }
+    get resolveName() {
+        return 'i386';
+    }
+    // Not q35: a 32-bit kernel without PAE can use only the memory below 4 GiB,
+    // and `pc` puts up to 3.5 GiB there, where q35 puts at most 2.75 GiB.
+    get machineType() {
+        return 'pc';
+    }
 }
 exports.I386 = I386;
 //# sourceMappingURL=i386.js.map
@@ -1490,12 +1498,8 @@ exports.Vax = Vax;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.X86 = void 0;
 const architecture_1 = __nccwpck_require__(4019);
-// Every x86 guest, 32-bit or 64-bit, runs on the same QEMU and machine, so
-// they share an implementation wherever one is resolved per architecture.
+// Every x86 guest, 32-bit or 64-bit, runs on the same QEMU, CPU and firmware.
 class X86 extends architecture_1.Architecture {
-    get resolveName() {
-        return 'x86_64';
-    }
     get resourceUrl() {
         return `${this.resourceBaseUrl}/qemu-system-x86_64-${this.hostString}.tar`;
     }
@@ -1533,9 +1537,6 @@ class X86 extends architecture_1.Architecture {
             'la57=off',
             'stibp-always-on=off'
         ];
-    }
-    get machineType() {
-        return 'q35';
     }
     get hypervisor() {
         return this.internalHypervisor;
@@ -1578,6 +1579,12 @@ const x86_1 = __nccwpck_require__(5651);
 class X86_64 extends x86_1.X86 {
     get name() {
         return 'x86-64';
+    }
+    get resolveName() {
+        return 'x86_64';
+    }
+    get machineType() {
+        return 'q35';
     }
 }
 exports.X86_64 = X86_64;
@@ -2840,17 +2847,111 @@ const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
 const netbsd_1 = __importDefault(__nccwpck_require__(7372));
 const vax_1 = __importDefault(__nccwpck_require__(9349));
 const sparc64_1 = __importDefault(__nccwpck_require__(1407));
+const i386_1 = __importDefault(__nccwpck_require__(816));
 (0, factory_1.factory)(class NetBsdFactory extends qemu_factory_1.default {
     createImpl(version) {
         const cls = this.architecture.resolve({
             vax: vax_1.default,
             sparc64: sparc64_1.default,
+            i386: i386_1.default,
             default: netbsd_1.default
         });
         return new cls(this.architecture, version);
     }
 });
 //# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 816:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const netbsd_1 = __importDefault(__nccwpck_require__(7372));
+const i386_vm = __importStar(__nccwpck_require__(2364));
+const variant_1 = __nccwpck_require__(2002);
+// NetBSD on 32-bit x86, which boots like x86-64 apart from its memory.
+class NetBsdI386 extends netbsd_1.default {
+    get vmClass() {
+        return i386_vm.Vm;
+    }
+    // The images carry no kernel for `microvm`.
+    get supportedVariants() {
+        return [variant_1.Variant.default];
+    }
+    vmClassFor() {
+        return this.vmClass;
+    }
+}
+exports["default"] = NetBsdI386;
+//# sourceMappingURL=i386.js.map
+
+/***/ }),
+
+/***/ 2364:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Vm = void 0;
+const qemu_vm = __importStar(__nccwpck_require__(7598));
+const utility_1 = __nccwpck_require__(2857);
+// The NetBSD/i386 kernels have no PAE, so they use only the memory below
+// 4 GiB. On the `pc` machine that is all of it, up to just under 3.5 GiB. From
+// 3.5 GiB, QEMU moves everything above 3 GiB past 4 GiB, so the action's
+// default of 6 GiB would leave the guest 3 GiB.
+class Vm extends qemu_vm.Vm {
+    get memory() {
+        return (0, utility_1.capMemory)(this.configuration.memory, Vm.maxMemoryMebibytes);
+    }
+}
+exports.Vm = Vm;
+Vm.maxMemoryMebibytes = 3583;
+//# sourceMappingURL=i386_vm.js.map
 
 /***/ }),
 
@@ -3228,10 +3329,7 @@ class Vm extends qemu_vm.Vm {
         return '1';
     }
     get memory() {
-        const requested = (0, utility_1.mebibytes)(this.configuration.memory);
-        if (requested === undefined || requested <= Vm.maxMemoryMebibytes)
-            return this.configuration.memory;
-        return `${Vm.maxMemoryMebibytes}M`;
+        return (0, utility_1.capMemory)(this.configuration.memory, Vm.maxMemoryMebibytes);
     }
 }
 exports.Vm = Vm;
@@ -3802,7 +3900,8 @@ class Qemu extends os.OperatingSystem {
     get hypervisor() {
         const cls = this.architecture.resolve({
             arm64: hypervisor_1.QemuEfi,
-            x86_64: hypervisor_1.Qemu
+            x86_64: hypervisor_1.Qemu,
+            i386: hypervisor_1.Qemu
         });
         return new cls();
     }
@@ -4465,7 +4564,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ExecExecutor = exports.group = exports.getImplementation = exports.getOrThrow = exports.mebibytes = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
+exports.ExecExecutor = exports.group = exports.getImplementation = exports.getOrThrow = exports.capMemory = exports.mebibytes = exports.getOrDefaultOrThrow = exports.execWithOutput = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const core = __importStar(__nccwpck_require__(2186));
 function execWithOutput(commandLine, args, options = {}) {
@@ -4510,6 +4609,15 @@ function mebibytes(memory) {
     }
 }
 exports.mebibytes = mebibytes;
+// `memory`, a QEMU `-m` memory string, or `maximum` mebibytes when it asks for
+// more. A value that can't be parsed is passed on for QEMU to reject.
+function capMemory(memory, maximum) {
+    const requested = mebibytes(memory);
+    if (requested === undefined || requested <= maximum)
+        return memory;
+    return `${maximum}M`;
+}
+exports.capMemory = capMemory;
 function getOrThrow(map, key) {
     const value = map.get(key);
     if (value === undefined)

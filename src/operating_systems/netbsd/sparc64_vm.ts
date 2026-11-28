@@ -1,5 +1,5 @@
 import * as qemu_vm from './qemu_vm'
-import {mebibytes} from '../../utility'
+import {capMemory} from '../../utility'
 
 // QEMU's `sun4u` machine, booted through its built-in OpenBIOS. The images run
 // on the QEMU from the resources release, which carries a fix to the sun4u PCI
@@ -42,12 +42,7 @@ export class Vm extends qemu_vm.Vm {
   }
 
   protected override get memory(): string {
-    const requested = mebibytes(this.configuration.memory)
-
-    if (requested === undefined || requested <= Vm.maxMemoryMebibytes)
-      return this.configuration.memory
-
-    return `${Vm.maxMemoryMebibytes}M`
+    return capMemory(this.configuration.memory, Vm.maxMemoryMebibytes)
   }
 }
 

@@ -1,13 +1,8 @@
 import {Architecture} from '../../architecture'
 import * as hypervisor from '../../hypervisor'
 
-// Every x86 guest, 32-bit or 64-bit, runs on the same QEMU and machine, so
-// they share an implementation wherever one is resolved per architecture.
+// Every x86 guest, 32-bit or 64-bit, runs on the same QEMU, CPU and firmware.
 export abstract class X86 extends Architecture {
-  override get resolveName(): string {
-    return 'x86_64'
-  }
-
   override get resourceUrl(): string {
     return `${this.resourceBaseUrl}/qemu-system-x86_64-${this.hostString}.tar`
   }
@@ -47,10 +42,6 @@ export abstract class X86 extends Architecture {
       'la57=off',
       'stibp-always-on=off'
     ]
-  }
-
-  override get machineType(): string {
-    return 'q35'
   }
 
   override get hypervisor(): hypervisor.Hypervisor {

@@ -251,8 +251,9 @@ describe('Architecture i386', () => {
     expect(arch.resourceUrl).toEqual(x86_64.resourceUrl)
   })
 
-  it('uses the same machine type as x86-64', () => {
-    expect(arch.machineType).toEqual(x86_64.machineType)
+  // q35 puts at most 2.75 GiB below 4 GiB, `pc` 3.5 GiB.
+  it('uses the pc machine type', () => {
+    expect(arch.machineType).toEqual('pc')
   })
 
   it('uses the same CPU as x86-64', () => {
@@ -263,8 +264,8 @@ describe('Architecture i386', () => {
     expect(arch.hypervisor.firmwareFile).toEqual(x86_64.hypervisor.firmwareFile)
   })
 
-  it('shares the x86-64 implementations', () => {
-    expect(arch.resolve({x86_64: 'x86', default: 'other'})).toEqual('x86')
+  it('resolves implementations of its own', () => {
+    expect(arch.resolve({i386: 'i386', x86_64: 'x86-64'})).toEqual('i386')
   })
 })
 

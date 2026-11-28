@@ -5,6 +5,7 @@ import * as path from 'path'
 import NetBsd from '../../../src/operating_systems/netbsd/netbsd'
 import NetBsdVax from '../../../src/operating_systems/netbsd/vax'
 import NetBsdSparc64 from '../../../src/operating_systems/netbsd/sparc64'
+import NetBsdI386 from '../../../src/operating_systems/netbsd/i386'
 import '../../../src/operating_systems/netbsd/factory'
 import {Factory} from '../../../src/operating_systems/factory'
 import * as hostModule from '../../../src/host'
@@ -17,6 +18,7 @@ import * as qemu from '../../../src/qemu_vm'
 import * as netbsdQemuVm from '../../../src/operating_systems/netbsd/qemu_vm'
 import * as netbsdVaxVm from '../../../src/operating_systems/netbsd/vax_vm'
 import * as netbsdSparc64Vm from '../../../src/operating_systems/netbsd/sparc64_vm'
+import * as netbsdI386Vm from '../../../src/operating_systems/netbsd/i386_vm'
 import {Input} from '../../../src/action/input'
 import {Variant} from '../../../src/action/variant'
 import * as vmModule from '../../../src/vm'
@@ -248,6 +250,20 @@ describe('NetBSD OperatingSystem', () => {
       new hypervisor.Qemu()
     )
 
+    it('is what the factory creates for i386', () => {
+      expect(netbsdI386).toBeInstanceOf(NetBsdI386)
+    })
+
+    it('rejects the microvm variant, which the images carry no kernel for', () => {
+      expect(() => netbsdI386.validateVariant(Variant.microvm)).toThrowError(
+        /not supported by netbsd on i386.*Supported variants are: default/
+      )
+    })
+
+    it('boots through the same QEMU and firmware as x86-64', () => {
+      expect(netbsdI386.hypervisor).toBeInstanceOf(hypervisor.Qemu)
+    })
+
     it('downloads the i386 image from the NetBSD builder', () => {
       expect(netbsdI386.virtualMachineImageUrl).toEqual(
         'https://github.com/cross-platform-actions/netbsd-builder/releases/' +
@@ -256,8 +272,8 @@ describe('NetBSD OperatingSystem', () => {
       )
     })
 
-    it('creates the same virtual machine as x86-64', () => {
-      let qemuVmSpy = spyOn(netbsdQemuVm, 'Vm')
+    it('creates a pc virtual machine', () => {
+      let i386VmSpy = spyOn(netbsdI386Vm, 'Vm')
 
       netbsdI386.createVirtualMachine(
         hypervisorDirectory,
@@ -267,7 +283,7 @@ describe('NetBSD OperatingSystem', () => {
         config
       )
 
-      expect(qemuVmSpy).toHaveBeenCalledOnceWith(
+      expect(i386VmSpy).toHaveBeenCalledOnceWith(
         hypervisorDirectory,
         resourcesDirectory,
         i386Architecture,
@@ -276,7 +292,7 @@ describe('NetBSD OperatingSystem', () => {
           ...config,
           ssHostPort: 2847,
           cpu: 'max',
-          machineType: 'q35',
+          machineType: 'pc',
           firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`,
           microvmFirmware: `${firmwareDirectory}/share/qemu/qboot.rom`,
           kernel: `${resourcesDirectory}/kernel`
