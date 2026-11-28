@@ -64,6 +64,25 @@ describe('masked CPU features', () => {
     })
   })
 
+  // The 32-bit guests run on the same QEMU and CPU, and their kernels size
+  // the saved CPU state from what it reports just the same.
+  describe('on i386', () => {
+    const architecture = architectureFor(archKind.Kind.i386, 'netbsd')
+    const vm = new NetBsdVm(
+      '',
+      '',
+      architecture,
+      new Input(host),
+      configuration
+    )
+
+    it('masks the same features as x86-64', () => {
+      allFeatures.forEach(feature =>
+        expect(cpuFlag(vm.command)).toContain(feature)
+      )
+    })
+  })
+
   describe('on arm64', () => {
     const architecture = architectureFor(archKind.Kind.arm64, 'netbsd')
     const vm = new NetBsdVm(

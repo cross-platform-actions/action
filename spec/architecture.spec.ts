@@ -172,6 +172,25 @@ describe('toKind', () => {
     })
   })
 
+  describe('i386', () => {
+    it('returns the i386 architecture', () => {
+      expect(architecture.toKind('i386')).toBe(architecture.Kind.i386)
+    })
+  })
+
+  describe('I386', () => {
+    it('returns the i386 architecture', () => {
+      expect(architecture.toKind('I386')).toBe(architecture.Kind.i386)
+    })
+  })
+
+  // GitHub Actions' name for it, in `runner.arch`.
+  describe('X86', () => {
+    it('returns the i386 architecture', () => {
+      expect(architecture.toKind('X86')).toBe(architecture.Kind.i386)
+    })
+  })
+
   // `sparc` is the 32-bit architecture, a separate NetBSD port and QEMU
   // emulator, so it must not resolve to sparc64.
   describe('sparc', () => {
@@ -210,6 +229,42 @@ describe('Architecture riscv64', () => {
 
   it('uses U-Boot as the firmware', () => {
     expect(arch.hypervisor.firmwareFile).toContain('u-boot.bin')
+  })
+})
+
+describe('Architecture i386', () => {
+  let host = Host.create('linux')
+  let osKind = os.Kind.for('netbsd')
+  let arch = factory.create(architecture.Kind.i386, host, osKind, new Qemu())
+  let x86_64 = factory.create(
+    architecture.Kind.x86_64,
+    host,
+    osKind,
+    new Qemu()
+  )
+
+  it('has the name i386', () => {
+    expect(arch.name).toEqual('i386')
+  })
+
+  it('runs on the same QEMU as x86-64', () => {
+    expect(arch.resourceUrl).toEqual(x86_64.resourceUrl)
+  })
+
+  it('uses the same machine type as x86-64', () => {
+    expect(arch.machineType).toEqual(x86_64.machineType)
+  })
+
+  it('uses the same CPU as x86-64', () => {
+    expect(arch.cpu).toEqual(x86_64.cpu)
+  })
+
+  it('boots through the same firmware as x86-64', () => {
+    expect(arch.hypervisor.firmwareFile).toEqual(x86_64.hypervisor.firmwareFile)
+  })
+
+  it('shares the x86-64 implementations', () => {
+    expect(arch.resolve({x86_64: 'x86', default: 'other'})).toEqual('x86')
   })
 })
 

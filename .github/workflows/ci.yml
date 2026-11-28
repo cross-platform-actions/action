@@ -239,6 +239,8 @@ jobs:
             uname: sparc64
             timeout: 30
 
+          - name: i386
+
         host:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action

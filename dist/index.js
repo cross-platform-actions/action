@@ -1189,6 +1189,7 @@ const openbsd_2 = __nccwpck_require__(367);
 const riscv64_1 = __nccwpck_require__(379);
 const vax_1 = __nccwpck_require__(429);
 const sparc64_1 = __nccwpck_require__(8735);
+const i386_1 = __nccwpck_require__(2924);
 const openbsd_3 = __importDefault(__nccwpck_require__(9243));
 const netbsd_1 = __importDefault(__nccwpck_require__(7372));
 const utility_1 = __nccwpck_require__(2857);
@@ -1210,9 +1211,28 @@ const architectureMap = new Map([
     [kind_1.Kind.x86_64, x86_64_1.X86_64],
     [kind_1.Kind.riscv64, riscv64_1.Riscv64],
     [kind_1.Kind.vax, vax_1.Vax],
-    [kind_1.Kind.sparc64, sparc64_1.Sparc64]
+    [kind_1.Kind.sparc64, sparc64_1.Sparc64],
+    [kind_1.Kind.i386, i386_1.I386]
 ]);
 //# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 2924:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.I386 = void 0;
+const x86_1 = __nccwpck_require__(5651);
+class I386 extends x86_1.X86 {
+    get name() {
+        return 'i386';
+    }
+}
+exports.I386 = I386;
+//# sourceMappingURL=i386.js.map
 
 /***/ }),
 
@@ -1233,6 +1253,7 @@ var Kind;
     Kind[Kind["riscv64"] = 2] = "riscv64";
     Kind[Kind["vax"] = 3] = "vax";
     Kind[Kind["sparc64"] = 4] = "sparc64";
+    Kind[Kind["i386"] = 5] = "i386";
 })(Kind = exports.Kind || (exports.Kind = {}));
 function toKind(value) {
     return architectureMap[value.toLocaleLowerCase()];
@@ -1248,7 +1269,10 @@ const architectureMap = {
     riscv: Kind.riscv64,
     rv64: Kind.riscv64,
     vax: Kind.vax,
-    sparc64: Kind.sparc64
+    sparc64: Kind.sparc64,
+    i386: Kind.i386,
+    // What GitHub Actions calls the 32-bit architecture, in `runner.arch`.
+    x86: Kind.i386
 };
 //# sourceMappingURL=kind.js.map
 
@@ -1458,36 +1482,17 @@ exports.Vax = Vax;
 
 /***/ }),
 
-/***/ 367:
+/***/ 5651:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.X86_64OpenBsd = void 0;
-const x86_64_1 = __nccwpck_require__(7055);
-class X86_64OpenBsd extends x86_64_1.X86_64 {
-    get networkDevice() {
-        return 'e1000';
-    }
-}
-exports.X86_64OpenBsd = X86_64OpenBsd;
-//# sourceMappingURL=openbsd.js.map
-
-/***/ }),
-
-/***/ 7055:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.X86_64 = void 0;
+exports.X86 = void 0;
 const architecture_1 = __nccwpck_require__(4019);
-class X86_64 extends architecture_1.Architecture {
-    get name() {
-        return 'x86-64';
-    }
+// Every x86 guest, 32-bit or 64-bit, runs on the same QEMU and machine, so
+// they share an implementation wherever one is resolved per architecture.
+class X86 extends architecture_1.Architecture {
     get resolveName() {
         return 'x86_64';
     }
@@ -1537,6 +1542,42 @@ class X86_64 extends architecture_1.Architecture {
     }
     get efiHypervisor() {
         return this.internalHypervisor.efi;
+    }
+}
+exports.X86 = X86;
+//# sourceMappingURL=x86.js.map
+
+/***/ }),
+
+/***/ 367:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.X86_64OpenBsd = void 0;
+const x86_64_1 = __nccwpck_require__(7055);
+class X86_64OpenBsd extends x86_64_1.X86_64 {
+    get networkDevice() {
+        return 'e1000';
+    }
+}
+exports.X86_64OpenBsd = X86_64OpenBsd;
+//# sourceMappingURL=openbsd.js.map
+
+/***/ }),
+
+/***/ 7055:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.X86_64 = void 0;
+const x86_1 = __nccwpck_require__(5651);
+class X86_64 extends x86_1.X86 {
+    get name() {
+        return 'x86-64';
     }
 }
 exports.X86_64 = X86_64;
@@ -4515,7 +4556,7 @@ const version = {
         freebsd: 'v0.17.0',
         haiku: 'v0.2.0',
         midnightbsd: 'v0.0.1',
-        netbsd: 'v1.3.0',
+        netbsd: 'v1.4.0',
         openbsd: 'v0.15.0',
         omnios: 'v0.3.0',
         openindiana: 'v0.0.1'

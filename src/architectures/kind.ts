@@ -6,7 +6,8 @@ export enum Kind {
   x86_64,
   riscv64,
   vax,
-  sparc64
+  sparc64,
+  i386
 }
 
 export function toKind(value: string): Kind | undefined {
@@ -23,5 +24,8 @@ const architectureMap: Record<string, Kind> = {
   riscv: Kind.riscv64,
   rv64: Kind.riscv64,
   vax: Kind.vax,
-  sparc64: Kind.sparc64
+  sparc64: Kind.sparc64,
+  i386: Kind.i386,
+  // What GitHub Actions calls the 32-bit architecture, in `runner.arch`.
+  x86: Kind.i386
 } as const

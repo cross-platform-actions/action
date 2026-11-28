@@ -348,17 +348,17 @@ operating system will list which versions are supported.
 
 ### [NetBSD][netbsd_builder] (`netbsd`)
 
-| Version | x86-64 | arm64 | vax   | sparc64 |
-|---------|--------|-------|-------|---------|
-| 11.1    | ✅     | ✅    | ✅    | ✅      |
-| 11.0    | ✅     | ✅    | ✅    | ✅      |
-| 10.2    | ✅     | ✅    | ✅    | ✅      |
-| 10.1    | ✅     | ✅    | ✅    | ✅      |
-| 10.0    | ✅     | ✅    | ❌    | ❌      |
-| 9.5     | ✅     | ❌    | ❌    | ❌      |
-| 9.4     | ✅     | ❌    | ❌    | ❌      |
-| 9.3     | ✅     | ❌    | ❌    | ❌      |
-| 9.2     | ✅     | ❌    | ❌    | ❌      |
+| Version | x86-64 | arm64 | vax   | sparc64 | i386 |
+|---------|--------|-------|-------|---------|------|
+| 11.1    | ✅     | ✅    | ✅    | ✅      | ✅   |
+| 11.0    | ✅     | ✅    | ✅    | ✅      | ✅   |
+| 10.2    | ✅     | ✅    | ✅    | ✅      | ✅   |
+| 10.1    | ✅     | ✅    | ✅    | ✅      | ✅   |
+| 10.0    | ✅     | ✅    | ❌    | ❌      | ✅   |
+| 9.5     | ✅     | ❌    | ❌    | ❌      | ✅   |
+| 9.4     | ✅     | ❌    | ❌    | ❌      | ✅   |
+| 9.3     | ✅     | ❌    | ❌    | ❌      | ✅   |
+| 9.2     | ✅     | ❌    | ❌    | ❌      | ✅   |
 
 Note, the VAX architecture runs on the [SIMH][simh_builder] simulator
 (MicroVAX 3900) instead of QEMU and comes with a couple of limitations:
@@ -433,6 +433,7 @@ operating systems, see the sections for each operating system above.
 | `x86-64`     | `x86_64`, `x64` |
 | `riscv64`    | `riscv`, `rv64` |
 | `sparc64`    |                 |
+| `i386`       | `x86`           |
 
 ### Hypervisors
 

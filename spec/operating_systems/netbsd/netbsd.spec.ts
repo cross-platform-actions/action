@@ -236,6 +236,55 @@ describe('NetBSD OperatingSystem', () => {
     })
   })
 
+  describe('i386 architecture', () => {
+    let i386Architecture = arch.create(
+      archKind.Kind.i386,
+      host,
+      osKind,
+      host.hypervisor
+    )
+    let netbsdI386 = Factory.for(osKind, i386Architecture).create(
+      '0.0.0',
+      new hypervisor.Qemu()
+    )
+
+    it('downloads the i386 image from the NetBSD builder', () => {
+      expect(netbsdI386.virtualMachineImageUrl).toEqual(
+        'https://github.com/cross-platform-actions/netbsd-builder/releases/' +
+          `download/${netbsdI386.virtualMachineImageReleaseVersion}/` +
+          'netbsd-0.0.0-i386.tar.zst'
+      )
+    })
+
+    it('creates the same virtual machine as x86-64', () => {
+      let qemuVmSpy = spyOn(netbsdQemuVm, 'Vm')
+
+      netbsdI386.createVirtualMachine(
+        hypervisorDirectory,
+        resourcesDirectory,
+        firmwareDirectory,
+        input,
+        config
+      )
+
+      expect(qemuVmSpy).toHaveBeenCalledOnceWith(
+        hypervisorDirectory,
+        resourcesDirectory,
+        i386Architecture,
+        input,
+        {
+          ...config,
+          ssHostPort: 2847,
+          cpu: 'max',
+          machineType: 'q35',
+          firmware: `${firmwareDirectory}/share/qemu/bios-256k.bin`,
+          microvmFirmware: `${firmwareDirectory}/share/qemu/qboot.rom`,
+          kernel: `${resourcesDirectory}/kernel`
+        }
+      )
+    })
+  })
+
   describe('SPARC64 architecture', () => {
     let sparc64Architecture = arch.create(
       archKind.Kind.sparc64,

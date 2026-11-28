@@ -10,6 +10,7 @@ import {X86_64OpenBsd} from './x86_64/openbsd'
 import {Riscv64} from './riscv64/riscv64'
 import {Vax} from './vax/vax'
 import {Sparc64} from './sparc64/sparc64'
+import {I386} from './i386/i386'
 import OpenBsd from '../operating_systems/openbsd/openbsd'
 import NetBsd from '../operating_systems/netbsd/netbsd'
 import {getOrThrow} from '../utility'
@@ -41,5 +42,6 @@ const architectureMap: ReadonlyMap<Kind, typeof X86_64> = new Map([
   [Kind.x86_64, X86_64],
   [Kind.riscv64, Riscv64],
   [Kind.vax, Vax],
-  [Kind.sparc64, Sparc64]
+  [Kind.sparc64, Sparc64],
+  [Kind.i386, I386]
 ])
